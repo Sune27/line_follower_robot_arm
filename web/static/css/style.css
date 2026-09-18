@@ -1,0 +1,400 @@
+﻿/* ============================================================
+   1. THIẾT LẬP NỀN TẢNG (Global Styles & CSS Reset)
+   Tác dụng: Sử dụng font 'Be Vietnam Pro' và 'Chakra Petch' tương thích 100% tiếng Việt
+   ============================================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #080c14; /* Nền xanh đen sâu thẳm */
+    color: #e2e8f0;            /* Màu chữ sáng dịu */
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+/* ============================================================
+   2. QUẢN LÝ CHUYỂN ĐỔI CÁC MÀN HÌNH (Screen Manager)
+   Tác dụng: Ẩn các màn hình chưa dùng và tạo hiệu ứng mờ dần (Fade) khi kích hoạt
+   ============================================================ */
+.screen {
+    display: none;
+    min-height: 100vh;
+    width: 100vw;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.screen.active {
+    display: flex;
+    opacity: 1;
+}
+
+/* ============================================================
+   3. MÀN HÌNH 1: TRAILER / SPLASH SCREEN
+   Tác dụng: Hiệu ứng quét radar vi mạch 360 độ và thanh nạp dữ liệu
+   ============================================================ */
+#trailer-screen {
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, #111e38 0%, #080c14 100%);
+    text-align: center;
+}
+
+.trailer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 550px;
+    padding: 20px;
+}
+
+/* Khung viền Radar tròn */
+.radar-scanner {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin-bottom: 25px;
+    border-radius: 50%;
+    border: 2px solid rgba(6, 182, 212, 0.4);
+    box-shadow: 0 0 30px rgba(6, 182, 212, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Các vòng tròn đồng tâm bên trong */
+.radar-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px dashed rgba(6, 182, 212, 0.35);
+}
+
+.ring-1 { width: 50px; height: 50px; }
+.ring-2 { width: 95px; height: 95px; }
+.ring-3 { width: 135px; height: 135px; }
+
+/* Tia radar quét xoay tròn */
+.radar-sweep {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(6, 182, 212, 0.5), transparent 60deg);
+    animation: radarSweep 2s linear infinite;
+}
+
+@keyframes radarSweep {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Icon robot phát sáng giữa tâm */
+.center-icon {
+    font-size: 36px;
+    z-index: 2;
+    filter: drop-shadow(0 0 10px #06b6d4);
+}
+
+/* Tiêu đề trailer sử dụng font Chakra Petch công nghệ không lỗi tiếng Việt */
+.trailer-title {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #06b6d4; /* Xanh Cyan */
+    text-shadow: 0 0 15px rgba(6, 182, 212, 0.8);
+    margin-bottom: 8px;
+}
+
+.trailer-subtitle {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: #94a3b8;
+    margin-bottom: 30px;
+}
+
+/* Thanh Loading bar nạp phần trăm */
+.loading-bar-container {
+    width: 280px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.loading-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #06b6d4, #3b82f6);
+    box-shadow: 0 0 10px #06b6d4;
+    animation: loadProgress 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes loadProgress {
+    0% { width: 0%; }
+    40% { width: 60%; }
+    100% { width: 100%; }
+}
+
+.system-status {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-style: italic;
+}
+
+/* ============================================================
+   4. MÀN HÌNH 2: FORM ĐĂNG NHẬP (Login Card)
+   Tác dụng: Khung đăng nhập kính mờ, hỗ trợ ô mật khẩu có nút con mắt
+   ============================================================ */
+#login-screen {
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+    padding: 20px;
+}
+
+.login-card {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    box-shadow: 0 0 40px rgba(6, 182, 212, 0.15), inset 0 0 20px rgba(6, 182, 212, 0.05);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 420px;
+    padding: 35px 30px;
+    backdrop-filter: blur(12px);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.mini-logo {
+    font-size: 34px;
+    margin-bottom: 10px;
+    animation: spinGear 15s linear infinite;
+}
+
+@keyframes spinGear {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.login-header h2 {
+    font-family: 'Chakra Petch', sans-serif;
+    color: #38bdf8;
+    letter-spacing: 1.5px;
+    font-size: 1.45rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.queue-notice {
+    font-size: 0.85rem;
+    color: #fbbf24; /* Vàng cảnh báo */
+    font-weight: 500;
+}
+
+/* Các trường input */
+.input-group {
+    margin-bottom: 18px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.92rem;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.input-group input[type="text"] {
+    width: 100%;
+    padding: 12px 14px;
+    background: rgba(2, 6, 23, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 8px;
+    color: #f8fafc;
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.input-group input[type="text"]:focus {
+    border-color: #06b6d4;
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+}
+
+/* Khung chứa input mật khẩu và nút hình con mắt */
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.password-wrapper input {
+    width: 100%;
+    padding: 12px 46px 12px 14px; /* Dành khoảng trống 46px bên phải cho nút con mắt */
+    background: rgba(2, 6, 23, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 8px;
+    color: #f8fafc;
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.password-wrapper input:focus {
+    border-color: #06b6d4;
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+}
+
+/* Nút hình con mắt bật/tắt hiển thị mật khẩu */
+.btn-toggle-pw {
+    position: absolute;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 1.15rem;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.btn-toggle-pw:hover {
+    color: #06b6d4;
+    transform: scale(1.15);
+}
+
+.checkbox-group {
+    margin-bottom: 20px;
+}
+
+.remember-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #94a3b8;
+    cursor: pointer;
+}
+
+.remember-label input {
+    accent-color: #06b6d4;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+.error-msg {
+    color: #ef4444;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    min-height: 20px;
+    text-align: center;
+    font-weight: 600;
+}
+
+/* Nút Submit đăng nhập */
+.btn-submit {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #06b6d4 0%, #2563eb 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 22px rgba(6, 182, 212, 0.6);
+}
+
+.login-footer {
+    text-align: center;
+    margin-top: 25px;
+    font-size: 0.82rem;
+    color: #64748b;
+}
+
+/* ============================================================
+   5. MÀN HÌNH 3: BẢNG ĐIỀU KHIỂN (Dashboard)
+   Tác dụng: Tạm thời chỉ hiển thị chữ 'Bảng điều khiển' sắc nét không lỗi font
+   ============================================================ */
+#dashboard-screen {
+    flex-direction: column;
+    background-color: #080c14;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 32px;
+    background: #0f172a;
+    border-bottom: 1px solid rgba(6, 182, 212, 0.25);
+}
+
+.user-info {
+    font-size: 1.05rem;
+    color: #38bdf8;
+}
+
+.btn-logout {
+    padding: 8px 18px;
+    background: transparent;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    border-radius: 6px;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-logout:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.dashboard-main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.dashboard-title {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #f1f5f9;
+    text-shadow: 0 0 25px rgba(6, 182, 212, 0.6);
+}

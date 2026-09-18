@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Xe Dò Line & Cánh Tay Robot 4 Bậc</title>
+    <!-- Nhúng file CSS định dạng giao diện -->
+    <link rel="stylesheet" href="../static/css/style.css">
+    <!-- Font chữ Chakra Petch (phong cách Robot/Công nghệ) và Be Vietnam Pro (tối ưu 100% tiếng Việt có dấu) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- ============================================================ -->
+    <!-- MÀN HÌNH 1: TRAILER / SPLASH SCREEN (Mở màn công nghệ cao)    -->
+    <!-- Tác dụng: Tạo ấn tượng ban đầu với hiệu ứng quét radar vi mạch  -->
+    <!-- ============================================================ -->
+    <div id="trailer-screen" class="screen active">
+        <div class="trailer-content">
+            <!-- Vòng tròn quét Radar công nghệ -->
+            <div class="radar-scanner">
+                <div class="radar-ring ring-1"></div>
+                <div class="radar-ring ring-2"></div>
+                <div class="radar-ring ring-3"></div>
+                <div class="radar-sweep"></div>
+                <!-- Biểu tượng robot trung tâm phát sáng -->
+                <div class="center-icon">🤖</div>
+            </div>
+
+            <!-- Tiêu đề và thông tin dự án -->
+            <h1 class="trailer-title">MECHATRONICS LAB</h1>
+            <p class="trailer-subtitle">HỆ THỐNG XE DÒ LINE & CÁNH TAY ROBOT 4-DOF</p>
+
+            <!-- Thanh nạp dữ liệu (Loading Bar) -->
+            <div class="loading-bar-container">
+                <div class="loading-bar-fill"></div>
+            </div>
+            <p class="system-status">Đang khởi tạo các module điều khiển...</p>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MÀN HÌNH 2: FORM ĐĂNG NHẬP (Phân quyền 1 người điều khiển)     -->
+    <!-- Tác dụng: Xác thực tài khoản trước khi cho phép lái xe/gắp vật -->
+    <!-- ============================================================ -->
+    <div id="login-screen" class="screen">
+        <div class="login-card">
+            <!-- Header của thẻ đăng nhập -->
+            <div class="login-header">
+                <div class="mini-logo">⚙️</div>
+                <h2>XÁC THỰC TRUY CẬP</h2>
+                <p class="queue-notice">⚠️ Chế độ độc quyền: 1 người điều khiển</p>
+            </div>
+
+            <!-- Biểu mẫu nhập liệu -->
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <!-- Ô nhập tên tài khoản -->
+                <div class="input-group">
+                    <label for="username">Tài khoản:</label>
+                    <input type="text" id="username" placeholder="Nhập tài khoản" required autocomplete="off">
+                </div>
+
+                <!-- Ô nhập mật khẩu có nút bật/tắt hiển thị dạng con mắt -->
+                <div class="input-group">
+                    <label for="password">Mật khẩu:</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="password" placeholder="Nhập mật khẩu" required>
+                        <!-- Nút hình con mắt để chuyển đổi hiển thị mật khẩu -->
+                        <button type="button" class="btn-toggle-pw" onclick="togglePasswordVisibility()" title="Ẩn/Hiện mật khẩu">
+                            <span id="eye-icon">👁️</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Checkbox ghi nhớ đăng nhập (tránh phải đăng nhập lại nhiều lần khi thi) -->
+                <div class="checkbox-group">
+                    <label class="remember-label">
+                        <input type="checkbox" id="remember-me" checked>
+                        <span>Ghi nhớ đăng nhập trên thiết bị này</span>
+                    </label>
+                </div>
+
+                <!-- Thông báo lỗi khi nhập sai -->
+                <div id="error-message" class="error-msg"></div>
+
+                <!-- Nút bấm gửi biểu mẫu: Đã đổi thành 'ĐĂNG NHẬP' theo yêu cầu -->
+                <button type="submit" class="btn-submit">ĐĂNG NHẬP</button>
+            </form>
+
+            <div class="login-footer">
+                <p>Khoa Cơ học kỹ thuật và Tự động hóa - FEMA</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MÀN HÌNH 3: BẢNG ĐIỀU KHIỂN (Hiện tại chỉ hiển thị chữ)        -->
+    <!-- Tác dụng: Giao diện sau khi đăng nhập thành công               -->
+    <!-- ============================================================ -->
+    <div id="dashboard-screen" class="screen">
+        <!-- Thanh tiêu đề phụ: hiển thị tài khoản hiện tại và nút đăng xuất để kiểm thử -->
+        <header class="dashboard-header">
+            <span class="user-info">👤 Người đang điều khiển: <b id="current-user">Admin</b></span>
+            <button class="btn-logout" onclick="handleLogout()" title="Nhấn để thoát và nhường lượt cho người khác">Đăng xuất</button>
+        </header>
+
+        <!-- Nội dung chính: Đúng yêu cầu chỉ hiển thị chữ Bảng điều khiển -->
+        <main class="dashboard-main">
+            <h1 class="dashboard-title">Bảng điều khiển</h1>
+        </main>
+    </div>
+
+    <!-- Nhúng file Javascript xử lý logic tương tác -->
+    <script src="../static/js/main.js"></script>
+</body>
+</html>
