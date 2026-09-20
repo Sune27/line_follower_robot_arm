@@ -348,12 +348,13 @@ body {
 }
 
 /* ============================================================
-   5. MÀN HÌNH 3: BẢNG ĐIỀU KHIỂN (Dashboard)
-   Tác dụng: Tạm thời chỉ hiển thị chữ 'Bảng điều khiển' sắc nét không lỗi font
+   5. MÀN HÌNH 3: BẢNG ĐIỀU KHIỂN & CHỨC NĂNG (Functions Hub)
+   Thiết kế linh hoạt: Luôn tự động dàn đều các ô ở chính giữa
    ============================================================ */
 #dashboard-screen {
     flex-direction: column;
     background-color: #080c14;
+    min-height: 100vh;
 }
 
 .dashboard-header {
@@ -363,11 +364,13 @@ body {
     padding: 16px 32px;
     background: #0f172a;
     border-bottom: 1px solid rgba(6, 182, 212, 0.25);
+    z-index: 20;
 }
 
 .user-info {
     font-size: 1.05rem;
     color: #38bdf8;
+    font-weight: 500;
 }
 
 .btn-logout {
@@ -388,22 +391,215 @@ body {
     color: white;
 }
 
+/* Khu vực nội dung trung tâm - Căn lên phía trên */
 .dashboard-main {
     flex: 1;
     display: flex;
     justify-content: center;
+    align-items: flex-start;
+    padding: 60px 20px 40px 20px;
+    width: 100%;
+    position: relative;
+}
+
+.functions-container {
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 1100px;
 }
 
-.dashboard-title {
+.functions-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.functions-title {
     font-family: 'Chakra Petch', sans-serif;
-    font-size: 3.5rem;
+    font-size: 2.5rem;
     font-weight: 700;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     color: #f1f5f9;
-    text-shadow: 0 0 25px rgba(6, 182, 212, 0.6);
+    text-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+    margin-bottom: 6px;
 }
 
+.functions-subtitle {
+    font-size: 0.95rem;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+}
+
+/* Lưới các thẻ chức năng: TỰ ĐỘNG CĂN ĐỀU CHÍNH GIỮA DÙ CÓ 1, 2 HAY NHIỀU Ô */
+.function-cards-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center; /* Luôn dàn đều ở chính giữa màn hình */
+    align-items: center;
+    gap: 25px;
+    width: 100%;
+}
+
+/* THẺ CHỨC NĂNG HÌNH CHỮ NHẬT */
+.function-card {
+    position: relative;
+    width: 280px;
+    height: 220px;
+    background: rgba(15, 23, 42, 0.85); /* Nền tiệp với gam màu xanh đen của hệ thống */
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    border-radius: 16px;
+    padding: 25px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
+    cursor: pointer;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(6, 182, 212, 0.03);
+    user-select: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Vùng sáng ngầm khi rê chuột */
+.card-glow-overlay {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+/* KHUNG BIỂU TƯỢNG (ICON WRAPPER) */
+.card-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
+    transition: all 0.3s ease;
+}
+
+/* BIỂU TƯỢNG WI-FI LAPTOP SVG */
+.wifi-laptop-icon {
+    width: 36px;
+    height: 36px;
+    color: #06b6d4;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.6));
+}
+
+.wifi-wave {
+    transition: stroke 0.3s ease;
+}
+
+.wifi-dot {
+    color: #06b6d4;
+}
+
+/* THÔNG TIN VĂN BẢN TRÊN THẺ */
+.card-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.card-title {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #f8fafc;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    transition: color 0.3s ease;
+}
+
+.card-desc {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+/* HUY HIỆU TRẠNG THÁI DƯỚI ĐÁY THẺ (MÀU VÀNG) */
+.card-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-radius: 20px;
+    margin-top: 10px;
+}
+
+.status-indicator {
+    width: 6px;
+    height: 6px;
+    background: #f59e0b;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #f59e0b;
+}
+
+.status-text {
+    font-size: 0.72rem;
+    color: #fbbf24;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+/* ============================================================
+   HIỆU ỨNG HOVER & CLICK CHO THẺ CHỨC NĂNG
+   ============================================================ */
+/* 1. HIỆU ỨNG RÊ CHUỘT (HOVER) */
+.function-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    border-color: #06b6d4;
+    box-shadow: 0 12px 30px rgba(6, 182, 212, 0.25), 
+                inset 0 0 20px rgba(6, 182, 212, 0.1);
+}
+
+.function-card:hover .card-glow-overlay {
+    opacity: 1;
+}
+
+.function-card:hover .card-icon-wrapper {
+    background: rgba(6, 182, 212, 0.2);
+    border-color: #38bdf8;
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+}
+
+.function-card:hover .wifi-laptop-icon {
+    color: #38bdf8;
+    filter: drop-shadow(0 0 10px #38bdf8);
+}
+
+.function-card:hover .card-title {
+    color: #38bdf8;
+    text-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+}
+
+/* 2. HIỆU ỨNG NHẤN CHUỘT (ACTIVE / CLICK) */
+.function-card:active {
+    transform: translateY(-2px) scale(0.98);
+    box-shadow: 0 6px 15px rgba(6, 182, 212, 0.35),
+                inset 0 0 25px rgba(6, 182, 212, 0.2);
+    border-color: #38bdf8;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
 
 
 /* ============================================================

@@ -296,9 +296,40 @@
             <button class="btn-logout" onclick="handleLogout()" title="Nhấn để thoát và nhường lượt cho người khác">Đăng xuất</button>
         </header>
 
-        <!-- Nội dung chính: Đúng yêu cầu chỉ hiển thị chữ Bảng điều khiển -->
+        <!-- Nội dung chính: Khu vực Chức năng trung tâm -->
         <main class="dashboard-main">
-            <h1 class="dashboard-title">Bảng điều khiển</h1>
+            <div class="functions-container">
+                <div class="functions-header">
+                    <h1 class="functions-title">Chức năng</h1>
+                    <p class="functions-subtitle">Hệ thống điều khiển & Giám sát thông minh</p>
+                </div>
+
+                <!-- Lưới hiển thị các thẻ chức năng (Tự động căn đều chính giữa màn hình) -->
+                <div class="function-cards-grid">
+                    
+                    <!-- THẺ 1: WI-FI & BLUETOOTH -->
+                    <div class="function-card" id="card-wifi-bluetooth" title="Quản lý kết nối Wi-Fi & Bluetooth">
+                        <div class="card-glow-overlay"></div>
+                        <div class="card-icon-wrapper">
+                            <!-- Biểu tượng sóng Wi-Fi dạng SVG laptop hiện đại -->
+                            <svg class="wifi-laptop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12.55a11 11 0 0 1 14.08 0" class="wifi-wave wave-outer"/>
+                                <path d="M8.53 16.11a6 6 0 0 1 6.95 0" class="wifi-wave wave-mid"/>
+                                <circle cx="12" cy="20" r="1.5" class="wifi-dot" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <div class="card-info">
+                            <h3 class="card-title">Wi-Fi & Bluetooth</h3>
+                            <p class="card-desc">Cấu hình kết nối, giám sát thiết bị và mạng không dây</p>
+                        </div>
+                        <div class="card-status-badge">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Chưa phát triển</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </main>
     </div>
 
