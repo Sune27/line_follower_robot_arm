@@ -202,6 +202,7 @@ class DashboardApp {
         this.screenManager = new ScreenManager();
         this.authManager = new AuthManager();
         this.pwController = new PasswordFieldController('#password', '#eye-icon');
+        this.wifiController = new WiFiScreenController(this.screenManager);
     }
 
     /**
@@ -270,6 +271,30 @@ class DashboardApp {
 
         if (usernameInput) usernameInput.addEventListener('input', clearErrorMessage);
         if (passwordInput) passwordInput.addEventListener('input', clearErrorMessage);
+
+        // 5. Xử lý click vào thẻ chức năng Wi-Fi để chuyển sang trang Wi-Fi
+        const wifiCard = document.getElementById('card-wifi');
+        if (wifiCard) {
+            wifiCard.addEventListener('click', () => {
+                this.wifiController.open();
+            });
+        }
+
+        // 6. Xử lý nút quay lại Bảng điều khiển từ màn hình Wi-Fi
+        const backBtn = document.getElementById('btn-back-dashboard');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                this.wifiController.close();
+            });
+        }
+
+        // 7. Xử lý nút nguồn Bật / Tắt Wi-Fi
+        const wifiPowerBtn = document.getElementById('wifi-power-toggle-btn');
+        if (wifiPowerBtn) {
+            wifiPowerBtn.addEventListener('click', () => {
+                this.wifiController.togglePower();
+            });
+        }
     }
 
     /**
@@ -370,7 +395,110 @@ class DashboardApp {
 
 
 // ==============================================================================
-// 5. KHỞI ĐỘNG ỨNG DỤNG (ENTRY POINT)
+// 5. CLASS WIFI_SCREEN_CONTROLLER (Quản lý giao diện & logic màn hình Wi-Fi)
+// ==============================================================================
+class WiFiScreenController {
+    constructor(screenManager) {
+        this.screenManager = screenManager;
+
+        // Trạng thái cục bộ (mặc định lấy từ cấu hình phát sóng ESP32)
+        this.isActive = false;
+        this.ssid = 'WIFI ESP32 CUA SUNE';
+        this.password = ''; // Chuỗi rỗng = Mạng mở không cần mật khẩu
+        this.clientCount = 0;
+        this.maxClients = 4;
+        this.channel = 6;
+        this.ip = '192.168.4.1';
+    }
+
+    /**
+     * Mở màn hình quản lý Wi-Fi và cập nhật giao diện
+     */
+    open() {
+        this.screenManager.show('wifi-screen');
+        this.render();
+    }
+
+    /**
+     * Quay về Bảng điều khiển chức năng
+     */
+    close() {
+        this.screenManager.show('dashboard-screen');
+    }
+
+    /**
+     * Chuyển đổi trạng thái Bật / Tắt nguồn Wi-Fi
+     */
+    togglePower() {
+        this.isActive = !this.isActive;
+        this.render();
+        console.log(`[WiFi] Nguồn phát sóng: ${this.isActive ? 'BẬT' : 'TẮT'}`);
+    }
+
+    /**
+     * Cập nhật toàn bộ thành phần giao diện theo trạng thái hiện tại
+     */
+    render() {
+        const powerBtn = document.getElementById('wifi-power-toggle-btn');
+        const statusLabel = document.getElementById('wifi-power-status-text');
+        const cardContainer = document.querySelector('.wifi-control-card');
+        const liveBar = document.getElementById('wifi-live-bar');
+        const liveText = document.getElementById('wifi-live-text');
+
+        const ssidEl = document.getElementById('wifi-ssid-val');
+        const passEl = document.getElementById('wifi-password-val');
+        const clientCountEl = document.getElementById('wifi-client-count');
+        const clientMaxEl = document.getElementById('wifi-client-max');
+        const ipEl = document.getElementById('wifi-ip-val');
+        const channelEl = document.getElementById('wifi-channel-val');
+
+        // Cập nhật thông số hiển thị
+        if (ssidEl) ssidEl.textContent = this.ssid;
+        if (passEl) {
+            passEl.textContent = (!this.password || this.password.trim() === '') 
+                ? 'Mạng mở (Không mật khẩu)' 
+                : this.password;
+        }
+        if (clientCountEl) clientCountEl.textContent = this.isActive ? this.clientCount : '—';
+        if (clientMaxEl) clientMaxEl.textContent = `/ ${this.maxClients} thiết bị`;
+        if (ipEl) ipEl.textContent = this.isActive ? this.ip : '—';
+        if (channelEl) channelEl.textContent = `Kênh ${this.channel} (2.4 GHz)`;
+
+        // Cập nhật hiệu ứng nút nguồn và thanh trạng thái
+        if (this.isActive) {
+            if (powerBtn) powerBtn.classList.add('wifi-on');
+            if (statusLabel) statusLabel.textContent = 'BẬT (Đang phát sóng)';
+            if (cardContainer) cardContainer.classList.add('is-active');
+            if (liveBar) liveBar.classList.add('active-broadcast');
+            if (liveText) liveText.textContent = `Đang phát sóng Access Point: ${this.ssid}`;
+        } else {
+            if (powerBtn) powerBtn.classList.remove('wifi-on');
+            if (statusLabel) statusLabel.textContent = 'TẮT';
+            if (cardContainer) cardContainer.classList.remove('is-active');
+            if (liveBar) liveBar.classList.remove('active-broadcast');
+            if (liveText) liveText.textContent = 'Wi-Fi đang ở trạng thái TẮT';
+        }
+    }
+
+    /**
+     * Cập nhật dữ liệu từ ESP32 gửi lên (chuẩn bị sẵn cho WebSocket)
+     */
+    updateFromHardware(data) {
+        if (!data) return;
+        if (typeof data.active === 'boolean') this.isActive = data.active;
+        if (data.ssid) this.ssid = data.ssid;
+        if (data.password !== undefined) this.password = data.password;
+        if (typeof data.clients === 'number') this.clientCount = data.clients;
+        if (typeof data.max_clients === 'number') this.maxClients = data.max_clients;
+        if (data.ip) this.ip = data.ip;
+        if (data.channel) this.channel = data.channel;
+        this.render();
+    }
+}
+
+
+// ==============================================================================
+// 6. KHỞI ĐỘNG ỨNG DỤNG (ENTRY POINT)
 // ==============================================================================
 let app = null;
 

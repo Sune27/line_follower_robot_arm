@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -307,8 +307,8 @@
                 <!-- Lưới hiển thị các thẻ chức năng (Tự động căn đều chính giữa màn hình) -->
                 <div class="function-cards-grid">
                     
-                    <!-- THẺ 1: WI-FI & BLUETOOTH -->
-                    <div class="function-card" id="card-wifi-bluetooth" title="Quản lý kết nối Wi-Fi & Bluetooth">
+                    <!-- THẺ 1: WI-FI -->
+                    <div class="function-card" id="card-wifi" title="Quản lý kết nối Wi-Fi" style="cursor: pointer;">
                         <div class="card-glow-overlay"></div>
                         <div class="card-icon-wrapper">
                             <!-- Biểu tượng sóng Wi-Fi dạng SVG laptop hiện đại (3 vạch sóng + chấm tâm khớp khung) -->
@@ -320,18 +320,128 @@
                             </svg>
                         </div>
                         <div class="card-info">
-                            <h3 class="card-title">Wi-Fi & Bluetooth</h3>
-                            <p class="card-desc">Cấu hình kết nối, giám sát thiết bị và mạng không dây</p>
+                            <h3 class="card-title">Wi-Fi</h3>
+                            <p class="card-desc">Cấu hình kết nối, phát sóng Access Point và giám sát thiết bị</p>
                         </div>
-                        <div class="card-status-badge status-not-started">
+                        <div class="card-status-badge status-in-progress">
                             <span class="status-indicator"></span>
-                            <span class="status-text">Chưa phát triển</span>
+                            <span class="status-text">Đang phát triển</span>
                         </div>
                     </div>
 
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MÀN HÌNH 4: BẢNG ĐIỀU KHIỂN & CẤU HÌNH WI-FI                -->
+    <!-- Hiển thị khi click vào thẻ Wi-Fi ở Bảng điều khiển          -->
+    <!-- ============================================================ -->
+    <div id="wifi-screen" class="screen">
+        <!-- Thanh tiêu đề điều hướng -->
+        <header class="wifi-panel-header">
+            <button class="btn-back" id="btn-back-dashboard" title="Quay lại Bảng điều khiển">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                <span>Quay lại</span>
+            </button>
+            <h2 class="wifi-panel-title">Cấu Hình Wi-Fi</h2>
+            <div class="header-placeholder"></div>
+        </header>
+
+        <!-- Nội dung chính: Thẻ điều khiển Wi-Fi tập trung -->
+        <main class="wifi-panel-main">
+            <div class="wifi-control-card">
+                <div class="wifi-card-top">
+                    <div class="wifi-icon-badge">
+                        <svg class="wifi-badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 8.82a15 15 0 0 1 20 0"/>
+                            <path d="M5 12.86a10.8 10.8 0 0 1 14 0"/>
+                            <path d="M8.5 16.43a6.4 6.4 0 0 1 7 0"/>
+                            <circle cx="12" cy="20" r="1.2" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <div class="wifi-title-group">
+                        <h3 class="wifi-main-heading">Wi-Fi Access Point</h3>
+                        <p class="wifi-sub-heading">Chế độ phát sóng trực tiếp từ xe Robot</p>
+                    </div>
+                </div>
+
+                <!-- NÚT NGUỒN WI-FI TRÒN -->
+                <div class="wifi-power-container">
+                    <button class="wifi-power-btn" id="wifi-power-toggle-btn" title="Bật / Tắt Wi-Fi">
+                        <svg class="power-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                            <line x1="12" y1="2" x2="12" y2="12"/>
+                        </svg>
+                    </button>
+                    <div class="power-status-label" id="wifi-power-status-text">TẮT</div>
+                </div>
+
+                <!-- BẢNG THÔNG TIN CHI TIẾT -->
+                <div class="wifi-specs-table">
+                    <!-- TÊN WI-FI -->
+                    <div class="spec-item">
+                        <div class="spec-left">
+                            <span class="spec-icon">📡</span>
+                            <span class="spec-name">Tên Wi-Fi (SSID)</span>
+                        </div>
+                        <span class="spec-value highlight-cyan" id="wifi-ssid-val">WIFI ESP32 CUA SUNE</span>
+                    </div>
+
+                    <!-- MẬT KHẨU -->
+                    <div class="spec-item">
+                        <div class="spec-left">
+                            <span class="spec-icon">🔑</span>
+                            <span class="spec-name">Mật khẩu</span>
+                        </div>
+                        <span class="spec-value" id="wifi-password-val">Mạng mở (Không mật khẩu)</span>
+                    </div>
+
+                    <!-- SỐ NGƯỜI TRUY CẬP HIỆN TẠI -->
+                    <div class="spec-item">
+                        <div class="spec-left">
+                            <span class="spec-icon">👥</span>
+                            <span class="spec-name">Đang truy cập hiện tại</span>
+                        </div>
+                        <div class="spec-client-badge">
+                            <span class="client-count-num" id="wifi-client-count">0</span>
+                            <span class="client-count-max" id="wifi-client-max">/ 4 thiết bị</span>
+                        </div>
+                    </div>
+
+                    <!-- ĐỊA CHỈ IP -->
+                    <div class="spec-item">
+                        <div class="spec-left">
+                            <span class="spec-icon">🌐</span>
+                            <span class="spec-name">Địa chỉ IP</span>
+                        </div>
+                        <span class="spec-value" id="wifi-ip-val">—</span>
+                    </div>
+
+                    <!-- KÊNH PHÁT SÓNG -->
+                    <div class="spec-item">
+                        <div class="spec-left">
+                            <span class="spec-icon">📶</span>
+                            <span class="spec-name">Kênh phát sóng</span>
+                        </div>
+                        <span class="spec-value" id="wifi-channel-val">Kênh 6 (2.4 GHz)</span>
+                    </div>
+                </div>
+
+                <!-- THANH TRẠNG THÁI CUỐI THẺ -->
+                <div class="wifi-live-status-bar" id="wifi-live-bar">
+                    <span class="live-dot" id="wifi-live-dot"></span>
+                    <span class="live-text" id="wifi-live-text">Wi-Fi đang ở trạng thái TẮT</span>
+                </div>
+            </div>
+        </main>
+
+        <footer class="wifi-panel-footer">
+            <p>⚡ Nhấn nút nguồn tròn để Bật / Tắt phát sóng Wi-Fi từ ESP32.</p>
+        </footer>
     </div>
 
     <!-- Nhúng file Javascript xử lý logic tương tác -->

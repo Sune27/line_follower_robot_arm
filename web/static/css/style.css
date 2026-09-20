@@ -1312,3 +1312,351 @@ body {
         opacity: 0.75;
     }
 }
+
+/* ============================================================
+   7. MÀN HÌNH 4: BẢNG ĐIỀU KHIỂN & CẤU HÌNH WI-FI (#wifi-screen)
+   ============================================================ */
+#wifi-screen {
+    flex-direction: column;
+    background-color: #080c14;
+    min-height: 100vh;
+}
+
+/* Thanh tiêu đề điều hướng */
+.wifi-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 32px;
+    background: #0f172a;
+    border-bottom: 1px solid rgba(6, 182, 212, 0.25);
+    z-index: 20;
+}
+
+.btn-back {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    color: #94a3b8;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-back:hover {
+    border-color: #06b6d4;
+    color: #06b6d4;
+    background: rgba(6, 182, 212, 0.12);
+    transform: translateX(-3px);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
+}
+
+.wifi-panel-title {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    letter-spacing: 1px;
+    text-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+}
+
+.header-placeholder {
+    width: 105px; /* Giữ cân đối với nút quay lại */
+}
+
+/* Khu vực nội dung chính */
+.wifi-panel-main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+}
+
+/* Thẻ điều khiển trung tâm */
+.wifi-control-card {
+    width: 100%;
+    max-width: 460px;
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(6, 182, 212, 0.25);
+    border-radius: 24px;
+    padding: 32px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(6, 182, 212, 0.04);
+    transition: all 0.35s ease;
+}
+
+.wifi-control-card.is-active {
+    border-color: rgba(6, 182, 212, 0.55);
+    box-shadow: 0 16px 45px rgba(6, 182, 212, 0.18), inset 0 0 25px rgba(6, 182, 212, 0.08);
+}
+
+/* Tiêu đề & Icon đầu thẻ */
+.wifi-card-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+}
+
+.wifi-icon-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(6, 182, 212, 0.12);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.wifi-badge-svg {
+    width: 28px;
+    height: 28px;
+    color: #06b6d4;
+    filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.6));
+}
+
+.wifi-title-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.wifi-main-heading {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #f8fafc;
+    letter-spacing: 0.5px;
+}
+
+.wifi-sub-heading {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+/* ── NÚT NGUỒN WI-FI TRÒN ── */
+.wifi-power-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0;
+}
+
+.wifi-power-btn {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.95);
+    border: 3px solid #334155;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.05);
+    outline: none;
+}
+
+.wifi-power-btn:hover {
+    transform: scale(1.06);
+    border-color: #64748b;
+}
+
+.wifi-power-btn:active {
+    transform: scale(0.95);
+}
+
+.power-svg-icon {
+    width: 40px;
+    height: 40px;
+    color: #475569;
+    transition: all 0.3s ease;
+}
+
+.power-status-label {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #64748b;
+    transition: all 0.3s ease;
+}
+
+/* Trạng thái BẬT của nút nguồn */
+.wifi-power-btn.wifi-on {
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.2),
+                0 0 35px rgba(6, 182, 212, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: wifiPowerPulse 2.4s ease-in-out infinite;
+}
+
+.wifi-power-btn.wifi-on .power-svg-icon {
+    color: #06b6d4;
+    filter: drop-shadow(0 0 10px #06b6d4);
+}
+
+.wifi-power-btn.wifi-on + .power-status-label {
+    color: #06b6d4;
+    text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+}
+
+@keyframes wifiPowerPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.2), 0 0 30px rgba(6, 182, 212, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(6, 182, 212, 0.08), 0 0 45px rgba(6, 182, 212, 0.6);
+    }
+}
+
+/* ── BẢNG THÔNG SỐ CHI TIẾT ── */
+.wifi-specs-table {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(2, 6, 23, 0.65);
+    border: 1px solid rgba(100, 116, 139, 0.18);
+    border-radius: 16px;
+    padding: 16px;
+}
+
+.spec-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(100, 116, 139, 0.1);
+}
+
+.spec-item:last-child {
+    border-bottom: none;
+}
+
+.spec-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.spec-icon {
+    font-size: 1rem;
+}
+
+.spec-name {
+    font-size: 0.84rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.spec-value {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    text-align: right;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.spec-value.highlight-cyan {
+    color: #38bdf8;
+    font-weight: 700;
+}
+
+/* Badge số người truy cập */
+.spec-client-badge {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    background: rgba(6, 182, 212, 0.1);
+    padding: 3px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(6, 182, 212, 0.25);
+}
+
+.client-count-num {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #06b6d4;
+}
+
+.client-count-max {
+    font-size: 0.78rem;
+    color: #94a3b8;
+}
+
+/* ── THANH TRẠNG THÁI CUỐI THẺ ── */
+.wifi-live-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: rgba(71, 85, 105, 0.15);
+    border: 1px solid rgba(71, 85, 105, 0.3);
+    transition: all 0.35s ease;
+}
+
+.wifi-live-status-bar.active-broadcast {
+    background: rgba(6, 182, 212, 0.12);
+    border-color: rgba(6, 182, 212, 0.4);
+}
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #64748b;
+    transition: all 0.3s ease;
+}
+
+.wifi-live-status-bar.active-broadcast .live-dot {
+    background: #06b6d4;
+    box-shadow: 0 0 8px #06b6d4;
+    animation: liveDotPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes liveDotPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.6; }
+}
+
+.live-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    letter-spacing: 0.3px;
+    transition: color 0.3s ease;
+}
+
+.wifi-live-status-bar.active-broadcast .live-text {
+    color: #06b6d4;
+}
+
+/* Footer ghi chú */
+.wifi-panel-footer {
+    padding: 16px 24px;
+    text-align: center;
+    font-size: 0.82rem;
+    color: #475569;
+    border-top: 1px solid rgba(100, 116, 139, 0.12);
+}
