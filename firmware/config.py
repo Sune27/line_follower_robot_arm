@@ -6,7 +6,7 @@
 # 1. CẤU HÌNH WI-FI ACCESS POINT (SoftAP phát từ ESP32)
 # ==============================================================================
 # Tên mạng Wi-Fi (SSID) phát từ xe Robot
-WIFI_SSID = "WIFI ESP32"
+WIFI_SSID = "ESP32 CUA SUNE"
 
 # Mật khẩu Wi-Fi:
 #   - Nhập chuỗi >= 8 ký tự   →  Wi-Fi bảo mật chuẩn WPA2-PSK

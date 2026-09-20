@@ -209,21 +209,10 @@ class DashboardApp {
      * Khởi tạo ứng dụng khi DOM đã sẵn sàng
      */
     init() {
-        // 1. Mở màn bằng Trailer công nghệ
-        this.screenManager.show('trailer-screen');
+        // Khởi đầu: Hiển thị ngay Màn hình Đăng nhập trước tiên
+        this.screenManager.show('login-screen');
 
-        // 2. Thiết lập bộ hẹn giờ chuyển cảnh sau khi trailer chạy xong
-        setTimeout(() => {
-            if (this.authManager.isLoggedIn()) {
-                // Nếu đã lưu phiên trước đó -> Vào thẳng Bảng điều khiển
-                this.enterDashboard(this.authManager.getActiveUser());
-            } else {
-                // Nếu chưa đăng nhập -> Chuyển sang Màn hình đăng nhập
-                this.screenManager.show('login-screen');
-            }
-        }, this.trailerDuration);
-
-        // 3. Gắn kết các sự kiện lắng nghe tương tác
+        // Gắn kết các sự kiện lắng nghe tương tác
         this.bindEvents();
     }
 
@@ -321,13 +310,42 @@ class DashboardApp {
         );
 
         if (result.success) {
-            this.enterDashboard(result.user);
+            // Khi đăng nhập thành công -> Hiển thị Trailer công nghệ -> rồi chuyển sang Dashboard
+            this.playTrailerAndEnterDashboard(result.user);
         } else {
             if (errorMsgElement) {
                 errorMsgElement.innerText = result.message;
             }
             // Không xóa nội dung mật khẩu để người dùng có thể bấm nút con mắt xem lại mật khẩu vừa gõ
         }
+    }
+
+    /**
+     * Hiển thị Trailer công nghệ chào mừng sau khi đăng nhập thành công, sau đó vào Bảng điều khiển
+     * @param {string} username - Tên người điều khiển
+     */
+    playTrailerAndEnterDashboard(username) {
+        // Cập nhật tên người dùng lên thanh header trước
+        const currentUserElement = document.getElementById('current-user');
+        if (currentUserElement) {
+            currentUserElement.innerText = username;
+        }
+
+        // Kích hoạt hiển thị màn hình Trailer
+        this.screenManager.show('trailer-screen');
+
+        // Reset thanh nạp dữ liệu animation để chạy từ 0% tới 100%
+        const loadingFill = document.querySelector('.loading-bar-fill');
+        if (loadingFill) {
+            loadingFill.style.animation = 'none';
+            void loadingFill.offsetWidth; // Buộc trình duyệt tính toán lại (reflow)
+            loadingFill.style.animation = '';
+        }
+
+        // Sau khi Trailer chạy xong (2600ms) -> chuyển tiếp sang Bảng điều khiển
+        setTimeout(() => {
+            this.enterDashboard(username);
+        }, this.trailerDuration);
     }
 
     /**
