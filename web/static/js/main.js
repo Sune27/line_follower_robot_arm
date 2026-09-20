@@ -401,10 +401,11 @@ class WiFiScreenController {
     constructor(screenManager) {
         this.screenManager = screenManager;
 
-        // Trạng thái cục bộ (mặc định lấy từ cấu hình phát sóng ESP32)
+        // Trạng thái cục bộ (Được đồng bộ động từ Python Backend & firmware/config.py)
         this.isActive = false;
-        this.ssid = 'WIFI ESP32 CUA SUNE';
-        this.password = ''; // Chuỗi rỗng = Mạng mở không cần mật khẩu
+        this.hardwareConnected = false;
+        this.ssid = '—';
+        this.password = '—';
         this.clientCount = 0;
         this.maxClients = 4;
         this.channel = 6;
@@ -434,7 +435,25 @@ class WiFiScreenController {
             this.ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    console.log('[WebSocket] 📥 Nhận phản hồi từ ESP32:', data);
+                    console.log('[WebSocket] 📥 Nhận dữ liệu:', data);
+
+                    // 1. Sự kiện cập nhật trạng thái cắm cáp phần cứng ESP32
+                    if (data.event === 'hardware_status') {
+                        this.updateHardwareConnection(data.connected, data.message);
+                        return;
+                    }
+
+                    // 2. Sự kiện nhận cấu hình ban đầu từ firmware/config.py
+                    if (data.event === 'firmware_config' && data.config) {
+                        this.ssid = data.config.ssid || this.ssid;
+                        this.password = data.config.password !== undefined ? data.config.password : this.password;
+                        this.maxClients = data.config.max_clients || this.maxClients;
+                        this.channel = data.config.channel || this.channel;
+                        this.render();
+                        return;
+                    }
+
+                    // 3. Phản hồi trạng thái hoạt động thực tế từ ESP32
                     this.updateFromHardware(data);
                 } catch (e) {
                     console.error('[WebSocket] Lỗi giải mã JSON:', e);
@@ -443,6 +462,7 @@ class WiFiScreenController {
 
             this.ws.onclose = () => {
                 this.wsConnected = false;
+                this.updateHardwareConnection(false, 'Mất kết nối với Python Server (COM3)');
                 console.warn('[WebSocket] ⚠ Mất kết nối tới server. Đang thử kết nối lại sau 2.5s...');
                 setTimeout(() => this.initWebSocket(), 2500);
             };
@@ -452,6 +472,29 @@ class WiFiScreenController {
             };
         } catch (e) {
             console.error('[WebSocket] Không thể khởi tạo:', e);
+        }
+    }
+
+    /**
+     * Cập nhật hiển thị trạng thái kết nối phần cứng ESP32 với máy tính
+     * @param {boolean} isConnected - true nếu ESP32 đã cắm và nhận cổng COM3
+     * @param {string} message - Nội dung thông báo hiển thị
+     */
+    updateHardwareConnection(isConnected, message) {
+        this.hardwareConnected = isConnected;
+        const barEl = document.getElementById('esp32-connection-bar');
+        const textEl = document.getElementById('esp32-status-text');
+
+        if (!barEl || !textEl) return;
+
+        if (isConnected) {
+            barEl.classList.remove('hw-disconnected');
+            barEl.classList.add('hw-connected');
+            textEl.textContent = message || 'ESP32 đã kết nối (Cổng COM3)';
+        } else {
+            barEl.classList.remove('hw-connected');
+            barEl.classList.add('hw-disconnected');
+            textEl.textContent = message || 'ESP32 chưa được cắm vào máy tính (Cổng COM3)';
         }
     }
 
@@ -479,6 +522,11 @@ class WiFiScreenController {
      * Gửi lệnh trực tiếp xuống Python Server -> truyền qua COM3 tới ESP32
      */
     togglePower() {
+        if (!this.hardwareConnected) {
+            alert("Vui lòng cắm cáp ESP32 vào máy tính (Cổng COM3) trước khi thao tác!");
+            return;
+        }
+
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             // Hiệu ứng chờ phản hồi
             const statusLabel = document.getElementById('wifi-power-status-text');
@@ -488,7 +536,6 @@ class WiFiScreenController {
             console.log('[WiFi] 📤 Đã gửi lệnh wifi_toggle tới Python Backend');
         } else {
             console.warn('[WiFi] ⚠ Chưa kết nối tới Python Server (Chạy python python_app/app.py)');
-            // Fallback thay đổi trực quan trên giao diện nếu chưa bật backend
             this.isActive = !this.isActive;
             this.render();
         }
@@ -501,8 +548,6 @@ class WiFiScreenController {
         const powerBtn = document.getElementById('wifi-power-toggle-btn');
         const statusLabel = document.getElementById('wifi-power-status-text');
         const cardContainer = document.querySelector('.wifi-control-card');
-        const liveBar = document.getElementById('wifi-live-bar');
-        const liveText = document.getElementById('wifi-live-text');
 
         const ssidEl = document.getElementById('wifi-ssid-val');
         const passEl = document.getElementById('wifi-password-val');
@@ -511,32 +556,31 @@ class WiFiScreenController {
         const ipEl = document.getElementById('wifi-ip-val');
         const channelEl = document.getElementById('wifi-channel-val');
 
-        // Cập nhật thông số hiển thị
+        // Cập nhật thông số hiển thị lấy từ config firmware
         if (ssidEl) ssidEl.textContent = this.ssid;
         if (passEl) {
             passEl.textContent = (!this.password || this.password.trim() === '') 
                 ? 'Mạng mở (Không mật khẩu)' 
                 : this.password;
         }
-        if (clientCountEl) clientCountEl.textContent = this.isActive ? this.clientCount : '—';
+        if (clientCountEl) clientCountEl.textContent = this.isActive ? this.clientCount : '0';
         if (clientMaxEl) clientMaxEl.textContent = `/ ${this.maxClients} thiết bị`;
         if (ipEl) ipEl.textContent = this.isActive ? (this.ip || '192.168.4.1') : '—';
         if (channelEl) channelEl.textContent = `Kênh ${this.channel} (2.4 GHz)`;
 
-        // Cập nhật hiệu ứng nút nguồn và thanh trạng thái
+        // Cập nhật hiệu ứng nút nguồn
         if (this.isActive) {
             if (powerBtn) powerBtn.classList.add('wifi-on');
             if (statusLabel) statusLabel.textContent = 'BẬT (Đang phát sóng)';
             if (cardContainer) cardContainer.classList.add('is-active');
-            if (liveBar) liveBar.classList.add('active-broadcast');
-            if (liveText) liveText.textContent = `Đang phát sóng Access Point: ${this.ssid}`;
         } else {
             if (powerBtn) powerBtn.classList.remove('wifi-on');
             if (statusLabel) statusLabel.textContent = 'TẮT';
             if (cardContainer) cardContainer.classList.remove('is-active');
-            if (liveBar) liveBar.classList.remove('active-broadcast');
-            if (liveText) liveText.textContent = 'Wi-Fi đang ở trạng thái TẮT';
         }
+
+        // Đồng bộ thanh trạng thái cắm cáp phần cứng ESP32
+        this.updateHardwareConnection(this.hardwareConnected);
     }
 
     /**

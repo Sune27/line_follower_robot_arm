@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Xe Dò Line & Cánh Tay Robot 4 Bậc</title>
     <!-- Nhúng file CSS định dạng giao diện -->
-    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="stylesheet" href="../static/css/style.css?v=2.2">
     <!-- Font chữ Chakra Petch (phong cách Robot/Công nghệ) và Be Vietnam Pro (tối ưu 100% tiếng Việt có dấu) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -289,7 +289,7 @@
     <!-- MÀN HÌNH 3: BẢNG ĐIỀU KHIỂN (Hiện tại chỉ hiển thị chữ)        -->
     <!-- Tác dụng: Giao diện sau khi đăng nhập thành công               -->
     <!-- ============================================================ -->
-    <div id="dashboard-screen" class="screen">
+        <div id="dashboard-screen" class="screen">
         <!-- Thanh tiêu đề phụ: hiển thị tài khoản hiện tại và nút đăng xuất để kiểm thử -->
         <header class="dashboard-header">
             <span class="user-info">👤 Người đang điều khiển: <b id="current-user">Admin</b></span>
@@ -380,7 +380,7 @@
                     <div class="power-status-label" id="wifi-power-status-text">TẮT</div>
                 </div>
 
-                <!-- BẢNG THÔNG TIN CHI TIẾT -->
+                <!-- BẢNG THÔNG TIN CHI TIẾT (ĐỒNG BỘ 100% TỪ FIRMWARE CONFIG) -->
                 <div class="wifi-specs-table">
                     <!-- TÊN WI-FI -->
                     <div class="spec-item">
@@ -388,7 +388,7 @@
                             <span class="spec-icon">📡</span>
                             <span class="spec-name">Tên Wi-Fi (SSID)</span>
                         </div>
-                        <span class="spec-value highlight-cyan" id="wifi-ssid-val">WIFI ESP32 CUA SUNE</span>
+                        <span class="spec-value highlight-cyan" id="wifi-ssid-val">—</span>
                     </div>
 
                     <!-- MẬT KHẨU -->
@@ -397,7 +397,7 @@
                             <span class="spec-icon">🔑</span>
                             <span class="spec-name">Mật khẩu</span>
                         </div>
-                        <span class="spec-value" id="wifi-password-val">Mạng mở (Không mật khẩu)</span>
+                        <span class="spec-value" id="wifi-password-val">—</span>
                     </div>
 
                     <!-- SỐ NGƯỜI TRUY CẬP HIỆN TẠI -->
@@ -427,14 +427,14 @@
                             <span class="spec-icon">📶</span>
                             <span class="spec-name">Kênh phát sóng</span>
                         </div>
-                        <span class="spec-value" id="wifi-channel-val">Kênh 6 (2.4 GHz)</span>
+                        <span class="spec-value" id="wifi-channel-val">—</span>
                     </div>
                 </div>
 
-                <!-- THANH TRẠNG THÁI CUỐI THẺ -->
-                <div class="wifi-live-status-bar" id="wifi-live-bar">
-                    <span class="live-dot" id="wifi-live-dot"></span>
-                    <span class="live-text" id="wifi-live-text">Wi-Fi đang ở trạng thái TẮT</span>
+                <!-- THANH TRẠNG THÁI KẾT NỐI PHẦN CỨNG ESP32 VỚI MÁY TÍNH -->
+                <div class="esp32-connection-bar hw-disconnected" id="esp32-connection-bar">
+                    <span class="esp32-status-dot" id="esp32-status-dot"></span>
+                    <span class="esp32-status-text" id="esp32-status-text">Đang kiểm tra kết nối ESP32...</span>
                 </div>
             </div>
         </main>
@@ -445,6 +445,6 @@
     </div>
 
     <!-- Nhúng file Javascript xử lý logic tương tác -->
-    <script src="../static/js/main.js"></script>
+    <script src="../static/js/main.js?v=2.2"></script>
 </body>
 </html>

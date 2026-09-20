@@ -1604,52 +1604,67 @@ body {
     color: #94a3b8;
 }
 
-/* ── THANH TRẠNG THÁI CUỐI THẺ ── */
-.wifi-live-status-bar {
+/* ── THANH TRẠNG THÁI KẾT NỐI PHẦN CỨNG ESP32 VỚI MÁY TÍNH ── */
+.esp32-connection-bar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
+    gap: 10px;
+    padding: 8px 18px;
     border-radius: 20px;
-    background: rgba(71, 85, 105, 0.15);
-    border: 1px solid rgba(71, 85, 105, 0.3);
     transition: all 0.35s ease;
+    width: fit-content;
+    margin: 4px auto 0 auto;
 }
 
-.wifi-live-status-bar.active-broadcast {
-    background: rgba(6, 182, 212, 0.12);
-    border-color: rgba(6, 182, 212, 0.4);
-}
-
-.live-dot {
-    width: 8px;
-    height: 8px;
+.esp32-status-dot {
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
-    background: #64748b;
     transition: all 0.3s ease;
 }
 
-.wifi-live-status-bar.active-broadcast .live-dot {
-    background: #06b6d4;
-    box-shadow: 0 0 8px #06b6d4;
-    animation: liveDotPulse 1.8s ease-in-out infinite;
-}
-
-@keyframes liveDotPulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.3); opacity: 0.6; }
-}
-
-.live-text {
-    font-size: 0.8rem;
+.esp32-status-text {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.82rem;
     font-weight: 600;
-    color: #64748b;
     letter-spacing: 0.3px;
     transition: color 0.3s ease;
 }
 
-.wifi-live-status-bar.active-broadcast .live-text {
-    color: #06b6d4;
+/* Khi đã cắm ESP32 qua cáp COM */
+.esp32-connection-bar.hw-connected {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.esp32-connection-bar.hw-connected .esp32-status-dot {
+    background: #10b981;
+    box-shadow: 0 0 10px #10b981;
+    animation: hwPulse 2s infinite ease-in-out;
+}
+
+.esp32-connection-bar.hw-connected .esp32-status-text {
+    color: #34d399;
+}
+
+/* Khi chưa cắm ESP32 */
+.esp32-connection-bar.hw-disconnected {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.esp32-connection-bar.hw-disconnected .esp32-status-dot {
+    background: #ef4444;
+    box-shadow: 0 0 10px #ef4444;
+}
+
+.esp32-connection-bar.hw-disconnected .esp32-status-text {
+    color: #f87171;
+}
+
+@keyframes hwPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.25); opacity: 0.7; }
 }
 
 /* Footer ghi chú */

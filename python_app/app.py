@@ -2,25 +2,26 @@
 ==============================================================================
 APP.PY – MÁY CHỦ PYTHON ĐIỀU KHIỂN ROBOT QUA SERIAL COM3 & WEBSOCKET
 ==============================================================================
-Kiến trúc:
-  1. Serial Bridge : Giao tiếp 2 chiều với ESP32 qua cổng COM3 (Baudrate 115200)
-  2. WebSocket Srv : Cung cấp API thời gian thực hai chiều cho Web (Cổng 8765)
-  3. HTTP Server   : Phục vụ giao diện Web (HTML, CSS, JS) tại http://localhost:5000
+Tính năng:
+  1. Đọc động cấu hình từ firmware/config.py (SSID, Mật khẩu, Số client, Kênh phát)
+  2. Giám sát trạng thái kết nối phần cứng ESP32 qua COM3 (Tự động phát hiện cắm/rút cáp)
+  3. Cầu nối thời gian thực WebSocket ↔ Serial UART hai chiều
+  4. Phục vụ Web giao diện tại http://localhost:5000
 ==============================================================================
 """
 
 import sys
-import io
 import os
 import json
 import time
 import asyncio
 import threading
+import importlib.util
 import http.server
 import socketserver
 from pathlib import Path
 
-# Cấu hình an toàn mã hóa UTF-8 cho console Windows
+# Cấu hình UTF-8 an toàn cho console Windows
 if sys.platform == "win32":
     try:
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -41,7 +42,7 @@ except ImportError:
     sys.exit(1)
 
 # ==============================================================================
-# THÔNG SỐ CẤU HÌNH HỆ THỐNG
+# CẤU HÌNH HỆ THỐNG
 # ==============================================================================
 SERIAL_PORT = "COM3"
 SERIAL_BAUD = 115200
@@ -49,35 +50,91 @@ WS_HOST     = "0.0.0.0"
 WS_PORT     = 8765
 HTTP_PORT   = 5000
 
-BASE_DIR    = Path(__file__).resolve().parent.parent
-WEB_DIR     = BASE_DIR / "web"
+BASE_DIR        = Path(__file__).resolve().parent.parent
+WEB_DIR         = BASE_DIR / "web"
+FIRMWARE_CONFIG = BASE_DIR / "firmware" / "config.py"
+
+
+def read_firmware_config():
+    """
+    Đọc trực tiếp file firmware/config.py để lấy thông số cấu hình chuẩn mới nhất
+    """
+    config_data = {
+        "ssid": "WIFI ESP32",
+        "password": "",
+        "max_clients": 4,
+        "channel": 6,
+        "open_network": True
+    }
+    if FIRMWARE_CONFIG.exists():
+        try:
+            content = FIRMWARE_CONFIG.read_text(encoding="utf-8")
+            for line in content.splitlines():
+                line = line.strip()
+                if line.startswith("WIFI_SSID"):
+                    val = line.split("=")[1].split("#")[0].strip().strip('"').strip("'")
+                    config_data["ssid"] = val
+                elif line.startswith("WIFI_PASSWORD"):
+                    val = line.split("=")[1].split("#")[0].strip().strip('"').strip("'")
+                    config_data["password"] = val
+                    config_data["open_network"] = (len(val) < 8)
+                elif line.startswith("WIFI_MAX_CLIENTS"):
+                    val = line.split("=")[1].split("#")[0].strip()
+                    config_data["max_clients"] = int(val)
+                elif line.startswith("WIFI_CHANNEL"):
+                    val = line.split("=")[1].split("#")[0].strip()
+                    config_data["channel"] = int(val)
+        except Exception as e:
+            print(f"[Config] Loi doc file firmware/config.py: {e}")
+    return config_data
 
 
 # ==============================================================================
-# CLASS SERIAL_BRIDGE – QUẢN LÝ KẾT NỐI VỚI ESP32 QUA COM3
+# CLASS SERIAL_BRIDGE – QUẢN LÝ KẾT NỐI VÀ TỰ ĐỘNG PHỤC HỒI COM3
 # ==============================================================================
 class SerialBridge:
-    def __init__(self, port="COM3", baudrate=115200, on_status_callback=None):
+    def __init__(self, port="COM3", baudrate=115200, on_status_callback=None, on_hw_change_callback=None):
         self.port = port
         self.baudrate = baudrate
         self.on_status_callback = on_status_callback
+        self.on_hw_change_callback = on_hw_change_callback
         self.ser = None
-        self.running = False
-        self._lock = threading.Lock()
+        self.connected = False
+        self.running = True
+        self._lock = threading.RLock()
 
-    def connect(self):
-        """Mở kết nối tới cổng Serial COM3"""
-        try:
-            self.ser = serial.Serial(self.port, self.baudrate, timeout=1)
-            self.running = True
-            time.sleep(1.0)
-            print(f"[Serial] [OK] Da ket noi thanh cong toi {self.port} ({self.baudrate} baud)")
+    def is_connected(self):
+        with self._lock:
+            return self.connected and self.ser is not None and self.ser.is_open
+
+    def try_connect(self):
+        """Thử kết nối cổng COM3 an toàn không gây deadlock"""
+        connected_now = False
+        with self._lock:
+            if self.ser and self.ser.is_open:
+                return True
+            try:
+                self.ser = serial.Serial(self.port, self.baudrate, timeout=0.8)
+                self.connected = True
+                connected_now = True
+            except Exception:
+                if self.connected:
+                    print(f"[Serial] [DISCONNECT] ESP32 da bi rut khoi cong {self.port}")
+                    self.connected = False
+                    if self.on_hw_change_callback:
+                        self.on_hw_change_callback(False)
+                self.ser = None
+                return False
+
+        # Thực hiện gọi callback và gửi lệnh khởi đầu ngoài lock
+        if connected_now:
+            time.sleep(0.4)
+            print(f"[Serial] [OK] Da ket noi thanh cong voi ESP32 qua {self.port}")
+            if self.on_hw_change_callback:
+                self.on_hw_change_callback(True)
             self.send_command("CMD:WIFI_STATUS")
             return True
-        except Exception as e:
-            print(f"[Serial] [ERR] Khong the mo cong {self.port}: {e}")
-            self.ser = None
-            return False
+        return False
 
     def send_command(self, cmd_str):
         """Gửi chuỗi lệnh xuống ESP32"""
@@ -91,44 +148,56 @@ class SerialBridge:
                     return True
                 except Exception as e:
                     print(f"[Serial] [ERR] Loi gui lenh: {e}")
-            else:
-                print(f"[Serial] [WARN] Cong {self.port} chua mo, khong the gui lenh.")
+                    self._mark_disconnected()
             return False
 
-    def listen_loop(self):
-        """Vòng lặp chạy trong thread riêng để đọc dữ liệu liên tục từ ESP32"""
+    def _mark_disconnected(self):
+        with self._lock:
+            if self.connected:
+                self.connected = False
+                print(f"[Serial] [DISCONNECT] Mat ket noi voi {self.port}")
+                if self.on_hw_change_callback:
+                    self.on_hw_change_callback(False)
+            if self.ser:
+                try: self.ser.close()
+                except Exception: pass
+                self.ser = None
+
+    def supervisor_loop(self):
+        """Vòng lặp đọc dữ liệu và tự động phát hiện cắm/rút cáp USB"""
         while self.running:
-            if not self.ser or not self.ser.is_open:
-                time.sleep(1.0)
+            if not self.is_connected():
+                self.try_connect()
+                time.sleep(1.5)
                 continue
+
             try:
-                if self.ser.in_waiting > 0:
-                    raw_line = self.ser.readline().decode('utf-8', errors='ignore').strip()
-                    if not raw_line:
-                        continue
-                    
-                    if raw_line.startswith("RESP:"):
-                        json_str = raw_line[5:].strip()
+                line = None
+                with self._lock:
+                    if self.ser and self.ser.is_open and self.ser.in_waiting > 0:
+                        line = self.ser.readline().decode('utf-8', errors='ignore').strip()
+
+                if line:
+                    if line.startswith("RESP:"):
+                        json_str = line[5:].strip()
                         try:
                             data = json.loads(json_str)
                             print(f"[Serial] [RX <- ESP32] active={data.get('active')}, ip={data.get('ip')}, clients={data.get('clients')}")
                             if self.on_status_callback:
                                 self.on_status_callback(data)
                         except json.JSONDecodeError:
-                            print(f"[Serial] [WARN] Loi giai ma JSON: {json_str}")
+                            pass
                     else:
-                        print(f"[ESP32 Log] {raw_line}")
+                        print(f"[ESP32 Log] {line}")
                 else:
                     time.sleep(0.02)
             except Exception as e:
-                print(f"[Serial] [ERR] Loi doc cong: {e}")
+                self._mark_disconnected()
                 time.sleep(1.0)
 
     def close(self):
         self.running = False
-        if self.ser and self.ser.is_open:
-            self.ser.close()
-            print(f"[Serial] Da dong cong {self.port}")
+        self._mark_disconnected()
 
 
 # ==============================================================================
@@ -141,17 +210,28 @@ class RobotControllerServer:
         self.serial_bridge = SerialBridge(
             port=SERIAL_PORT,
             baudrate=SERIAL_BAUD,
-            on_status_callback=self._handle_serial_status
+            on_status_callback=self._handle_serial_status,
+            on_hw_change_callback=self._handle_hw_change
         )
 
+    def _handle_hw_change(self, is_connected):
+        """Khi phần cứng cắm hoặc rút cáp USB -> báo ngay cho Web"""
+        if self.loop and self.connected_clients:
+            msg = json.dumps({
+                "event": "hardware_status",
+                "connected": is_connected,
+                "port": SERIAL_PORT,
+                "message": "ESP32 đã kết nối (Cổng COM3)" if is_connected else "ESP32 chưa được cắm vào máy tính (Cổng COM3)"
+            })
+            asyncio.run_coroutine_threadsafe(self._broadcast(msg), self.loop)
+
     def _handle_serial_status(self, data):
-        """Khi nhận được JSON trạng thái từ Serial, chuyển tiếp lên tất cả WebSocket clients"""
+        """Khi nhận JSON trạng thái từ ESP32 -> đẩy lên Web"""
         if self.loop and self.connected_clients:
             msg_str = json.dumps(data)
             asyncio.run_coroutine_threadsafe(self._broadcast(msg_str), self.loop)
 
     async def _broadcast(self, message):
-        """Gửi message tới tất cả các trình duyệt Web đang mở"""
         if not self.connected_clients:
             return
         dead_clients = set()
@@ -163,13 +243,34 @@ class RobotControllerServer:
         self.connected_clients -= dead_clients
 
     async def ws_handler(self, websocket):
-        """Xử lý từng kết nối WebSocket từ trình duyệt Web"""
+        """Xử lý kết nối từ Web client"""
         self.connected_clients.add(websocket)
         client_addr = websocket.remote_address
         print(f"[WebSocket] [Client Connected] {client_addr}")
 
-        # Gửi lệnh lấy trạng thái mới nhất ngay khi có client kết nối
-        self.serial_bridge.send_command("CMD:WIFI_STATUS")
+        # 1. Gửi trạng thái phần cứng ESP32 đã cắm hay chưa
+        is_hw = self.serial_bridge.is_connected()
+        hw_status = {
+            "event": "hardware_status",
+            "connected": is_hw,
+            "port": SERIAL_PORT,
+            "message": "ESP32 đã kết nối (Cổng COM3)" if is_hw else "ESP32 chưa được cắm vào máy tính (Cổng COM3)"
+        }
+        await websocket.send(json.dumps(hw_status))
+        print(f"[WebSocket] [TX -> Web] hardware_status: connected={is_hw}")
+
+        # 2. Gửi thông tin cấu hình đọc từ firmware/config.py
+        cfg = read_firmware_config()
+        cfg_msg = {
+            "event": "firmware_config",
+            "config": cfg
+        }
+        await websocket.send(json.dumps(cfg_msg))
+        print(f"[WebSocket] [TX -> Web] firmware_config: ssid='{cfg['ssid']}'")
+
+        # 3. Nếu ESP32 đang cắm, yêu cầu gửi trạng thái Wi-Fi thực tế
+        if is_hw:
+            self.serial_bridge.send_command("CMD:WIFI_STATUS")
 
         try:
             async for raw_message in websocket:
@@ -185,12 +286,20 @@ class RobotControllerServer:
                     elif cmd == "wifi_off":
                         self.serial_bridge.send_command("CMD:WIFI_OFF")
                     elif cmd == "wifi_status":
-                        self.serial_bridge.send_command("CMD:WIFI_STATUS")
-                    else:
-                        print(f"[WebSocket] [WARN] Lenh khong xac dinh: {cmd}")
-
+                        curr_hw = self.serial_bridge.is_connected()
+                        await websocket.send(json.dumps({
+                            "event": "hardware_status",
+                            "connected": curr_hw,
+                            "port": SERIAL_PORT,
+                            "message": "ESP32 đã kết nối (Cổng COM3)" if curr_hw else "ESP32 chưa được cắm vào máy tính (Cổng COM3)"
+                        }))
+                        if curr_hw:
+                            self.serial_bridge.send_command("CMD:WIFI_STATUS")
+                    elif cmd == "get_config":
+                        cfg = read_firmware_config()
+                        await websocket.send(json.dumps({"event": "firmware_config", "config": cfg}))
                 except json.JSONDecodeError:
-                    print(f"[WebSocket] [WARN] Nhan du lieu khong phai JSON: {raw_message}")
+                    pass
 
         except websockets.exceptions.ConnectionClosed:
             pass
@@ -200,7 +309,7 @@ class RobotControllerServer:
             print(f"[WebSocket] [Client Disconnected] {client_addr}")
 
     def start_http_server(self):
-        """Khởi động HTTP server phục vụ file web tại http://localhost:5000"""
+        """Khởi động HTTP server phục vụ giao diện Web tại http://localhost:5000"""
         class CustomHTTPHandler(http.server.SimpleHTTPRequestHandler):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, directory=str(WEB_DIR), **kwargs)
@@ -209,6 +318,12 @@ class RobotControllerServer:
                 if self.path == "/" or self.path == "":
                     self.path = "/templates/index.html"
                 return super().do_GET()
+
+            def end_headers(self):
+                self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                self.send_header('Pragma', 'no-cache')
+                self.send_header('Expires', '0')
+                super().end_headers()
 
             def log_message(self, format, *args):
                 pass
@@ -222,21 +337,24 @@ class RobotControllerServer:
             print(f"[HTTP Server] [ERR] Loi khoi dong HTTP: {e}")
 
     def run(self):
-        """Chạy toàn bộ hệ thống"""
+        """Khởi động máy chủ"""
         print("\n" + "="*60)
         print("   HE THONG DIEU KHIEN XE DO LINE & CANH TAY ROBOT")
         print("="*60)
 
-        # 1. Kết nối Serial COM3
-        self.serial_bridge.connect()
-        serial_thread = threading.Thread(target=self.serial_bridge.listen_loop, daemon=True)
+        # 1. Đọc và in cấu hình firmware
+        cfg = read_firmware_config()
+        print(f"[Config Firmware] SSID: '{cfg['ssid']}', Mat khau: {'(Mang mo)' if cfg['open_network'] else cfg['password']}, Kenh: {cfg['channel']}, Toi da: {cfg['max_clients']}")
+
+        # 2. Khởi động luồng giám sát Serial COM3
+        serial_thread = threading.Thread(target=self.serial_bridge.supervisor_loop, daemon=True)
         serial_thread.start()
 
-        # 2. Khởi động HTTP Web Server
+        # 3. Khởi động HTTP Web Server
         http_thread = threading.Thread(target=self.start_http_server, daemon=True)
         http_thread.start()
 
-        # 3. Khởi động WebSocket Server
+        # 4. Khởi động WebSocket Server
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
@@ -247,8 +365,7 @@ class RobotControllerServer:
                 print("HUONG DAN:")
                 print(f"   1. Mo trinh duyet vao: http://localhost:{HTTP_PORT}")
                 print("   2. Dang nhap tai khoan: sune / 24021197")
-                print("   3. Vao tab Wi-Fi va bam Nut Nguon de dieu khien ESP32 that!")
-                print("   4. Nhan Ctrl + C tai cua so nay de dung he thong.\n")
+                print("   3. Vao tab Wi-Fi de quan sat trang thai ESP32 va dieu khien!\n")
                 await asyncio.Future()
 
         try:
