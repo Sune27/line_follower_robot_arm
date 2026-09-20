@@ -46,6 +46,196 @@
     <!-- Tác dụng: Xác thực tài khoản trước khi cho phép lái xe/gắp vật -->
     <!-- ============================================================ -->
     <div id="login-screen" class="screen">
+        <!-- ============================================================ -->
+        <!-- PHẦN TRANG TRÍ NỀN ĐỘNG (BACKGROUND DECORATIONS)              -->
+        <!-- Tác dụng: Tạo không gian công nghệ với xe chạy xoay bánh,     -->
+        <!-- cánh tay gắp đồ nhẹ nhàng, và robot humanoid chớp mắt ^^      -->
+        <!-- ============================================================ -->
+        <div class="login-bg-decorations" aria-hidden="true">
+            <!-- 1. Lưới vi mạch 3D phối cảnh & ánh sáng khuếch tán -->
+            <div class="cyber-grid-floor"></div>
+            <div class="ambient-glow glow-cyan"></div>
+            <div class="ambient-glow glow-blue"></div>
+
+            <!-- 2. CHIẾC XE DÒ LINE ĐANG CHUYỂN ĐỘNG VỚI BÁNH XE XOAY TRÒN -->
+            <div class="moving-car-decor">
+                <div class="track-line">
+                    <div class="track-pulse"></div>
+                </div>
+                <div class="robot-car-wrapper">
+                    <!-- Sóng siêu âm phát ra từ cảm biến đầu xe -->
+                    <div class="sonar-waves">
+                        <div class="wave wave-1"></div>
+                        <div class="wave wave-2"></div>
+                    </div>
+                    <!-- Khung thân xe cơ khí -->
+                    <div class="car-chassis">
+                        <div class="car-headlight"></div>
+                        <!-- Cảm biến siêu âm RCWL-1601 -->
+                        <div class="car-sensor">
+                            <div class="sensor-barrel"></div>
+                            <div class="sensor-barrel"></div>
+                        </div>
+                        <!-- Bo mạch ESP32 với đèn LED nhấp nháy -->
+                        <div class="car-board">
+                            <span class="board-text">ESP32</span>
+                            <div class="led-blink"></div>
+                        </div>
+                        <!-- Hộp pin đôi 18650 -->
+                        <div class="car-battery-pack">
+                            <div class="battery-cell"></div>
+                            <div class="battery-cell"></div>
+                        </div>
+                        <div class="caster-wheel"></div>
+                    </div>
+                    <!-- Hai bánh xe DC xoay tròn liên tục -->
+                    <div class="car-wheel wheel-left">
+                        <div class="wheel-tire">
+                            <div class="wheel-spoke s1"></div>
+                            <div class="wheel-spoke s2"></div>
+                            <div class="wheel-spoke s3"></div>
+                            <div class="wheel-center"></div>
+                        </div>
+                    </div>
+                    <div class="car-wheel wheel-right">
+                        <div class="wheel-tire">
+                            <div class="wheel-spoke s1"></div>
+                            <div class="wheel-spoke s2"></div>
+                            <div class="wheel-spoke s3"></div>
+                            <div class="wheel-center"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="decor-tag tag-car">ROBOT CAR • TRACKING LINE</div>
+            </div>
+
+            <!-- 3. CÁNH TAY ROBOT 4 BẬC CHUYỂN ĐỘNG KHỚP TAY NHẸ NHÀNG -->
+            <div class="robotic-arm-decor">
+                <svg class="cad-arm-svg" viewBox="0 0 460 380" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="cadBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#2563eb"/>
+                            <stop offset="60%" stop-color="#1d4ed8"/>
+                            <stop offset="100%" stop-color="#1e3a8a"/>
+                        </linearGradient>
+                        <linearGradient id="cadRedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#ef4444"/>
+                            <stop offset="100%" stop-color="#b91c1c"/>
+                        </linearGradient>
+                        <linearGradient id="cadDarkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#334155"/>
+                            <stop offset="50%" stop-color="#1e293b"/>
+                            <stop offset="100%" stop-color="#0f172a"/>
+                        </linearGradient>
+                        <filter id="cadGlow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#06b6d4" flood-opacity="0.6"/>
+                        </filter>
+                    </defs>
+
+                    <!-- Đế Robot cố định -->
+                    <g class="cad-base-assembly">
+                        <path d="M 50 360 L 220 360 L 210 330 L 195 315 L 75 315 L 60 330 Z" fill="url(#cadDarkGrad)" stroke="#0ea5e9" stroke-width="1.5"/>
+                        <polygon points="45,360 75,360 68,325 52,325" fill="url(#cadBlueGrad)" stroke="#38bdf8" stroke-width="1"/>
+                        <polygon points="195,360 225,360 218,325 202,325" fill="url(#cadBlueGrad)" stroke="#38bdf8" stroke-width="1"/>
+                        <polygon points="110,360 160,360 155,325 115,325" fill="url(#cadBlueGrad)" opacity="0.8"/>
+                        <rect x="75" y="310" width="120" height="8" rx="2" fill="url(#cadRedGrad)"/>
+                        <rect x="85" y="280" width="100" height="30" rx="3" fill="url(#cadDarkGrad)" stroke="#475569" stroke-width="1.2"/>
+                        <circle cx="135" cy="295" r="3" fill="#64748b"/>
+                        <rect x="80" y="273" width="110" height="7" rx="2" fill="url(#cadRedGrad)"/>
+                        <path d="M 80 273 L 95 230 L 175 230 L 190 273 Z" fill="url(#cadBlueGrad)" stroke="#38bdf8" stroke-width="1.5"/>
+                    </g>
+
+                    <!-- Cụm khớp cánh tay chuyển động nhịp nhàng -->
+                    <g class="cad-arm-assembly">
+                        <!-- Khớp vai & Cánh tay dưới (TEAM 3) -->
+                        <g class="cad-link-shoulder">
+                            <g class="cad-shoulder-hub">
+                                <circle cx="95" cy="230" r="36" fill="url(#cadRedGrad)"/>
+                                <circle cx="95" cy="230" r="30" fill="url(#cadBlueGrad)" stroke="#1e3a8a" stroke-width="2"/>
+                                <circle cx="95" cy="230" r="20" fill="#0f172a" stroke="#64748b" stroke-width="1.5"/>
+                                <circle cx="95" cy="216" r="2.5" fill="#38bdf8"/>
+                                <circle cx="95" cy="244" r="2.5" fill="#38bdf8"/>
+                                <circle cx="81" cy="230" r="2.5" fill="#38bdf8"/>
+                                <circle cx="109" cy="230" r="2.5" fill="#38bdf8"/>
+                                <circle cx="95" cy="230" r="10" fill="url(#cadBlueGrad)" stroke="#38bdf8" stroke-width="1.5"/>
+                            </g>
+                            <path d="M 95 264 C 130 264 168 238 195 168 L 210 173 C 185 248 135 278 95 276 Z" fill="url(#cadRedGrad)"/>
+                            <path d="M 95 230 C 130 220 160 190 205 140 L 225 165 C 180 215 140 250 95 260 Z" fill="url(#cadDarkGrad)" stroke="#38bdf8" stroke-width="1"/>
+                            <text x="135" y="218" fill="#ef4444" font-family="'Chakra Petch', sans-serif" font-size="14" font-weight="900" font-style="italic" transform="rotate(-30, 135, 218)" letter-spacing="1">TEAM 3</text>
+                        </g>
+
+                        <!-- Khớp khuỷu & Cánh tay trên (SPKT) -->
+                        <g class="cad-link-elbow">
+                            <path d="M 195 120 L 245 125 L 240 170 L 190 165 Z" fill="url(#cadBlueGrad)" stroke="#38bdf8" stroke-width="1.5"/>
+                            <circle cx="215" cy="122" r="16" fill="url(#cadBlueGrad)" stroke="#1e3a8a" stroke-width="2"/>
+                            <circle cx="215" cy="122" r="8" fill="url(#cadDarkGrad)"/>
+                            <!-- Thanh ty trợ lực đỏ -->
+                            <rect x="235" y="110" width="85" height="7" rx="3.5" fill="url(#cadRedGrad)"/>
+                            <circle cx="235" cy="113.5" r="4" fill="#38bdf8"/>
+                            <rect x="245" y="130" width="70" height="28" rx="4" fill="url(#cadDarkGrad)" stroke="#475569" stroke-width="1.5"/>
+                            <rect x="242" y="133" width="6" height="22" fill="url(#cadRedGrad)"/>
+                            <text x="256" y="149" fill="#ef4444" font-family="'Chakra Petch', sans-serif" font-size="13" font-weight="900" font-style="italic" letter-spacing="1.5">SPKT</text>
+                            <rect x="315" y="110" width="14" height="52" rx="3" fill="url(#cadBlueGrad)" stroke="#38bdf8" stroke-width="1"/>
+
+                            <!-- Khớp cổ tay & Tay gắp đồ -->
+                            <g class="cad-link-wrist">
+                                <path d="M 329 135 C 345 120 360 150 380 140 C 395 130 400 145 410 142 L 407 152 C 395 155 385 145 370 155 C 350 165 340 140 329 145 Z" fill="url(#cadDarkGrad)" stroke="#0ea5e9" stroke-width="1.2"/>
+                                <circle cx="337" cy="140" r="9" fill="url(#cadBlueGrad)"/>
+                                <circle cx="395" cy="146" r="10" fill="url(#cadBlueGrad)"/>
+                                <g transform="rotate(35, 410, 155)">
+                                    <ellipse cx="410" cy="150" rx="14" ry="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+                                    <rect x="403" y="152" width="14" height="25" rx="3" fill="url(#cadDarkGrad)" stroke="#64748b" stroke-width="1"/>
+                                    <rect x="404" y="150" width="12" height="4" fill="url(#cadRedGrad)"/>
+                                    <polygon points="407,177 413,177 410,205" fill="#38bdf8" filter="url(#cadGlow)"/>
+                                    <circle cx="410" cy="205" r="3" fill="#ffffff" filter="url(#cadGlow)"/>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </svg>
+                <div class="decor-tag tag-arm">4-DOF ARM • CALIBRATING</div>
+            </div>
+
+            <!-- 4. CON ROBOT HUMANOID CHỚP MẮT BIỂU CẢM ^^ ĐÁNG YÊU -->
+            <div class="humanoid-decor">
+                <div class="humanoid-actor">
+                    <!-- Ăng-ten phát tín hiệu -->
+                    <div class="humanoid-antenna">
+                        <div class="antenna-rod"></div>
+                        <div class="antenna-beacon"></div>
+                    </div>
+                    <!-- Đầu robot màn hình LED -->
+                    <div class="humanoid-head">
+                        <div class="face-screen">
+                            <!-- Mắt trái: Chớp đổi dạng mắt cười ^^ -->
+                            <div class="happy-eye eye-left">
+                                <span class="eye-normal"></span>
+                                <span class="eye-happy">^</span>
+                            </div>
+                            <!-- Mắt phải: Chớp đổi dạng mắt cười ^^ -->
+                            <div class="happy-eye eye-right">
+                                <span class="eye-normal"></span>
+                                <span class="eye-happy">^</span>
+                            </div>
+                            <!-- Miệng cười LED -->
+                            <div class="mascot-mouth"></div>
+                        </div>
+                        <div class="head-ear ear-left"></div>
+                        <div class="head-ear ear-right"></div>
+                    </div>
+                    <!-- Thân robot lơ lửng -->
+                    <div class="humanoid-torso">
+                        <div class="torso-core"></div>
+                        <div class="arm-hover arm-left"></div>
+                        <div class="arm-hover arm-right"></div>
+                    </div>
+                </div>
+                <!-- Bóng phản chiếu bồng bềnh -->
+                <div class="humanoid-shadow"></div>
+                <div class="decor-tag tag-mascot">AI ASSISTANT • ONLINE</div>
+            </div>
+        </div>
+
         <div class="login-card">
             <!-- Header của thẻ đăng nhập -->
             <div class="login-header">

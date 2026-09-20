@@ -398,3 +398,669 @@ body {
     color: #f1f5f9;
     text-shadow: 0 0 25px rgba(6, 182, 212, 0.6);
 }
+
+
+
+/* ============================================================
+   6. PHẦN TRANG TRÍ NỀN ĐỘNG (BACKGROUND DECORATIONS)
+   Tác dụng: Xe dò line xoay bánh, cánh tay robot cử động nhẹ nhàng,
+   và robot humanoid chớp mắt biểu cảm ^^ đáng yêu
+   ============================================================ */
+
+#login-screen {
+    position: relative;
+    overflow: hidden;
+}
+
+.login-card {
+    position: relative;
+    z-index: 10;
+}
+
+.login-bg-decorations {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+}
+
+/* 6.1 Lưới vi mạch 3D và ánh sáng khuếch tán */
+.cyber-grid-floor {
+    position: absolute;
+    bottom: -50px;
+    left: 0;
+    width: 100%;
+    height: 55%;
+    background-image: 
+        linear-gradient(rgba(6, 182, 212, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(6, 182, 212, 0.08) 1px, transparent 1px);
+    background-size: 45px 45px;
+    transform: perspective(400px) rotateX(65deg);
+    transform-origin: bottom center;
+    mask-image: linear-gradient(to top, rgba(0,0,0,0.9), transparent 85%);
+    -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.9), transparent 85%);
+}
+
+.ambient-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.18;
+}
+
+.glow-cyan {
+    width: 380px;
+    height: 380px;
+    background: #06b6d4;
+    bottom: 5%;
+    left: 2%;
+}
+
+.glow-blue {
+    width: 420px;
+    height: 420px;
+    background: #3b82f6;
+    bottom: 10%;
+    right: 2%;
+}
+
+.decor-tag {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: #64748b;
+    margin-top: 10px;
+    text-align: center;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    background: rgba(15, 23, 42, 0.6);
+    padding: 3px 10px;
+    border-radius: 20px;
+    display: inline-block;
+    backdrop-filter: blur(4px);
+}
+
+/* ============================================================
+   6.2 XE DÒ LINE ĐANG CHUYỂN ĐỘNG VỚI BÁNH XE XOAY TRÒN
+   Vị trí: Góc dưới bên trái
+   ============================================================ */
+.moving-car-decor {
+    position: absolute;
+    bottom: 40px;
+    left: calc(50% - 490px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: carSway 4s ease-in-out infinite;
+}
+
+@keyframes carSway {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+.track-line {
+    position: relative;
+    width: 220px;
+    height: 8px;
+    background: #090e17;
+    border-radius: 4px;
+    border-bottom: 2px solid rgba(6, 182, 212, 0.5);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
+    margin-top: -6px;
+    overflow: hidden;
+}
+
+.track-pulse {
+    position: absolute;
+    top: 0;
+    left: -60px;
+    width: 60px;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, #06b6d4, transparent);
+    animation: trackScan 1.8s linear infinite;
+}
+
+@keyframes trackScan {
+    from { left: -60px; }
+    to { left: 220px; }
+}
+
+.robot-car-wrapper {
+    position: relative;
+    width: 140px;
+    height: 75px;
+    animation: carVibrate 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes carVibrate {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-1.5px); }
+}
+
+.sonar-waves {
+    position: absolute;
+    top: 15px;
+    right: -30px;
+    width: 30px;
+    height: 30px;
+}
+
+.wave {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 16px;
+    height: 24px;
+    border-right: 2px solid #06b6d4;
+    border-radius: 0 50% 50% 0;
+    transform: translateY(-50%);
+    opacity: 0;
+}
+
+.wave-1 {
+    animation: sonarPulse 1.4s ease-out infinite;
+}
+
+.wave-2 {
+    left: 8px;
+    width: 22px;
+    height: 32px;
+    animation: sonarPulse 1.4s ease-out infinite 0.4s;
+}
+
+@keyframes sonarPulse {
+    0% { opacity: 0; transform: translateY(-50%) scale(0.6); }
+    50% { opacity: 0.8; }
+    100% { opacity: 0; transform: translateY(-50%) scale(1.3); }
+}
+
+.car-chassis {
+    position: absolute;
+    bottom: 12px;
+    left: 10px;
+    width: 115px;
+    height: 36px;
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid rgba(6, 182, 212, 0.4);
+    border-radius: 8px 16px 6px 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+}
+
+.car-headlight {
+    position: absolute;
+    top: 10px;
+    right: -2px;
+    width: 4px;
+    height: 8px;
+    background: #38bdf8;
+    border-radius: 0 2px 2px 0;
+    box-shadow: 0 0 10px #38bdf8, 5px 0 15px rgba(56, 189, 248, 0.8);
+}
+
+.car-sensor {
+    position: absolute;
+    top: -14px;
+    right: 6px;
+    display: flex;
+    gap: 4px;
+    background: #0284c7;
+    padding: 2px 4px;
+    border-radius: 4px;
+    border: 1px solid #38bdf8;
+}
+
+.sensor-barrel {
+    width: 9px;
+    height: 9px;
+    background: #0f172a;
+    border: 2px solid #94a3b8;
+    border-radius: 50%;
+    box-shadow: inset 0 0 3px #06b6d4;
+}
+
+.car-board {
+    position: absolute;
+    top: -8px;
+    left: 14px;
+    width: 45px;
+    height: 18px;
+    background: #047857;
+    border: 1px solid #10b981;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+}
+
+.board-text {
+    font-size: 7px;
+    font-weight: 700;
+    color: #a7f3d0;
+    letter-spacing: 0.5px;
+}
+
+.led-blink {
+    width: 4px;
+    height: 4px;
+    background: #ef4444;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #ef4444;
+    animation: ledFlash 0.8s infinite;
+}
+
+@keyframes ledFlash {
+    0%, 100% { opacity: 1; background: #38bdf8; box-shadow: 0 0 6px #38bdf8; }
+    50% { opacity: 0.2; }
+}
+
+.car-battery-pack {
+    position: absolute;
+    bottom: 4px;
+    left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.battery-cell {
+    width: 42px;
+    height: 7px;
+    background: #9333ea;
+    border-radius: 3px;
+    border: 1px solid #c084fc;
+}
+
+.car-wheel {
+    position: absolute;
+    bottom: 2px;
+    width: 32px;
+    height: 32px;
+}
+
+.wheel-left {
+    left: 20px;
+}
+
+.wheel-right {
+    right: 20px;
+}
+
+.wheel-tire {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #020617;
+    border: 3px solid #334155;
+    position: relative;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+    animation: spinWheel 0.9s linear infinite;
+}
+
+@keyframes spinWheel {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.wheel-spoke {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 2px;
+    background: #06b6d4;
+    transform-origin: center;
+}
+
+.wheel-spoke.s1 { transform: translate(-50%, -50%) rotate(0deg); }
+.wheel-spoke.s2 { transform: translate(-50%, -50%) rotate(60deg); }
+.wheel-spoke.s3 { transform: translate(-50%, -50%) rotate(120deg); }
+
+.wheel-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    background: #06b6d4;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 6px #06b6d4;
+}
+
+.caster-wheel {
+    position: absolute;
+    bottom: -5px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    background: #94a3b8;
+    border-radius: 50%;
+}
+
+
+/* ============================================================
+   6.3 CÁNH TAY ROBOT 4 BẬC CHUYỂN ĐỘNG KHỚP NHẸ NHÀNG
+   Vị trí: Góc dưới bên phải
+   ============================================================ */
+.robotic-arm-decor {
+    position: absolute;
+    bottom: 30px;
+    right: calc(50% - 490px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.cad-arm-svg {
+    width: 260px;
+    height: 215px;
+    overflow: visible;
+}
+
+/* Toàn bộ cụm cánh tay lắc nhẹ nhịp nhàng quanh khớp vai/đế */
+.cad-arm-assembly {
+    transform-origin: 135px 280px;
+    animation: armGentleMotion 5.5s ease-in-out infinite;
+}
+
+@keyframes armGentleMotion {
+    0%, 100% { transform: rotate(0deg); }
+    35% { transform: rotate(-5deg); }
+    75% { transform: rotate(4deg); }
+}
+
+.cad-link-wrist {
+    transform-origin: 337px 140px;
+    animation: wristGentleMotion 4s ease-in-out infinite;
+}
+
+@keyframes wristGentleMotion {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(-8deg); }
+}
+
+
+/* ============================================================
+   6.4 ROBOT HUMANOID CHỚP MẮT BIỂU CẢM ^^ ĐÁNG YÊU
+   Vị trí: Góc trên bên phải
+   ============================================================ */
+.humanoid-decor {
+    position: absolute;
+    top: 45px;
+    right: calc(50% - 460px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: mascotFloat 3.8s ease-in-out infinite;
+}
+
+@keyframes mascotFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(1.5deg); }
+}
+
+.humanoid-actor {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.humanoid-antenna {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: -2px;
+}
+
+.antenna-beacon {
+    width: 8px;
+    height: 8px;
+    background: #38bdf8;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #38bdf8, 0 0 20px #06b6d4;
+    animation: beaconFlash 1.5s ease-in-out infinite;
+}
+
+@keyframes beaconFlash {
+    0%, 100% { transform: scale(0.9); opacity: 0.5; }
+    50% { transform: scale(1.3); opacity: 1; filter: drop-shadow(0 0 8px #38bdf8); }
+}
+
+.antenna-rod {
+    width: 3px;
+    height: 12px;
+    background: #64748b;
+    border-radius: 1px;
+}
+
+.humanoid-head {
+    position: relative;
+    width: 72px;
+    height: 56px;
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border: 2px solid rgba(6, 182, 212, 0.5);
+    border-radius: 20px 20px 14px 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 22px rgba(6, 182, 212, 0.3);
+}
+
+.head-ear {
+    position: absolute;
+    top: 18px;
+    width: 6px;
+    height: 18px;
+    background: #0284c7;
+    border-radius: 3px;
+}
+
+.ear-left { left: -6px; }
+.ear-right { right: -6px; }
+
+/* Màn hình hiển thị khuôn mặt LED */
+.face-screen {
+    width: 54px;
+    height: 40px;
+    background: #020617;
+    border-radius: 12px;
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    padding: 6px 4px 2px 4px;
+    gap: 8px;
+    box-shadow: inset 0 0 8px rgba(6, 182, 212, 0.2);
+}
+
+/* Khung chứa mắt có hiệu ứng chớp đổi biểu cảm ^^ */
+.happy-eye {
+    position: relative;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Mắt dạng hình tròn bình thường (sáng Cyan) */
+.eye-normal {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #06b6d4;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #06b6d4;
+    animation: normalEyeBlink 4s ease-in-out infinite;
+}
+
+/* Mắt biểu cảm nụ cười dạng dấu ^ (Caret Smile) */
+.eye-happy {
+    position: absolute;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1;
+    color: #38bdf8;
+    text-shadow: 0 0 8px #38bdf8;
+    opacity: 0;
+    transform: scale(0.6) translateY(2px);
+    animation: happyEyeSmile 4s ease-in-out infinite;
+    user-select: none;
+}
+
+/* Animation chớp mắt: Bình thường hiện chấm tròn -> Định kỳ chớp biến thành mắt cười ^^ */
+@keyframes normalEyeBlink {
+    0%, 72%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    75%, 95% {
+        opacity: 0;
+        transform: scale(0.2);
+    }
+}
+
+@keyframes happyEyeSmile {
+    0%, 72%, 100% {
+        opacity: 0;
+        transform: scale(0.5) translateY(3px);
+    }
+    76%, 94% {
+        opacity: 1;
+        transform: scale(1.15) translateY(0);
+    }
+}
+
+/* Miệng cười LED */
+.mascot-mouth {
+    width: 16px;
+    height: 5px;
+    border-bottom: 2.5px solid #38bdf8;
+    border-radius: 0 0 10px 10px;
+    margin-top: -2px;
+    box-shadow: 0 1px 5px rgba(56, 189, 248, 0.9);
+}
+
+.humanoid-torso {
+    position: relative;
+    width: 44px;
+    height: 32px;
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    border: 1.5px solid rgba(6, 182, 212, 0.4);
+    border-radius: 8px 8px 18px 18px;
+    margin-top: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.torso-core {
+    width: 12px;
+    height: 12px;
+    background: #06b6d4;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #06b6d4;
+    animation: corePulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes corePulse {
+    from { opacity: 0.5; transform: scale(0.85); }
+    to { opacity: 1; transform: scale(1.15); }
+}
+
+.arm-hover {
+    position: absolute;
+    top: 6px;
+    width: 5px;
+    height: 18px;
+    background: #0ea5e9;
+    border-radius: 3px;
+}
+
+.arm-left { left: -7px; transform: rotate(10deg); }
+.arm-right { right: -7px; transform: rotate(-10deg); }
+
+.humanoid-shadow {
+    width: 45px;
+    height: 8px;
+    background: rgba(6, 182, 212, 0.18);
+    border-radius: 50%;
+    filter: blur(4px);
+    margin-top: 15px;
+    animation: shadowPulse 3.8s ease-in-out infinite;
+}
+
+@keyframes shadowPulse {
+    0%, 100% { transform: scale(1); opacity: 0.3; }
+    50% { transform: scale(0.65); opacity: 0.1; }
+}
+
+
+/* ============================================================
+   6.5 RESPONSIVE ADAPTATION (Tương thích kích thước màn hình)
+   ============================================================ */
+@media (max-width: 1280px) {
+    .moving-car-decor {
+        left: 20px;
+        transform: scale(0.85);
+        transform-origin: bottom left;
+    }
+    .robotic-arm-decor {
+        right: 20px;
+        transform: scale(0.85);
+        transform-origin: bottom right;
+    }
+    .humanoid-decor {
+        right: 30px;
+        transform: scale(0.85);
+        transform-origin: top right;
+    }
+}
+
+@media (max-width: 900px) {
+    .moving-car-decor {
+        bottom: 15px;
+        left: 10px;
+        transform: scale(0.7);
+        opacity: 0.75;
+    }
+    .robotic-arm-decor {
+        bottom: 15px;
+        right: 10px;
+        transform: scale(0.7);
+        opacity: 0.75;
+    }
+    .humanoid-decor {
+        top: 20px;
+        right: 15px;
+        transform: scale(0.75);
+        opacity: 0.85;
+    }
+}
+
+@media (max-width: 640px) {
+    .moving-car-decor {
+        bottom: 5px;
+        left: 5px;
+        transform: scale(0.55);
+        opacity: 0.6;
+    }
+    .robotic-arm-decor {
+        display: none;
+    }
+    .humanoid-decor {
+        top: 15px;
+        right: 10px;
+        transform: scale(0.65);
+        opacity: 0.75;
+    }
+}
