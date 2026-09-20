@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    1. THIẾT LẬP NỀN TẢNG (Global Styles & CSS Reset)
    Tác dụng: Sử dụng font 'Be Vietnam Pro' và 'Chakra Petch' tương thích 100% tiếng Việt
    ============================================================ */
@@ -481,7 +481,7 @@ body {
 .card-icon-wrapper {
     width: 64px;
     height: 64px;
-    border-radius: 14px;
+    border-radius: 16px;
     background: rgba(6, 182, 212, 0.1);
     border: 1px solid rgba(6, 182, 212, 0.35);
     display: flex;
@@ -494,11 +494,11 @@ body {
 
 /* BIỂU TƯỢNG WI-FI LAPTOP SVG */
 .wifi-laptop-icon {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     color: #06b6d4;
     transition: all 0.3s ease;
-    filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.6));
+    filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.7));
 }
 
 .wifi-wave {
@@ -533,31 +533,78 @@ body {
     line-height: 1.4;
 }
 
-/* HUY HIỆU TRẠNG THÁI DƯỚI ĐÁY THẺ (MÀU VÀNG) */
+/* ============================================================
+   BỘ 3 HUY HIỆU TRẠNG THÁI TÁI SỬ DỤNG (STATUS BADGES)
+   1. Sẵn sàng         (.status-ready)        -> Màu xanh lá
+   2. Đang phát triển  (.status-in-progress)  -> Màu vàng
+   3. Chưa phát triển  (.status-not-started)  -> Màu đỏ
+   ============================================================ */
+
+/* Khung cơ bản dùng chung */
 .card-status-badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 4px 12px;
-    background: rgba(245, 158, 11, 0.12);
-    border: 1px solid rgba(245, 158, 11, 0.4);
     border-radius: 20px;
     margin-top: 10px;
+    transition: all 0.3s ease;
 }
 
-.status-indicator {
+.card-status-badge .status-indicator {
     width: 6px;
     height: 6px;
-    background: #f59e0b;
     border-radius: 50%;
-    box-shadow: 0 0 6px #f59e0b;
+    transition: all 0.3s ease;
 }
 
-.status-text {
+.card-status-badge .status-text {
     font-size: 0.72rem;
-    color: #fbbf24;
     font-weight: 600;
     letter-spacing: 0.3px;
+    transition: all 0.3s ease;
+}
+
+/* 1. TRẠNG THÁI: SẴN SÀNG (MÀU XANH LÁ) */
+.card-status-badge.status-ready {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+.card-status-badge.status-ready .status-indicator {
+    background: #10b981;
+    box-shadow: 0 0 6px #10b981;
+}
+.card-status-badge.status-ready .status-text {
+    color: #34d399;
+}
+
+/* 2. TRẠNG THÁI: ĐANG PHÁT TRIỂN (MÀU VÀNG) */
+.card-status-badge.status-in-progress {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+.card-status-badge.status-in-progress .status-indicator {
+    background: #f59e0b;
+    box-shadow: 0 0 6px #f59e0b;
+}
+.card-status-badge.status-in-progress .status-text {
+    color: #fbbf24;
+}
+
+/* 3. TRẠNG THÁI: CHƯA PHÁT TRIỂN (MÀU ĐỎ) - Mặc định fallback */
+.card-status-badge,
+.card-status-badge.status-not-started {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+.card-status-badge .status-indicator,
+.card-status-badge.status-not-started .status-indicator {
+    background: #ef4444;
+    box-shadow: 0 0 6px #ef4444;
+}
+.card-status-badge .status-text,
+.card-status-badge.status-not-started .status-text {
+    color: #f87171;
 }
 
 /* ============================================================

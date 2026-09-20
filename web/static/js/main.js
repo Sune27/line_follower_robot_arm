@@ -334,6 +334,38 @@ class DashboardApp {
         // Đưa về màn hình đăng nhập
         this.screenManager.show('login-screen');
     }
+
+    /**
+     * Cập nhật trạng thái huy hiệu của thẻ chức năng linh hoạt
+     * @param {string} cardSelector - Selector của thẻ (vd: '#card-wifi-bluetooth')
+     * @param {'ready' | 'in_progress' | 'not_started'} statusKey - Loại trạng thái
+     */
+    setCardStatus(cardSelector, statusKey) {
+        const card = document.querySelector(cardSelector);
+        if (!card) return;
+
+        const badge = card.querySelector('.card-status-badge');
+        const textEl = card.querySelector('.status-text');
+        if (!badge || !textEl) return;
+
+        badge.classList.remove('status-ready', 'status-in-progress', 'status-not-started');
+
+        switch (statusKey) {
+            case 'ready':
+                badge.classList.add('status-ready');
+                textEl.textContent = 'Sẵn sàng';
+                break;
+            case 'in_progress':
+                badge.classList.add('status-in-progress');
+                textEl.textContent = 'Đang phát triển';
+                break;
+            case 'not_started':
+            default:
+                badge.classList.add('status-not-started');
+                textEl.textContent = 'Chưa phát triển';
+                break;
+        }
+    }
 }
 
 

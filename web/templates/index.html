@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -311,18 +311,19 @@
                     <div class="function-card" id="card-wifi-bluetooth" title="Quản lý kết nối Wi-Fi & Bluetooth">
                         <div class="card-glow-overlay"></div>
                         <div class="card-icon-wrapper">
-                            <!-- Biểu tượng sóng Wi-Fi dạng SVG laptop hiện đại -->
-                            <svg class="wifi-laptop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M5 12.55a11 11 0 0 1 14.08 0" class="wifi-wave wave-outer"/>
-                                <path d="M8.53 16.11a6 6 0 0 1 6.95 0" class="wifi-wave wave-mid"/>
-                                <circle cx="12" cy="20" r="1.5" class="wifi-dot" fill="currentColor"/>
+                            <!-- Biểu tượng sóng Wi-Fi dạng SVG laptop hiện đại (3 vạch sóng + chấm tâm khớp khung) -->
+                            <svg class="wifi-laptop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 8.82a15 15 0 0 1 20 0" class="wifi-wave wave-outer"/>
+                                <path d="M5 12.86a10.8 10.8 0 0 1 14 0" class="wifi-wave wave-mid"/>
+                                <path d="M8.5 16.43a6.4 6.4 0 0 1 7 0" class="wifi-wave wave-inner"/>
+                                <circle cx="12" cy="20" r="1.2" class="wifi-dot" fill="currentColor"/>
                             </svg>
                         </div>
                         <div class="card-info">
                             <h3 class="card-title">Wi-Fi & Bluetooth</h3>
                             <p class="card-desc">Cấu hình kết nối, giám sát thiết bị và mạng không dây</p>
                         </div>
-                        <div class="card-status-badge">
+                        <div class="card-status-badge status-not-started">
                             <span class="status-indicator"></span>
                             <span class="status-text">Chưa phát triển</span>
                         </div>
