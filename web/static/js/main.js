@@ -408,7 +408,51 @@ class WiFiScreenController {
         this.clientCount = 0;
         this.maxClients = 4;
         this.channel = 6;
-        this.ip = '192.168.4.1';
+        this.ip = '—';
+
+        // Quản lý kết nối WebSocket tới Python Backend Server
+        this.ws = null;
+        this.wsConnected = false;
+        this.initWebSocket();
+    }
+
+    /**
+     * Khởi tạo kết nối WebSocket tới Python Backend (Port 8765)
+     */
+    initWebSocket() {
+        const wsUrl = `ws://${window.location.hostname || 'localhost'}:8765`;
+        try {
+            this.ws = new WebSocket(wsUrl);
+
+            this.ws.onopen = () => {
+                this.wsConnected = true;
+                console.log('[WebSocket] ✅ Đã kết nối tới Python Backend Server (COM3 Bridge)');
+                // Yêu cầu lấy trạng thái mới nhất từ ESP32
+                this.ws.send(JSON.stringify({ cmd: 'wifi_status' }));
+            };
+
+            this.ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('[WebSocket] 📥 Nhận phản hồi từ ESP32:', data);
+                    this.updateFromHardware(data);
+                } catch (e) {
+                    console.error('[WebSocket] Lỗi giải mã JSON:', e);
+                }
+            };
+
+            this.ws.onclose = () => {
+                this.wsConnected = false;
+                console.warn('[WebSocket] ⚠ Mất kết nối tới server. Đang thử kết nối lại sau 2.5s...');
+                setTimeout(() => this.initWebSocket(), 2500);
+            };
+
+            this.ws.onerror = (err) => {
+                this.wsConnected = false;
+            };
+        } catch (e) {
+            console.error('[WebSocket] Không thể khởi tạo:', e);
+        }
     }
 
     /**
@@ -416,6 +460,10 @@ class WiFiScreenController {
      */
     open() {
         this.screenManager.show('wifi-screen');
+        // Nếu đã có kết nối WebSocket, gửi lệnh cập nhật trạng thái mới nhất từ ESP32
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ cmd: 'wifi_status' }));
+        }
         this.render();
     }
 
@@ -428,11 +476,22 @@ class WiFiScreenController {
 
     /**
      * Chuyển đổi trạng thái Bật / Tắt nguồn Wi-Fi
+     * Gửi lệnh trực tiếp xuống Python Server -> truyền qua COM3 tới ESP32
      */
     togglePower() {
-        this.isActive = !this.isActive;
-        this.render();
-        console.log(`[WiFi] Nguồn phát sóng: ${this.isActive ? 'BẬT' : 'TẮT'}`);
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            // Hiệu ứng chờ phản hồi
+            const statusLabel = document.getElementById('wifi-power-status-text');
+            if (statusLabel) statusLabel.textContent = 'Đang xử lý...';
+
+            this.ws.send(JSON.stringify({ cmd: 'wifi_toggle' }));
+            console.log('[WiFi] 📤 Đã gửi lệnh wifi_toggle tới Python Backend');
+        } else {
+            console.warn('[WiFi] ⚠ Chưa kết nối tới Python Server (Chạy python python_app/app.py)');
+            // Fallback thay đổi trực quan trên giao diện nếu chưa bật backend
+            this.isActive = !this.isActive;
+            this.render();
+        }
     }
 
     /**
@@ -461,7 +520,7 @@ class WiFiScreenController {
         }
         if (clientCountEl) clientCountEl.textContent = this.isActive ? this.clientCount : '—';
         if (clientMaxEl) clientMaxEl.textContent = `/ ${this.maxClients} thiết bị`;
-        if (ipEl) ipEl.textContent = this.isActive ? this.ip : '—';
+        if (ipEl) ipEl.textContent = this.isActive ? (this.ip || '192.168.4.1') : '—';
         if (channelEl) channelEl.textContent = `Kênh ${this.channel} (2.4 GHz)`;
 
         // Cập nhật hiệu ứng nút nguồn và thanh trạng thái
@@ -481,7 +540,7 @@ class WiFiScreenController {
     }
 
     /**
-     * Cập nhật dữ liệu từ ESP32 gửi lên (chuẩn bị sẵn cho WebSocket)
+     * Cập nhật dữ liệu thực tế nhận từ ESP32 qua WebSocket
      */
     updateFromHardware(data) {
         if (!data) return;
