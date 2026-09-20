@@ -15,7 +15,7 @@
 // Tác dụng: Lưu danh sách tài khoản được phép điều khiển và thời gian hiệu ứng
 // ------------------------------------------------------------------------------
 const AUTHORIZED_ACCOUNTS = [
-    { username: "admin", password: "robot2026" }
+    { username: "sune", password: "24021197" }
 ];
 
 // Khóa định danh phiên đăng nhập trong bộ nhớ trình duyệt
