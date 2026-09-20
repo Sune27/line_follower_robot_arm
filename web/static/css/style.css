@@ -265,6 +265,7 @@ body {
 .btn-toggle-pw {
     position: absolute;
     right: 10px;
+    z-index: 5;
     background: transparent;
     border: none;
     color: #94a3b8;
@@ -277,6 +278,10 @@ body {
     border-radius: 6px;
     transition: all 0.2s ease;
     user-select: none;
+}
+
+.btn-toggle-pw span {
+    pointer-events: none;
 }
 
 .btn-toggle-pw:hover {

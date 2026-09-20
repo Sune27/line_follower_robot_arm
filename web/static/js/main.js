@@ -11,7 +11,6 @@
 // ==============================================================================
 class ScreenManager {
     constructor() {
-        this.screens = document.querySelectorAll('.screen');
         this.currentScreenId = null;
     }
 
@@ -20,7 +19,8 @@ class ScreenManager {
      * @param {string} screenId - ID của màn hình cần hiển thị
      */
     show(screenId) {
-        this.screens.forEach(screen => {
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(screen => {
             screen.classList.remove('active');
         });
 
@@ -40,17 +40,33 @@ class ScreenManager {
 
 
 // ==============================================================================
-// 2. CLASS AUTH_MANAGER (Quản lý định danh, xác thực & phiên làm việc)
+// 2. CLASS AUTH_MANAGER (Quản lý định danh, xác thực & danh sách tài khoản)
 // ==============================================================================
 class AuthManager {
     constructor() {
         // Khóa định danh lưu trong bộ nhớ trình duyệt
         this.storageKey = 'robot_car_active_user';
         
-        // Danh sách tài khoản hợp lệ được cấp quyền điều khiển
+        // Danh sách các tài khoản hợp lệ được cấp quyền truy cập hệ thống
         this.authorizedAccounts = [
-            { username: 'sune', password: '24021197' }
+            { username: 'sune', password: '24021197' }, // Tài khoản quản trị chính
+            { username: 'tung', password: '24020000' }, // Tài khoản thành viên 2
+            { username: 'hung', password: '24020001' }  // Tài khoản thành viên 3
         ];
+    }
+
+    /**
+     * Thêm tài khoản mới vào danh sách ủy quyền (tiện ích mở rộng động)
+     * @param {string} username
+     * @param {string} password
+     */
+    addAccount(username, password) {
+        if (!username || !password) return false;
+        this.authorizedAccounts.push({
+            username: username.trim(),
+            password: password.trim()
+        });
+        return true;
     }
 
     /**
@@ -71,7 +87,7 @@ class AuthManager {
         if (!matched) {
             return {
                 success: false,
-                message: '❌ Tài khoản hoặc mật khẩu không chính xác!'
+                message: '❌ Sai tên đăng nhập hoặc mật khẩu!'
             };
         }
 
@@ -116,39 +132,62 @@ class AuthManager {
 
 
 // ==============================================================================
-// 3. CLASS PASSWORD_FIELD_CONTROLLER (Điều khiển ô nhập mật khẩu & nút con mắt)
+// 3. CLASS PASSWORD_FIELD_CONTROLLER (Điều khiển ẩn/hiện mật khẩu chống xung đột)
 // ==============================================================================
 class PasswordFieldController {
     constructor(inputSelector, iconSelector) {
-        this.input = document.querySelector(inputSelector);
-        this.icon = document.querySelector(iconSelector);
+        this.inputSelector = inputSelector;
+        this.iconSelector = iconSelector;
+        this.lastToggleTime = 0; // Khóa chống kích hoạt lặp (debounce)
+    }
+
+    getInput() {
+        return document.querySelector(this.inputSelector);
+    }
+
+    getIcon() {
+        return document.querySelector(this.iconSelector);
     }
 
     /**
      * Chuyển đổi trạng thái ẩn / hiện mật khẩu
+     * Có cơ chế Debounce 250ms để ngăn chặn sự cố double-click hoặc kích hoạt 2 lần liên tiếp
      */
     toggle() {
-        if (!this.input || !this.icon) return;
-
-        if (this.input.type === 'password') {
-            this.input.type = 'text';
-            this.icon.innerText = '🙈'; // Chuyển sang biểu tượng che mắt khi đang hiện chữ
-        } else {
-            this.input.type = 'password';
-            this.icon.innerText = '👁️'; // Chuyển lại biểu tượng con mắt khi che mật khẩu
+        const now = Date.now();
+        if (now - this.lastToggleTime < 250) {
+            return; // Chặn nếu kích hoạt quá nhanh (dưới 250ms)
         }
+        this.lastToggleTime = now;
+
+        const input = this.getInput();
+        const icon = this.getIcon();
+        if (!input || !icon) return;
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.innerText = '🙈'; // Chuyển sang biểu tượng che mắt khi đang hiện chữ
+        } else {
+            input.type = 'password';
+            icon.innerText = '👁️'; // Chuyển lại biểu tượng con mắt khi che mật khẩu
+        }
+
+        // Đảm bảo con trỏ vẫn nằm trong ô mật khẩu để người dùng tiện chỉnh sửa
+        input.focus();
     }
 
     /**
      * Đặt lại trạng thái ban đầu (xóa text và đưa về dạng ẩn)
      */
     reset() {
-        if (this.input) {
-            this.input.value = '';
-            this.input.type = 'password';
+        const input = this.getInput();
+        const icon = this.getIcon();
+        if (input) {
+            input.value = '';
+            input.type = 'password';
         }
-        if (this.icon) {
-            this.icon.innerText = '👁️';
+        if (icon) {
+            icon.innerText = '👁️';
         }
     }
 }
@@ -169,7 +208,7 @@ class DashboardApp {
      * Khởi tạo ứng dụng khi DOM đã sẵn sàng
      */
     init() {
-        // 1. Luôn mở màn bằng Trailer công nghệ
+        // 1. Mở màn bằng Trailer công nghệ
         this.screenManager.show('trailer-screen');
 
         // 2. Thiết lập bộ hẹn giờ chuyển cảnh sau khi trailer chạy xong
@@ -183,7 +222,7 @@ class DashboardApp {
             }
         }, this.trailerDuration);
 
-        // 3. Gắn các sự kiện lắng nghe tương tác
+        // 3. Gắn kết các sự kiện lắng nghe tương tác
         this.bindEvents();
     }
 
@@ -191,30 +230,53 @@ class DashboardApp {
      * Gắn kết các sự kiện từ giao diện HTML
      */
     bindEvents() {
-        // Bắt sự kiện nộp Form đăng nhập
+        // 1. Xử lý Form đăng nhập
         const loginForm = document.getElementById('login-form');
         if (loginForm) {
+            loginForm.removeAttribute('onsubmit'); // Gỡ bỏ inline onsubmit cũ nếu có
             loginForm.addEventListener('submit', (e) => this.handleLoginFormSubmit(e));
         }
 
-        // Bắt sự kiện nút con mắt ẩn/hiện mật khẩu
+        // 2. Xử lý nút con mắt ẩn/hiện mật khẩu
         const togglePwBtn = document.querySelector('.btn-toggle-pw');
         if (togglePwBtn) {
-            togglePwBtn.addEventListener('click', () => this.pwController.toggle());
+            togglePwBtn.removeAttribute('onclick'); // Gỡ bỏ inline onclick cũ để tránh bị gọi 2 lần liên tiếp
+            togglePwBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.pwController.toggle();
+            });
         }
 
-        // Bắt sự kiện nút đăng xuất
+        // 3. Xử lý nút đăng xuất
         const logoutBtn = document.querySelector('.btn-logout');
         if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => this.handleUserLogout());
+            logoutBtn.removeAttribute('onclick'); // Gỡ bỏ inline onclick cũ
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleUserLogout();
+            });
         }
+
+        // 4. Tự động xóa dòng thông báo lỗi khi người dùng bắt đầu gõ lại tài khoản hoặc mật khẩu
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const clearErrorMessage = () => {
+            const errorMsgElement = document.getElementById('error-message');
+            if (errorMsgElement && errorMsgElement.innerText !== '') {
+                errorMsgElement.innerText = '';
+            }
+        };
+
+        if (usernameInput) usernameInput.addEventListener('input', clearErrorMessage);
+        if (passwordInput) passwordInput.addEventListener('input', clearErrorMessage);
     }
 
     /**
      * Xử lý sự kiện khi người dùng nhấn ĐĂNG NHẬP
      */
     handleLoginFormSubmit(event) {
-        event.preventDefault();
+        if (event) event.preventDefault();
 
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
@@ -239,6 +301,7 @@ class DashboardApp {
             if (errorMsgElement) {
                 errorMsgElement.innerText = result.message;
             }
+            // Không xóa nội dung mật khẩu để người dùng có thể bấm nút con mắt xem lại mật khẩu vừa gõ
         }
     }
 
@@ -277,7 +340,6 @@ class DashboardApp {
 // ==============================================================================
 // 5. KHỞI ĐỘNG ỨNG DỤNG (ENTRY POINT)
 // ==============================================================================
-// Khởi tạo đối tượng Singleton của hệ thống
 let app = null;
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -285,7 +347,7 @@ window.addEventListener('DOMContentLoaded', () => {
     app.init();
 });
 
-// Giữ lại các hàm Wrapper toàn cục để tương thích 100% với các thuộc tính onclick/onsubmit inline cũ (nếu có)
+// Giữ lại các hàm Wrapper toàn cục có debounce để tương thích 100% nếu có gọi từ bên ngoài
 function handleLogin(event) {
     if (app) app.handleLoginFormSubmit(event);
 }
