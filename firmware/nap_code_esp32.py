@@ -19,19 +19,25 @@ def send_raw(ser, data, wait=0.1):
     time.sleep(wait)
 
 def enter_raw_repl(ser):
-    # Gui Ctrl+C hai lan de ngat code cu
-    send_raw(ser, b'\r\x03\x03', 0.5)
+    # Gui Ctrl+C nhieu lan de ngat code
+    for _ in range(5):
+        ser.write(b'\r\x03')
+        time.sleep(0.1)
+    ser.read_all()
+    
     # Gui Ctrl+A vao Raw REPL
-    send_raw(ser, b'\r\x01', 0.5)
+    ser.write(b'\r\x01')
+    time.sleep(0.4)
     resp = ser.read_all()
-    if b'raw REPL; CTRL-B to exit' in resp:
+    if b'raw REPL' in resp:
         print("[OK] Đã vào chế độ Raw REPL thành công.")
         return True
-    else:
-        print("[WARN] Thử lại vào Raw REPL... phản hồi:", resp)
-        send_raw(ser, b'\r\x02\x03\x03\x01', 0.5)
-        resp2 = ser.read_all()
-        return b'raw REPL' in resp2
+    
+    # Thu tiep Ctrl+B roi Ctrl+C roi Ctrl+A
+    ser.write(b'\r\x02\r\x03\x03\r\x01')
+    time.sleep(0.5)
+    resp2 = ser.read_all()
+    return b'raw REPL' in resp2
 
 def exec_raw(ser, code_str):
     payload = code_str.encode('utf-8') + b'\x04'

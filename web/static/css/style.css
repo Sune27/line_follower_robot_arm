@@ -1373,17 +1373,227 @@ body {
     border-radius: 50%;
     display: flex;
     justify-content: center;
+}
+
+@keyframes happyEyeSmile {
+    0%, 72%, 100% {
+        opacity: 0;
+        transform: scale(0.5) translateY(3px);
+    }
+    76%, 94% {
+        opacity: 1;
+        transform: scale(1.15) translateY(0);
+    }
+}
+
+/* Miệng cười LED */
+.mascot-mouth {
+    width: 16px;
+    height: 5px;
+    border-bottom: 2.5px solid #38bdf8;
+    border-radius: 0 0 10px 10px;
+    margin-top: -2px;
+    box-shadow: 0 1px 5px rgba(56, 189, 248, 0.9);
+}
+
+.humanoid-torso {
+    position: relative;
+    width: 44px;
+    height: 32px;
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    border: 1.5px solid rgba(6, 182, 212, 0.4);
+    border-radius: 8px 8px 18px 18px;
+    margin-top: 4px;
+    display: flex;
+    justify-content: center;
     align-items: center;
-    font-size: 1rem;
+}
+
+.torso-core {
+    width: 12px;
+    height: 12px;
+    background: #06b6d4;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #06b6d4;
+    animation: corePulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes corePulse {
+    from { opacity: 0.5; transform: scale(0.85); }
+    to { opacity: 1; transform: scale(1.15); }
+}
+
+.arm-hover {
+    position: absolute;
+    top: 6px;
+    width: 5px;
+    height: 18px;
+    background: #0ea5e9;
+    border-radius: 3px;
+}
+
+.arm-left { left: -7px; transform: rotate(10deg); }
+.arm-right { right: -7px; transform: rotate(-10deg); }
+
+.humanoid-shadow {
+    width: 45px;
+    height: 8px;
+    background: rgba(6, 182, 212, 0.18);
+    border-radius: 50%;
+    filter: blur(4px);
+    margin-top: 15px;
+    animation: shadowPulse 3.8s ease-in-out infinite;
+}
+
+@keyframes shadowPulse {
+    0%, 100% { transform: scale(1); opacity: 0.3; }
+    50% { transform: scale(0.65); opacity: 0.1; }
+}
+
+
+/* ============================================================
+   6.5 RESPONSIVE ADAPTATION (Tương thích kích thước màn hình)
+   ============================================================ */
+@media (max-width: 1280px) {
+    .moving-car-decor {
+        left: 20px;
+        transform: scale(0.85);
+        transform-origin: bottom left;
+    }
+    .robotic-arm-decor {
+        right: 20px;
+        transform: scale(0.85);
+        transform-origin: bottom right;
+    }
+    .humanoid-decor {
+        right: 30px;
+        transform: scale(0.85);
+        transform-origin: top right;
+    }
+}
+
+@media (max-width: 900px) {
+    .moving-car-decor {
+        bottom: 15px;
+        left: 10px;
+        transform: scale(0.7);
+        opacity: 0.75;
+    }
+    .robotic-arm-decor {
+        bottom: 15px;
+        right: 10px;
+        transform: scale(0.7);
+        opacity: 0.75;
+    }
+    .humanoid-decor {
+        top: 20px;
+        right: 15px;
+        transform: scale(0.75);
+        opacity: 0.85;
+    }
+}
+
+@media (max-width: 640px) {
+    .moving-car-decor {
+        bottom: 5px;
+        left: 5px;
+        transform: scale(0.55);
+        opacity: 0.6;
+    }
+    .robotic-arm-decor {
+        display: none;
+    }
+    .humanoid-decor {
+        top: 15px;
+        right: 10px;
+        transform: scale(0.65);
+        opacity: 0.75;
+    }
+}
+/* ============================================================
+   7. MODAL BẢNG THÔNG TIN KẾT NỐI WI-FI (#wifi-info-modal)
+   ============================================================ */
+.wifi-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(2, 6, 23, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+    animation: fadeInModal 0.25s ease-out;
+}
+
+@keyframes fadeInModal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.wifi-modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(6, 182, 212, 0.4);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(6, 182, 212, 0.2);
+    border-radius: 20px;
+    padding: 30px 24px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: popUpCard 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popUpCard {
+    from { transform: scale(0.9) translateY(20px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Nút Quay lại ở góc trên bên trái modal */
+.wifi-modal-top-bar {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-bottom: -6px;
+}
+
+.btn-modal-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    color: #94a3b8;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.86rem;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
-.wifi-modal-close:hover {
-    background: #ef4444;
-    border-color: #ef4444;
-    color: white;
-    transform: rotate(90deg);
+.btn-modal-back:hover {
+    border-color: #06b6d4;
+    color: #38bdf8;
+    background: rgba(6, 182, 212, 0.12);
+    transform: translateX(-3px);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
+}
+
+.btn-modal-back svg {
+    stroke: currentColor;
+    transition: transform 0.2s ease;
+}
+
+.btn-modal-back:hover svg {
+    transform: translateX(-2px);
 }
 
 /* Header Modal: Icon Wi-Fi & Title */
@@ -1499,7 +1709,7 @@ body {
     border-radius: 12px;
 }
 
-/* Status Pill */
+/* Status Pill: Online & Offline */
 .wifi-status-pill {
     font-family: 'Chakra Petch', sans-serif;
     font-size: 0.82rem;
@@ -1509,6 +1719,7 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    transition: all 0.3s ease;
 }
 
 .wifi-status-pill.online {
@@ -1527,46 +1738,18 @@ body {
     box-shadow: 0 0 6px #10b981;
 }
 
-/* Security Notice */
-.wifi-security-notice {
-    font-size: 0.78rem;
-    color: #64748b;
-    font-style: italic;
-    background: rgba(15, 23, 42, 0.5);
-    padding: 8px 12px;
-    border-radius: 8px;
-    border-left: 3px solid #0ea5e9;
-    line-height: 1.4;
+.wifi-status-pill.offline {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
 }
 
-/* Footer Modal */
-.wifi-modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    border-top: 1px solid rgba(100, 116, 139, 0.15);
-    padding-top: 14px;
-}
-
-.btn-modal-action {
-    padding: 9px 24px;
-    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-family: inherit;
-    font-weight: 600;
-    font-size: 0.92rem;
-    cursor: pointer;
-    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
-    transition: all 0.2s ease;
-}
-
-.btn-modal-action:hover {
-    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(14, 165, 233, 0.5);
-}
-
-.btn-modal-action:active {
-    transform: translateY(0);
+.wifi-status-pill.offline::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ef4444;
+    box-shadow: 0 0 6px #ef4444;
 }

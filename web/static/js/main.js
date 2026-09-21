@@ -223,6 +223,11 @@ class WebSocketClient {
                 try {
                     const data = JSON.parse(event.data);
                     console.log('[WebSocket] 📥 Nhận dữ liệu:', data);
+
+                    // Xử lý cập nhật thông tin Wi-Fi thời gian thực (Real-time)
+                    if (data.event === 'wifi_status' || data.event === 'wifi_heartbeat') {
+                        this.updateWifiRealtimeUI(data);
+                    }
                 } catch (e) {
                     console.error('[WebSocket] Lỗi giải mã JSON:', e);
                 }
@@ -239,6 +244,32 @@ class WebSocketClient {
             };
         } catch (e) {
             console.error('[WebSocket] Không thể khởi tạo:', e);
+        }
+    }
+
+    updateWifiRealtimeUI(data) {
+        const ssidEl = document.getElementById('modal-wifi-ssid');
+        const statusEl = document.getElementById('modal-wifi-status');
+        const ipEl = document.getElementById('modal-wifi-ip');
+
+        const isConnected = data.connected === true;
+
+        if (statusEl) {
+            statusEl.className = 'wifi-status-pill ' + (isConnected ? 'online' : 'offline');
+            statusEl.textContent = isConnected ? 'Đã kết nối' : 'Không kết nối';
+        }
+
+        if (ssidEl) {
+            ssidEl.textContent = isConnected ? (data.ssid || 'Sune') : 'Chưa kết nối';
+            if (isConnected) {
+                ssidEl.classList.add('highlight-cyan');
+            } else {
+                ssidEl.classList.remove('highlight-cyan');
+            }
+        }
+
+        if (ipEl) {
+            ipEl.textContent = isConnected ? (data.ip || '—') : '—';
         }
     }
 
@@ -321,11 +352,12 @@ class DashboardApp {
         // 5. Thẻ Wi-Fi: Click vào để mở Bảng thông tin Giám sát mạng không dây
         const wifiCard = document.getElementById('card-wifi');
         const wifiModal = document.getElementById('wifi-info-modal');
-        const closeBtn = document.getElementById('btn-close-wifi-modal');
-        const okBtn = document.getElementById('btn-ok-wifi-modal');
+        const backBtn = document.getElementById('btn-back-wifi-modal');
 
         const openWifiModal = () => {
             if (wifiModal) wifiModal.style.display = 'flex';
+            // Yêu cầu lấy thông tin trạng thái Wi-Fi mới nhất
+            this.wsClient.send({ cmd: 'get_wifi_status' });
         };
 
         const closeWifiModal = () => {
@@ -333,8 +365,7 @@ class DashboardApp {
         };
 
         if (wifiCard) wifiCard.addEventListener('click', openWifiModal);
-        if (closeBtn) closeBtn.addEventListener('click', closeWifiModal);
-        if (okBtn) okBtn.addEventListener('click', closeWifiModal);
+        if (backBtn) backBtn.addEventListener('click', closeWifiModal);
 
         // Đóng khi click vào vùng nền mờ bên ngoài
         if (wifiModal) {
