@@ -41,6 +41,12 @@ except ImportError:
     print("[Error] Thu vien 'websockets' chua duoc cai dat. Chay: pip install websockets")
     sys.exit(1)
 
+try:
+    from aiohttp import web
+except ImportError:
+    print("[Error] Thu vien 'aiohttp' chua duoc cai dat. Chay: pip install aiohttp")
+    sys.exit(1)
+
 # ==============================================================================
 # CẤU HÌNH HỆ THỐNG
 # ==============================================================================
@@ -237,123 +243,131 @@ class RobotControllerServer:
         dead_clients = set()
         for client in list(self.connected_clients):
             try:
-                await client.send(message)
+                if hasattr(client, 'send_str'):
+                    await client.send_str(message)
+                else:
+                    await client.send(message)
             except Exception:
                 dead_clients.add(client)
         self.connected_clients -= dead_clients
 
-    async def ws_handler(self, websocket):
-        """Xử lý kết nối từ Web client"""
-        self.connected_clients.add(websocket)
-        client_addr = websocket.remote_address
-        print(f"[WebSocket] [Client Connected] {client_addr}")
+    async def _process_command(self, client, raw_message):
+        try:
+            msg = json.loads(raw_message)
+            cmd = msg.get("cmd")
+            print(f"[WebSocket] [RX <- Web] {cmd}")
 
-        # 1. Gửi trạng thái phần cứng ESP32 đã cắm hay chưa
+            if cmd == "wifi_toggle":
+                self.serial_bridge.send_command("CMD:WIFI_TOGGLE")
+            elif cmd == "wifi_on":
+                self.serial_bridge.send_command("CMD:WIFI_ON")
+            elif cmd == "wifi_off":
+                self.serial_bridge.send_command("CMD:WIFI_OFF")
+            elif cmd == "wifi_status":
+                curr_hw = self.serial_bridge.is_connected()
+                reply = json.dumps({
+                    "event": "hardware_status",
+                    "connected": curr_hw,
+                    "port": SERIAL_PORT,
+                    "message": "ESP32 đã kết nối (Cổng COM3)" if curr_hw else "ESP32 chưa được cắm vào máy tính (Cổng COM3)"
+                })
+                if hasattr(client, 'send_str'):
+                    await client.send_str(reply)
+                else:
+                    await client.send(reply)
+                if curr_hw:
+                    self.serial_bridge.send_command("CMD:WIFI_STATUS")
+            elif cmd == "get_config":
+                cfg = read_firmware_config()
+                reply = json.dumps({"event": "firmware_config", "config": cfg})
+                if hasattr(client, 'send_str'):
+                    await client.send_str(reply)
+                else:
+                    await client.send(reply)
+            elif cmd == "login_success":
+                print(f"[System] [LOGIN] Nguoi dung '{msg.get('user', 'Admin')}' da dang nhap. Kich hoat ket noi ESP32...")
+                if not self.serial_bridge.is_connected():
+                    self.serial_bridge.try_connect()
+                curr_hw = self.serial_bridge.is_connected()
+                reply = json.dumps({
+                    "event": "hardware_status",
+                    "connected": curr_hw,
+                    "port": SERIAL_PORT,
+                    "message": "ESP32 đã kết nối (Cổng COM3)" if curr_hw else "ESP32 chưa được cắm vào máy tính (Cổng COM3)"
+                })
+                if hasattr(client, 'send_str'):
+                    await client.send_str(reply)
+                else:
+                    await client.send(reply)
+            elif cmd == "logout_and_stop":
+                print("[System] [LOGOUT] Nhan tin hieu Dang xuat tu Web. Dang giai phong COM3 va tu dong dung Python App...")
+                self.serial_bridge.close()
+                self.loop.call_later(0.5, lambda: os._exit(0))
+        except json.JSONDecodeError:
+            pass
+
+    async def aiohttp_ws_handler(self, request):
+        """Xử lý WebSocket qua AioHTTP tại đường dẫn /ws (hỗ trợ 100% Cloudflare Tunnel)"""
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
+        client_addr = request.remote
+        print(f"[WebSocket AioHTTP] [Client Connected] {client_addr}")
+        self.connected_clients.add(ws)
+
         is_hw = self.serial_bridge.is_connected()
-        hw_status = {
+        await ws.send_str(json.dumps({
             "event": "hardware_status",
             "connected": is_hw,
             "port": SERIAL_PORT,
             "message": "ESP32 đã kết nối (Cổng COM3)" if is_hw else "ESP32 chưa được cắm vào máy tính (Cổng COM3)"
-        }
-        await websocket.send(json.dumps(hw_status))
-        print(f"[WebSocket] [TX -> Web] hardware_status: connected={is_hw}")
-
-        # 2. Gửi thông tin cấu hình đọc từ firmware/config.py
+        }))
         cfg = read_firmware_config()
-        cfg_msg = {
-            "event": "firmware_config",
-            "config": cfg
-        }
-        await websocket.send(json.dumps(cfg_msg))
-        print(f"[WebSocket] [TX -> Web] firmware_config: ssid='{cfg['ssid']}'")
+        await ws.send_str(json.dumps({"event": "firmware_config", "config": cfg}))
+        if is_hw:
+            self.serial_bridge.send_command("CMD:WIFI_STATUS")
 
-        # 3. Nếu ESP32 đang cắm, yêu cầu gửi trạng thái Wi-Fi thực tế
+        try:
+            async for raw_msg in ws:
+                if raw_msg.type == web.WSMsgType.TEXT:
+                    await self._process_command(ws, raw_msg.data)
+                elif raw_msg.type in (web.WSMsgType.CLOSE, web.WSMsgType.ERROR):
+                    break
+        finally:
+            if ws in self.connected_clients:
+                self.connected_clients.remove(ws)
+            print(f"[WebSocket AioHTTP] [Client Disconnected] {client_addr}")
+        return ws
+
+    async def ws_handler(self, websocket):
+        """Xử lý kết nối Standalone WebSocket tại cổng 8765 (Fallback)"""
+        self.connected_clients.add(websocket)
+        client_addr = websocket.remote_address
+        print(f"[WebSocket 8765] [Client Connected] {client_addr}")
+
+        is_hw = self.serial_bridge.is_connected()
+        await websocket.send(json.dumps({
+            "event": "hardware_status",
+            "connected": is_hw,
+            "port": SERIAL_PORT,
+            "message": "ESP32 đã kết nối (Cổng COM3)" if is_hw else "ESP32 chưa được cắm vào máy tính (Cổng COM3)"
+        }))
+        cfg = read_firmware_config()
+        await websocket.send(json.dumps({"event": "firmware_config", "config": cfg}))
         if is_hw:
             self.serial_bridge.send_command("CMD:WIFI_STATUS")
 
         try:
             async for raw_message in websocket:
-                try:
-                    msg = json.loads(raw_message)
-                    cmd = msg.get("cmd")
-                    print(f"[WebSocket] [RX <- Web] {cmd}")
-
-                    if cmd == "wifi_toggle":
-                        self.serial_bridge.send_command("CMD:WIFI_TOGGLE")
-                    elif cmd == "wifi_on":
-                        self.serial_bridge.send_command("CMD:WIFI_ON")
-                    elif cmd == "wifi_off":
-                        self.serial_bridge.send_command("CMD:WIFI_OFF")
-                    elif cmd == "wifi_status":
-                        curr_hw = self.serial_bridge.is_connected()
-                        await websocket.send(json.dumps({
-                            "event": "hardware_status",
-                            "connected": curr_hw,
-                            "port": SERIAL_PORT,
-                            "message": "ESP32 đã kết nối (Cổng COM3)" if curr_hw else "ESP32 chưa được cắm vào máy tính (Cổng COM3)"
-                        }))
-                        if curr_hw:
-                            self.serial_bridge.send_command("CMD:WIFI_STATUS")
-                    elif cmd == "get_config":
-                        cfg = read_firmware_config()
-                        await websocket.send(json.dumps({"event": "firmware_config", "config": cfg}))
-                    elif cmd == "login_success":
-                        print(f"[System] [LOGIN] Nguoi dung '{msg.get('user', 'Admin')}' da dang nhap. Kich hoat ket noi ESP32...")
-                        if not self.serial_bridge.is_connected():
-                            self.serial_bridge.try_connect()
-                        curr_hw = self.serial_bridge.is_connected()
-                        await websocket.send(json.dumps({
-                            "event": "hardware_status",
-                            "connected": curr_hw,
-                            "port": SERIAL_PORT,
-                            "message": "ESP32 đã kết nối (Cổng COM3)" if curr_hw else "ESP32 chưa được cắm vào máy tính (Cổng COM3)"
-                        }))
-                    elif cmd == "logout_and_stop":
-                        print("[System] [LOGOUT] Nhan tin hieu Dang xuat tu Web. Dang giai phong COM3 va tu dong dung Python App...")
-                        self.serial_bridge.close()
-                        # Cho phep gui xong frame dong websocket roi thoat tien trinh
-                        self.loop.call_later(0.5, lambda: os._exit(0))
-                except json.JSONDecodeError:
-                    pass
-
+                await self._process_command(websocket, raw_message)
         except websockets.exceptions.ConnectionClosed:
             pass
         finally:
             if websocket in self.connected_clients:
                 self.connected_clients.remove(websocket)
-            print(f"[WebSocket] [Client Disconnected] {client_addr}")
-
-    def start_http_server(self):
-        """Khởi động HTTP server phục vụ giao diện Web tại http://localhost:5000"""
-        class CustomHTTPHandler(http.server.SimpleHTTPRequestHandler):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, directory=str(WEB_DIR), **kwargs)
-
-            def do_GET(self):
-                if self.path == "/" or self.path == "":
-                    self.path = "/templates/index.html"
-                return super().do_GET()
-
-            def end_headers(self):
-                self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                self.send_header('Pragma', 'no-cache')
-                self.send_header('Expires', '0')
-                super().end_headers()
-
-            def log_message(self, format, *args):
-                pass
-
-        try:
-            socketserver.TCPServer.allow_reuse_address = True
-            with socketserver.TCPServer(("", HTTP_PORT), CustomHTTPHandler) as httpd:
-                print(f"[HTTP Server] [OK] Giao dien Web san sang tai: http://localhost:{HTTP_PORT}")
-                httpd.serve_forever()
-        except Exception as e:
-            print(f"[HTTP Server] [ERR] Loi khoi dong HTTP: {e}")
+            print(f"[WebSocket 8765] [Client Disconnected] {client_addr}")
 
     def run(self):
-        """Khởi động máy chủ"""
+        """Khởi động máy chủ tích hợp (Web + WebSocket chung cổng 5000 & Cloudflare Tunnel ready)"""
         print("\n" + "="*60)
         print("   HE THONG DIEU KHIEN XE DO LINE & CANH TAY ROBOT")
         print("="*60)
@@ -366,26 +380,46 @@ class RobotControllerServer:
         serial_thread = threading.Thread(target=self.serial_bridge.supervisor_loop, daemon=True)
         serial_thread.start()
 
-        # 3. Khởi động HTTP Web Server
-        http_thread = threading.Thread(target=self.start_http_server, daemon=True)
-        http_thread.start()
-
-        # 4. Khởi động WebSocket Server
+        # 3. Khởi động máy chủ AioHTTP (Cổng 5000) và Standalone WebSocket (Cổng 8765)
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
-        async def start_ws():
-            async with websockets.serve(self.ws_handler, WS_HOST, WS_PORT):
-                print(f"[WebSocket] [OK] WebSocket Server dang lang nghe tai: ws://localhost:{WS_PORT}")
-                print("="*60)
-                print("HUONG DAN:")
-                print(f"   1. Mo trinh duyet vao: http://localhost:{HTTP_PORT}")
-                print("   2. Dang nhap tai khoan: sune / 24021197")
-                print("   3. Vao tab Wi-Fi de quan sat trang thai ESP32 va dieu khien!\n")
-                await asyncio.Future()
+        async def start_servers():
+            # A. AioHTTP Server (Phục vụ Web HTML/CSS/JS và WebSocket /ws chung cổng 5000)
+            app = web.Application()
+
+            async def index_handler(req):
+                return web.FileResponse(WEB_DIR / "templates" / "index.html", headers={
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0',
+                    'ngrok-skip-browser-warning': 'true'
+                })
+
+            app.router.add_get('/', index_handler)
+            app.router.add_get('/templates/index.html', index_handler)
+            app.router.add_static('/static', WEB_DIR / 'static')
+            app.router.add_get('/ws', self.aiohttp_ws_handler)
+
+            runner = web.AppRunner(app)
+            await runner.setup()
+            site = web.TCPSite(runner, "0.0.0.0", HTTP_PORT)
+            await site.start()
+            print(f"[HTTP Server] [OK] Giao dien Web & WebSocket san sang tai: http://localhost:{HTTP_PORT}")
+
+            # B. Standalone WebSocket Server (Cổng 8765 fallback)
+            await websockets.serve(self.ws_handler, WS_HOST, WS_PORT)
+            print(f"[WebSocket] [OK] WebSocket Server dang lang nghe tai: ws://localhost:{WS_PORT}")
+            print("="*60)
+            print("HUONG DAN:")
+            print(f"   1. Local: Mo http://localhost:{HTTP_PORT}")
+            print(f"   2. Global: Chay '.\\cloudflared.exe tunnel --url http://localhost:{HTTP_PORT}'")
+            print("   3. Dang nhap tai khoan: sune / 24021197 de dieu khien!\n")
+
+            await asyncio.Future()
 
         try:
-            self.loop.run_until_complete(start_ws())
+            self.loop.run_until_complete(start_servers())
         except KeyboardInterrupt:
             print("\n[System] Dang dung may chu...")
         finally:

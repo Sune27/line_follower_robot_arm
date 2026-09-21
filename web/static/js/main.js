@@ -446,10 +446,15 @@ class WiFiScreenController {
     }
 
     /**
-     * Khởi tạo kết nối WebSocket tới Python Backend (Port 8765)
+     * Khởi tạo kết nối WebSocket tới Python Backend (Tự thích ứng Local, LAN và Cloudflare Tunnel Global)
      */
     initWebSocket() {
-        const wsUrl = `ws://${window.location.hostname || 'localhost'}:8765`;
+        const isHttps = window.location.protocol === 'https:';
+        const wsProtocol = isHttps ? 'wss:' : 'ws:';
+        // Tự động kết nối /ws qua cùng cổng (hỗ trợ Cloudflare Tunnel & HTTPS) hoặc cổng 8765
+        const wsUrl = (window.location.port === '5000' || isHttps)
+            ? `${wsProtocol}//${window.location.host}/ws`
+            : `${wsProtocol}//${window.location.hostname || 'localhost'}:8765`;
         try {
             this.ws = new WebSocket(wsUrl);
 
