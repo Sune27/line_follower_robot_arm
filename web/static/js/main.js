@@ -318,11 +318,28 @@ class DashboardApp {
         if (usernameInput) usernameInput.addEventListener('input', clearErrorMessage);
         if (passwordInput) passwordInput.addEventListener('input', clearErrorMessage);
 
-        // 5. Thẻ Wi-Fi: Click vào thông báo nhẹ đang ở trạng thái chưa phát triển
+        // 5. Thẻ Wi-Fi: Click vào để mở Bảng thông tin Giám sát mạng không dây
         const wifiCard = document.getElementById('card-wifi');
-        if (wifiCard) {
-            wifiCard.addEventListener('click', () => {
-                console.log('[Dashboard] Thẻ Wi-Fi hiện đang ở trạng thái Chưa phát triển.');
+        const wifiModal = document.getElementById('wifi-info-modal');
+        const closeBtn = document.getElementById('btn-close-wifi-modal');
+        const okBtn = document.getElementById('btn-ok-wifi-modal');
+
+        const openWifiModal = () => {
+            if (wifiModal) wifiModal.style.display = 'flex';
+        };
+
+        const closeWifiModal = () => {
+            if (wifiModal) wifiModal.style.display = 'none';
+        };
+
+        if (wifiCard) wifiCard.addEventListener('click', openWifiModal);
+        if (closeBtn) closeBtn.addEventListener('click', closeWifiModal);
+        if (okBtn) okBtn.addEventListener('click', closeWifiModal);
+
+        // Đóng khi click vào vùng nền mờ bên ngoài
+        if (wifiModal) {
+            wifiModal.addEventListener('click', (e) => {
+                if (e.target === wifiModal) closeWifiModal();
             });
         }
     }

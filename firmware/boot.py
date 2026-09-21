@@ -1,12 +1,14 @@
 # ==============================================================================
-# BOOT.PY – TỰ ĐỘNG CHẠY MAIN KHI CẤP NGUỒN (SẴN SÀNG NHẬN LỆNH QUA SERIAL)
-# Bấm nút STOP trên Thonny để dừng và vào Shell REPL bất kỳ lúc nào.
+# BOOT.PY – TỰ ĐỘNG CHẠY MAIN KHI CẤP NGUỒN ESP32
 # ==============================================================================
 
 try:
     import main
-    main.run()
+    if hasattr(main, 'run'):
+        main.run()
+    elif hasattr(main, 'main'):
+        main.main()
 except KeyboardInterrupt:
-    print("[Boot] Đã dừng vòng lặp nhận lệnh. Vào chế độ Shell.")
+    print("[Boot] Đã dừng vòng lặp.")
 except Exception as e:
     print("[Boot Error]:", e)

@@ -308,7 +308,7 @@
                 <div class="function-cards-grid">
                     
                     <!-- THẺ 1: WI-FI -->
-                    <div class="function-card" id="card-wifi" title="Quản lý kết nối Wi-Fi">
+                    <div class="function-card" id="card-wifi" title="Quản lý kết nối Wi-Fi" style="cursor: pointer;">
                         <div class="card-glow-overlay"></div>
                         <div class="card-icon-wrapper">
                             <!-- Biểu tượng sóng Wi-Fi dạng SVG laptop hiện đại -->
@@ -323,15 +323,103 @@
                             <h3 class="card-title">Wi-Fi</h3>
                             <p class="card-desc">Cấu hình kết nối và giám sát đường truyền không dây</p>
                         </div>
-                        <div class="card-status-badge status-not-started">
+                        <div class="card-status-badge status-in-progress">
                             <span class="status-indicator"></span>
-                            <span class="status-text">Chưa phát triển</span>
+                            <span class="status-text">Đang phát triển</span>
                         </div>
                     </div>
 
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- BẢNG THÔNG TIN KẾT NỐI WI-FI (MODAL POP-UP HIỆN ĐẠI)          -->
+    <!-- ============================================================ -->
+    <div id="wifi-info-modal" class="wifi-modal-backdrop" style="display: none;">
+        <div class="wifi-modal-card">
+            <!-- Nút đóng pop-up góc trên phải -->
+            <button class="wifi-modal-close" id="btn-close-wifi-modal" title="Đóng bảng">✕</button>
+
+            <!-- TIÊU ĐỀ: HÌNH ẢNH WI-FI & TIÊU ĐỀ THÍCH HỢP -->
+            <div class="wifi-modal-header">
+                <div class="wifi-modal-icon-badge">
+                    <svg class="wifi-modal-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 8.82a15 15 0 0 1 20 0" class="wifi-wave-pulse-1"/>
+                        <path d="M5 12.86a10.8 10.8 0 0 1 14 0" class="wifi-wave-pulse-2"/>
+                        <path d="M8.5 16.43a6.4 6.4 0 0 1 7 0" class="wifi-wave-pulse-3"/>
+                        <circle cx="12" cy="20" r="1.2" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="wifi-modal-title-group">
+                    <h2 class="wifi-modal-title">GIÁM SÁT MẠNG KHÔNG DÂY</h2>
+                    <p class="wifi-modal-subtitle">Trạng thái kết nối trạm tự động (ESP32 Station Mode)</p>
+                </div>
+            </div>
+
+            <!-- NỘI DUNG CHI TIẾT (BẢO MẬT: KHÔNG HIỂN THỊ MẬT KHẨU) -->
+            <div class="wifi-modal-body">
+                <div class="wifi-info-grid">
+                    
+                    <!-- 1. TÊN WI-FI ĐANG KẾT NỐI -->
+                    <div class="wifi-info-row">
+                        <div class="wifi-info-label">
+                            <span class="info-icon">📡</span>
+                            <span>Tên Wi-Fi (SSID):</span>
+                        </div>
+                        <span class="wifi-info-value highlight-cyan" id="modal-wifi-ssid">Sune</span>
+                    </div>
+
+                    <!-- 2. TRẠNG THÁI LIÊN KẾT -->
+                    <div class="wifi-info-row">
+                        <div class="wifi-info-label">
+                            <span class="info-icon">⚡</span>
+                            <span>Trạng thái kết nối:</span>
+                        </div>
+                        <span class="wifi-status-pill online" id="modal-wifi-status">Đã kết nối</span>
+                    </div>
+
+                    <!-- 3. ĐỊA CHỈ IP ESP32 ĐƯỢC CẤP -->
+                    <div class="wifi-info-row">
+                        <div class="wifi-info-label">
+                            <span class="info-icon">🌐</span>
+                            <span>Địa chỉ IP (ESP32):</span>
+                        </div>
+                        <span class="wifi-info-value" id="modal-wifi-ip">10.206.93.159</span>
+                    </div>
+
+                    <!-- 4. CHẾ ĐỘ XÁC THỰC BẢO MẬT (KHÔNG HIỆN MẬT KHẨU) -->
+                    <div class="wifi-info-row">
+                        <div class="wifi-info-label">
+                            <span class="info-icon">🔒</span>
+                            <span>Bảo mật đường truyền:</span>
+                        </div>
+                        <span class="wifi-info-value secure-tag">WPA2-PSK (Đã mã hóa)</span>
+                    </div>
+
+                    <!-- 5. CHẾ ĐỘ ƯU TIÊN & AN TOÀN -->
+                    <div class="wifi-info-row">
+                        <div class="wifi-info-label">
+                            <span class="info-icon">🛡️</span>
+                            <span>Cơ chế bảo vệ:</span>
+                        </div>
+                        <span class="wifi-info-value">Chỉ kết nối mạng chỉ định</span>
+                    </div>
+
+                </div>
+
+                <!-- Dòng ghi chú an toàn -->
+                <div class="wifi-security-notice">
+                    <span>🔒 Mật khẩu Wi-Fi được bảo vệ an toàn theo nguyên tắc bảo mật và không được hiển thị tại đây.</span>
+                </div>
+            </div>
+
+            <!-- CHÂN BẢNG: NÚT XÁC NHẬN -->
+            <div class="wifi-modal-footer">
+                <button class="btn-modal-action" id="btn-ok-wifi-modal">Đã hiểu</button>
+            </div>
+        </div>
     </div>
 
     <!-- Nhúng file Javascript xử lý logic tương tác -->
