@@ -298,6 +298,22 @@ class RobotControllerServer:
                     elif cmd == "get_config":
                         cfg = read_firmware_config()
                         await websocket.send(json.dumps({"event": "firmware_config", "config": cfg}))
+                    elif cmd == "login_success":
+                        print(f"[System] [LOGIN] Nguoi dung '{msg.get('user', 'Admin')}' da dang nhap. Kich hoat ket noi ESP32...")
+                        if not self.serial_bridge.is_connected():
+                            self.serial_bridge.try_connect()
+                        curr_hw = self.serial_bridge.is_connected()
+                        await websocket.send(json.dumps({
+                            "event": "hardware_status",
+                            "connected": curr_hw,
+                            "port": SERIAL_PORT,
+                            "message": "ESP32 đã kết nối (Cổng COM3)" if curr_hw else "ESP32 chưa được cắm vào máy tính (Cổng COM3)"
+                        }))
+                    elif cmd == "logout_and_stop":
+                        print("[System] [LOGOUT] Nhan tin hieu Dang xuat tu Web. Dang giai phong COM3 va tu dong dung Python App...")
+                        self.serial_bridge.close()
+                        # Cho phep gui xong frame dong websocket roi thoat tien trinh
+                        self.loop.call_later(0.5, lambda: os._exit(0))
                 except json.JSONDecodeError:
                     pass
 

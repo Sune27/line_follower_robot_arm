@@ -334,6 +334,11 @@ class DashboardApp {
         // Kích hoạt hiển thị màn hình Trailer
         this.screenManager.show('trailer-screen');
 
+        // Báo cho backend biết người dùng đã đăng nhập để kích hoạt kết nối ESP32
+        if (this.wifiController && this.wifiController.ws && this.wifiController.ws.readyState === WebSocket.OPEN) {
+            this.wifiController.ws.send(JSON.stringify({ cmd: 'login_success', user: username }));
+        }
+
         // Reset thanh nạp dữ liệu animation để chạy từ 0% tới 100%
         const loadingFill = document.querySelector('.loading-bar-fill');
         if (loadingFill) {
@@ -364,6 +369,11 @@ class DashboardApp {
      * Xử lý đăng xuất
      */
     handleUserLogout() {
+        // Gửi thông báo xuống Python backend để tự động giải phóng COM3 và tự động dừng file python app
+        if (this.wifiController && this.wifiController.ws && this.wifiController.ws.readyState === WebSocket.OPEN) {
+            this.wifiController.ws.send(JSON.stringify({ cmd: 'logout_and_stop' }));
+        }
+
         this.authManager.logout();
 
         // Dọn dẹp các trường input form
