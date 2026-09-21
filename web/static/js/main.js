@@ -194,7 +194,64 @@ class PasswordFieldController {
 
 
 // ==============================================================================
-// 4. CLASS DASHBOARD_APP (Lớp ứng dụng trung tâm - Điều phối toàn bộ hệ thống)
+// ==============================================================================
+// 4. CLASS WEBSOCKET_CLIENT (Quản lý kết nối thời gian thực tới Backend Server)
+// ==============================================================================
+class WebSocketClient {
+    constructor() {
+        this.ws = null;
+        this.connected = false;
+        this.init();
+    }
+
+    init() {
+        const isHttps = window.location.protocol === 'https:';
+        const wsProtocol = isHttps ? 'wss:' : 'ws:';
+        const wsUrl = (window.location.port === '5000' || isHttps)
+            ? `${wsProtocol}//${window.location.host}/ws`
+            : `${wsProtocol}//${window.location.hostname || 'localhost'}:8765`;
+
+        try {
+            this.ws = new WebSocket(wsUrl);
+
+            this.ws.onopen = () => {
+                this.connected = true;
+                console.log('[WebSocket] ✅ Đã kết nối tới Server máy chủ');
+            };
+
+            this.ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('[WebSocket] 📥 Nhận dữ liệu:', data);
+                } catch (e) {
+                    console.error('[WebSocket] Lỗi giải mã JSON:', e);
+                }
+            };
+
+            this.ws.onclose = () => {
+                this.connected = false;
+                console.warn('[WebSocket] ⚠ Mất kết nối tới server. Đang thử kết nối lại sau 3s...');
+                setTimeout(() => this.init(), 3000);
+            };
+
+            this.ws.onerror = () => {
+                this.connected = false;
+            };
+        } catch (e) {
+            console.error('[WebSocket] Không thể khởi tạo:', e);
+        }
+    }
+
+    send(data) {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(typeof data === 'string' ? data : JSON.stringify(data));
+        }
+    }
+}
+
+
+// ==============================================================================
+// 5. CLASS DASHBOARD_APP (Lớp ứng dụng trung tâm - Điều phối toàn bộ hệ thống)
 // ==============================================================================
 class DashboardApp {
     constructor() {
@@ -202,7 +259,7 @@ class DashboardApp {
         this.screenManager = new ScreenManager();
         this.authManager = new AuthManager();
         this.pwController = new PasswordFieldController('#password', '#eye-icon');
-        this.wifiController = new WiFiScreenController(this.screenManager);
+        this.wsClient = new WebSocketClient();
     }
 
     /**
@@ -223,14 +280,14 @@ class DashboardApp {
         // 1. Xử lý Form đăng nhập
         const loginForm = document.getElementById('login-form');
         if (loginForm) {
-            loginForm.removeAttribute('onsubmit'); // Gỡ bỏ inline onsubmit cũ nếu có
+            loginForm.removeAttribute('onsubmit');
             loginForm.addEventListener('submit', (e) => this.handleLoginFormSubmit(e));
         }
 
         // 2. Xử lý nút con mắt ẩn/hiện mật khẩu
         const togglePwBtn = document.querySelector('.btn-toggle-pw');
         if (togglePwBtn) {
-            togglePwBtn.removeAttribute('onclick'); // Gỡ bỏ inline onclick cũ để tránh bị gọi 2 lần liên tiếp
+            togglePwBtn.removeAttribute('onclick');
             togglePwBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -241,14 +298,14 @@ class DashboardApp {
         // 3. Xử lý nút đăng xuất
         const logoutBtn = document.querySelector('.btn-logout');
         if (logoutBtn) {
-            logoutBtn.removeAttribute('onclick'); // Gỡ bỏ inline onclick cũ
+            logoutBtn.removeAttribute('onclick');
             logoutBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.handleUserLogout();
             });
         }
 
-        // 4. Tự động xóa dòng thông báo lỗi khi người dùng bắt đầu gõ lại tài khoản hoặc mật khẩu
+        // 4. Tự động xóa dòng thông báo lỗi khi người dùng gõ phím
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
         const clearErrorMessage = () => {
@@ -261,27 +318,11 @@ class DashboardApp {
         if (usernameInput) usernameInput.addEventListener('input', clearErrorMessage);
         if (passwordInput) passwordInput.addEventListener('input', clearErrorMessage);
 
-        // 5. Xử lý click vào thẻ chức năng Wi-Fi để chuyển sang trang Wi-Fi
+        // 5. Thẻ Wi-Fi: Click vào thông báo nhẹ đang ở trạng thái chưa phát triển
         const wifiCard = document.getElementById('card-wifi');
         if (wifiCard) {
             wifiCard.addEventListener('click', () => {
-                this.wifiController.open();
-            });
-        }
-
-        // 6. Xử lý nút quay lại Bảng điều khiển từ màn hình Wi-Fi
-        const backBtn = document.getElementById('btn-back-dashboard');
-        if (backBtn) {
-            backBtn.addEventListener('click', () => {
-                this.wifiController.close();
-            });
-        }
-
-        // 7. Xử lý nút nguồn Bật / Tắt Wi-Fi
-        const wifiPowerBtn = document.getElementById('wifi-power-toggle-btn');
-        if (wifiPowerBtn) {
-            wifiPowerBtn.addEventListener('click', () => {
-                this.wifiController.togglePower();
+                console.log('[Dashboard] Thẻ Wi-Fi hiện đang ở trạng thái Chưa phát triển.');
             });
         }
     }
@@ -299,10 +340,8 @@ class DashboardApp {
 
         if (!usernameInput || !passwordInput) return;
 
-        // Xóa thông báo lỗi cũ
         if (errorMsgElement) errorMsgElement.innerText = '';
 
-        // Gọi phương thức login từ AuthManager
         const result = this.authManager.login(
             usernameInput.value,
             passwordInput.value,
@@ -310,44 +349,36 @@ class DashboardApp {
         );
 
         if (result.success) {
-            // Khi đăng nhập thành công -> Hiển thị Trailer công nghệ -> rồi chuyển sang Dashboard
             this.playTrailerAndEnterDashboard(result.user);
         } else {
             if (errorMsgElement) {
                 errorMsgElement.innerText = result.message;
             }
-            // Không xóa nội dung mật khẩu để người dùng có thể bấm nút con mắt xem lại mật khẩu vừa gõ
         }
     }
 
     /**
-     * Hiển thị Trailer công nghệ chào mừng sau khi đăng nhập thành công, sau đó vào Bảng điều khiển
-     * @param {string} username - Tên người điều khiển
+     * Hiển thị Trailer công nghệ chào mừng sau khi đăng nhập thành công
      */
     playTrailerAndEnterDashboard(username) {
-        // Cập nhật tên người dùng lên thanh header trước
         const currentUserElement = document.getElementById('current-user');
         if (currentUserElement) {
             currentUserElement.innerText = username;
         }
 
-        // Kích hoạt hiển thị màn hình Trailer
         this.screenManager.show('trailer-screen');
 
-        // Báo cho backend biết người dùng đã đăng nhập để kích hoạt kết nối ESP32
-        if (this.wifiController && this.wifiController.ws && this.wifiController.ws.readyState === WebSocket.OPEN) {
-            this.wifiController.ws.send(JSON.stringify({ cmd: 'login_success', user: username }));
-        }
+        // Báo cho backend biết người dùng đã đăng nhập thành công
+        this.wsClient.send({ cmd: 'login_success', user: username });
 
-        // Reset thanh nạp dữ liệu animation để chạy từ 0% tới 100%
+        // Reset thanh nạp dữ liệu animation
         const loadingFill = document.querySelector('.loading-bar-fill');
         if (loadingFill) {
             loadingFill.style.animation = 'none';
-            void loadingFill.offsetWidth; // Buộc trình duyệt tính toán lại (reflow)
+            void loadingFill.offsetWidth;
             loadingFill.style.animation = '';
         }
 
-        // Sau khi Trailer chạy xong (2600ms) -> chuyển tiếp sang Bảng điều khiển
         setTimeout(() => {
             this.enterDashboard(username);
         }, this.trailerDuration);
@@ -355,7 +386,6 @@ class DashboardApp {
 
     /**
      * Đưa người dùng vào Bảng điều khiển
-     * @param {string} username - Tên người điều khiển
      */
     enterDashboard(username) {
         const currentUserElement = document.getElementById('current-user');
@@ -369,14 +399,11 @@ class DashboardApp {
      * Xử lý đăng xuất
      */
     handleUserLogout() {
-        // Gửi thông báo xuống Python backend để tự động giải phóng COM3 và tự động dừng file python app
-        if (this.wifiController && this.wifiController.ws && this.wifiController.ws.readyState === WebSocket.OPEN) {
-            this.wifiController.ws.send(JSON.stringify({ cmd: 'logout_and_stop' }));
-        }
+        // Gửi thông báo xuống Python backend
+        this.wsClient.send({ cmd: 'logout_and_stop' });
 
         this.authManager.logout();
 
-        // Dọn dẹp các trường input form
         const usernameInput = document.getElementById('username');
         if (usernameInput) usernameInput.value = '';
         this.pwController.reset();
@@ -384,14 +411,11 @@ class DashboardApp {
         const errorMsgElement = document.getElementById('error-message');
         if (errorMsgElement) errorMsgElement.innerText = '';
 
-        // Đưa về màn hình đăng nhập
         this.screenManager.show('login-screen');
     }
 
     /**
      * Cập nhật trạng thái huy hiệu của thẻ chức năng linh hoạt
-     * @param {string} cardSelector - Selector của thẻ (vd: '#card-wifi-bluetooth')
-     * @param {'ready' | 'in_progress' | 'not_started'} statusKey - Loại trạng thái
      */
     setCardStatus(cardSelector, statusKey) {
         const card = document.querySelector(cardSelector);
@@ -418,217 +442,6 @@ class DashboardApp {
                 textEl.textContent = 'Chưa phát triển';
                 break;
         }
-    }
-}
-
-
-// ==============================================================================
-// 5. CLASS WIFI_SCREEN_CONTROLLER (Quản lý giao diện & logic màn hình Wi-Fi)
-// ==============================================================================
-class WiFiScreenController {
-    constructor(screenManager) {
-        this.screenManager = screenManager;
-
-        // Trạng thái cục bộ (Được đồng bộ động từ Python Backend & firmware/config.py)
-        this.isActive = false;
-        this.hardwareConnected = false;
-        this.ssid = '—';
-        this.password = '—';
-        this.clientCount = 0;
-        this.maxClients = 4;
-        this.channel = 6;
-        this.ip = '—';
-
-        // Quản lý kết nối WebSocket tới Python Backend Server
-        this.ws = null;
-        this.wsConnected = false;
-        this.initWebSocket();
-    }
-
-    /**
-     * Khởi tạo kết nối WebSocket tới Python Backend (Tự thích ứng Local, LAN và Cloudflare Tunnel Global)
-     */
-    initWebSocket() {
-        const isHttps = window.location.protocol === 'https:';
-        const wsProtocol = isHttps ? 'wss:' : 'ws:';
-        // Tự động kết nối /ws qua cùng cổng (hỗ trợ Cloudflare Tunnel & HTTPS) hoặc cổng 8765
-        const wsUrl = (window.location.port === '5000' || isHttps)
-            ? `${wsProtocol}//${window.location.host}/ws`
-            : `${wsProtocol}//${window.location.hostname || 'localhost'}:8765`;
-        try {
-            this.ws = new WebSocket(wsUrl);
-
-            this.ws.onopen = () => {
-                this.wsConnected = true;
-                console.log('[WebSocket] ✅ Đã kết nối tới Python Backend Server (COM3 Bridge)');
-                // Yêu cầu lấy trạng thái mới nhất từ ESP32
-                this.ws.send(JSON.stringify({ cmd: 'wifi_status' }));
-            };
-
-            this.ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    console.log('[WebSocket] 📥 Nhận dữ liệu:', data);
-
-                    // 1. Sự kiện cập nhật trạng thái cắm cáp phần cứng ESP32
-                    if (data.event === 'hardware_status') {
-                        this.updateHardwareConnection(data.connected, data.message);
-                        return;
-                    }
-
-                    // 2. Sự kiện nhận cấu hình ban đầu từ firmware/config.py
-                    if (data.event === 'firmware_config' && data.config) {
-                        this.ssid = data.config.ssid || this.ssid;
-                        this.password = data.config.password !== undefined ? data.config.password : this.password;
-                        this.maxClients = data.config.max_clients || this.maxClients;
-                        this.channel = data.config.channel || this.channel;
-                        this.render();
-                        return;
-                    }
-
-                    // 3. Phản hồi trạng thái hoạt động thực tế từ ESP32
-                    this.updateFromHardware(data);
-                } catch (e) {
-                    console.error('[WebSocket] Lỗi giải mã JSON:', e);
-                }
-            };
-
-            this.ws.onclose = () => {
-                this.wsConnected = false;
-                this.updateHardwareConnection(false, 'Mất kết nối với Python Server (COM3)');
-                console.warn('[WebSocket] ⚠ Mất kết nối tới server. Đang thử kết nối lại sau 2.5s...');
-                setTimeout(() => this.initWebSocket(), 2500);
-            };
-
-            this.ws.onerror = (err) => {
-                this.wsConnected = false;
-            };
-        } catch (e) {
-            console.error('[WebSocket] Không thể khởi tạo:', e);
-        }
-    }
-
-    /**
-     * Cập nhật hiển thị trạng thái kết nối phần cứng ESP32 với máy tính
-     * @param {boolean} isConnected - true nếu ESP32 đã cắm và nhận cổng COM3
-     * @param {string} message - Nội dung thông báo hiển thị
-     */
-    updateHardwareConnection(isConnected, message) {
-        this.hardwareConnected = isConnected;
-        const barEl = document.getElementById('esp32-connection-bar');
-        const textEl = document.getElementById('esp32-status-text');
-
-        if (!barEl || !textEl) return;
-
-        if (isConnected) {
-            barEl.classList.remove('hw-disconnected');
-            barEl.classList.add('hw-connected');
-            textEl.textContent = message || 'ESP32 đã kết nối (Cổng COM3)';
-        } else {
-            barEl.classList.remove('hw-connected');
-            barEl.classList.add('hw-disconnected');
-            textEl.textContent = message || 'ESP32 chưa được cắm vào máy tính (Cổng COM3)';
-        }
-    }
-
-    /**
-     * Mở màn hình quản lý Wi-Fi và cập nhật giao diện
-     */
-    open() {
-        this.screenManager.show('wifi-screen');
-        // Nếu đã có kết nối WebSocket, gửi lệnh cập nhật trạng thái mới nhất từ ESP32
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify({ cmd: 'wifi_status' }));
-        }
-        this.render();
-    }
-
-    /**
-     * Quay về Bảng điều khiển chức năng
-     */
-    close() {
-        this.screenManager.show('dashboard-screen');
-    }
-
-    /**
-     * Chuyển đổi trạng thái Bật / Tắt nguồn Wi-Fi
-     * Gửi lệnh trực tiếp xuống Python Server -> truyền qua COM3 tới ESP32
-     */
-    togglePower() {
-        if (!this.hardwareConnected) {
-            alert("Vui lòng cắm cáp ESP32 vào máy tính (Cổng COM3) trước khi thao tác!");
-            return;
-        }
-
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            // Hiệu ứng chờ phản hồi
-            const statusLabel = document.getElementById('wifi-power-status-text');
-            if (statusLabel) statusLabel.textContent = 'Đang xử lý...';
-
-            this.ws.send(JSON.stringify({ cmd: 'wifi_toggle' }));
-            console.log('[WiFi] 📤 Đã gửi lệnh wifi_toggle tới Python Backend');
-        } else {
-            console.warn('[WiFi] ⚠ Chưa kết nối tới Python Server (Chạy python python_app/app.py)');
-            this.isActive = !this.isActive;
-            this.render();
-        }
-    }
-
-    /**
-     * Cập nhật toàn bộ thành phần giao diện theo trạng thái hiện tại
-     */
-    render() {
-        const powerBtn = document.getElementById('wifi-power-toggle-btn');
-        const statusLabel = document.getElementById('wifi-power-status-text');
-        const cardContainer = document.querySelector('.wifi-control-card');
-
-        const ssidEl = document.getElementById('wifi-ssid-val');
-        const passEl = document.getElementById('wifi-password-val');
-        const clientCountEl = document.getElementById('wifi-client-count');
-        const clientMaxEl = document.getElementById('wifi-client-max');
-        const ipEl = document.getElementById('wifi-ip-val');
-        const channelEl = document.getElementById('wifi-channel-val');
-
-        // Cập nhật thông số hiển thị lấy từ config firmware
-        if (ssidEl) ssidEl.textContent = this.ssid;
-        if (passEl) {
-            passEl.textContent = (!this.password || this.password.trim() === '') 
-                ? 'Mạng mở (Không mật khẩu)' 
-                : this.password;
-        }
-        if (clientCountEl) clientCountEl.textContent = this.isActive ? this.clientCount : '0';
-        if (clientMaxEl) clientMaxEl.textContent = `/ ${this.maxClients} thiết bị`;
-        if (ipEl) ipEl.textContent = this.isActive ? (this.ip || '192.168.4.1') : '—';
-        if (channelEl) channelEl.textContent = `Kênh ${this.channel} (2.4 GHz)`;
-
-        // Cập nhật hiệu ứng nút nguồn
-        if (this.isActive) {
-            if (powerBtn) powerBtn.classList.add('wifi-on');
-            if (statusLabel) statusLabel.textContent = 'BẬT (Đang phát sóng)';
-            if (cardContainer) cardContainer.classList.add('is-active');
-        } else {
-            if (powerBtn) powerBtn.classList.remove('wifi-on');
-            if (statusLabel) statusLabel.textContent = 'TẮT';
-            if (cardContainer) cardContainer.classList.remove('is-active');
-        }
-
-        // Đồng bộ thanh trạng thái cắm cáp phần cứng ESP32
-        this.updateHardwareConnection(this.hardwareConnected);
-    }
-
-    /**
-     * Cập nhật dữ liệu thực tế nhận từ ESP32 qua WebSocket
-     */
-    updateFromHardware(data) {
-        if (!data) return;
-        if (typeof data.active === 'boolean') this.isActive = data.active;
-        if (data.ssid) this.ssid = data.ssid;
-        if (data.password !== undefined) this.password = data.password;
-        if (typeof data.clients === 'number') this.clientCount = data.clients;
-        if (typeof data.max_clients === 'number') this.maxClients = data.max_clients;
-        if (data.ip) this.ip = data.ip;
-        if (data.channel) this.channel = data.channel;
-        this.render();
     }
 }
 
