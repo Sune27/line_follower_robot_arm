@@ -2,9 +2,9 @@
 > **Hệ thống xe tự hành bám line tích hợp cánh tay robot gắp vật thể, điều khiển và giám sát thời gian thực qua giao diện Web.**
 
 [![Hardware](https://img.shields.io/badge/Hardware-ESP32%20%7C%20TB6612FNG%20%7C%20SG90-blue.svg)](#phần-cứng)
-[![Firmware](https://img.shields.io/badge/Firmware-MicroPython%20%2F%20C%2B%2B-green.svg)](#kiến-trúc-phần-mềm)
-[![Backend](https://img.shields.io/badge/Backend-Python%20%7C%20WebSocket-yellow.svg)](#kiến-trúc-phần-mềm)
-[![Frontend](https://img.shields.io/badge/Frontend-HTML5%20%7C%20CSS3%20%7C%20JS-orange.svg)](#giao-diện-web)
+[![Firmware](https://img.shields.io/badge/Firmware-MicroPython-green.svg)](#kiến-trúc-phần-mềm)
+[![Backend](https://img.shields.io/badge/Backend-Python%20%7C%20AioHTTP%20%7C%20WebSocket-yellow.svg)](#kiến-trúc-phần-mềm)
+[![Frontend](https://img.shields.io/badge/Frontend-HTML5%20%7C%20CSS3%20%7C%20JS-orange.svg)](#hướng-dẫn-truy-cập-web)
 
 ---
 
@@ -12,7 +12,7 @@
 
 Dự án nghiên cứu và chế tạo **Xe tự hành dò đường (Line Follower Car)** kết hợp **Cánh tay robot 4 bậc tự do (4-DOF Robotic Arm)** phục vụ nghiên cứu thực nghiệm liên môn:
 - **Nhập môn Cơ Điện Tử:** Tích hợp cơ khí, mạch động lực, nguồn pin và điều khiển chấp hành.
-- **Kiến trúc Máy Tính & Mạng Truyền Thông Công Nghiệp:** Vi điều khiển ESP32 32-bit Dual-Core, giao thức mạng thời gian thực WebSocket, mạng Wi-Fi AP/STA.
+- **Kiến trúc Máy Tính & Mạng Truyền Thông Công Nghiệp:** Vi điều khiển ESP32 32-bit Dual-Core, giao thức mạng thời gian thực WebSocket, mạng Wi-Fi không dây.
 - **Lập Trình Nâng Cao:** Mô hình máy trạng thái (FSM), thuật toán điều khiển PID bám line, lập trình hướng đối tượng (OOP).
 - **Kỹ Thuật Đo Lường & Cảm Biến:** Thu thập và lọc nhiễu cảm biến hồng ngoại TCRT5000 và cảm biến siêu âm RCWL-1601.
 
@@ -21,13 +21,13 @@ Dự án nghiên cứu và chế tạo **Xe tự hành dò đường (Line Follo
 ## 🌟 Tính Năng Chính
 
 * **Tự động bám line (Line Tracking):** Xe bám theo đường line đen chính xác trên nền sáng nhờ mảng cảm biến hồng ngoại `TCRT5000` và bộ điều khiển PID.
-* **Đo khoảng cách & Tránh vật cản (Object Detection):** Cảm biến siêu âm `RCWL-1601` phát hiện vật thể phía trước với độ chính xác cao ở cự ly $\le 10 cm$.
+* **Đo khoảng cách & Tránh vật cản (Object Detection):** Cảm biến siêu âm `RCWL-1601` phát hiện vật thể phía trước với độ chính xác cao ở cự ly $\le 10\text{ cm}$.
 * **Cánh tay gắp tự động (Robotic Pick & Place):** Cánh tay 4-DOF dẫn động bởi 4 động cơ Servo `SG90` thực hiện chuỗi hành động hạ tay, mở kẹp, gắp vật và nâng vật an toàn.
 * **Giao diện Web điều khiển thời gian thực:**
   - **Màn hình Trailer:** Quét radar $360^\circ$, hiệu ứng vi mạch công nghệ hiện đại.
   - **Xác thực bảo mật:** Form đăng nhập phân quyền 1 người điều khiển (chống xung đột lệnh), hỗ trợ nút ẩn/hiện mật khẩu và ghi nhớ phiên đăng nhập.
-  - **Nền hoạt họa công nghệ:** Xe dò line xoay bánh, cánh tay robot cử động nhịp nhàng mô phỏng theo mẫu CAD SPKT Team 3, robot mascot nháy mắt.
-  - **Hỗ trợ 2 chế độ kết nối song song:** Cắm cáp USB Serial với laptop hoặc kết nối không dây qua sóng Wi-Fi do ESP32 tự phát.
+  - **Nền hoạt họa công nghệ:** Xe dò line xoay bánh, cánh tay robot cử động nhịp nhàng mô phỏng theo mẫu CAD SPKT Team 3, robot mascot biểu cảm.
+  - **Giám sát kết nối Wi-Fi thời gian thực:** Theo dõi trạng thái kết nối mạng của ESP32 trực tiếp trên Web.
 
 ---
 
@@ -54,73 +54,65 @@ Dự án nghiên cứu và chế tạo **Xe tự hành dò đường (Line Follo
 
 ```text
 D:\ki5\line_follower_robot_arm\
-├── README.md                      # Trang thông tin chính của dự án (Landing page)
-├── .gitignore                     # Cấu hình loại trừ file rác Git
+├── README.md                              # Trang thông tin chính của dự án
+├── .gitignore                             # Cấu hình loại trừ file rác Git
+├── .gitattributes                         # Cấu hình chuẩn hóa dòng văn bản đa nền tảng
+├── khoi_dong_server_global_online.bat     # 1-Click: Bật Python Backend & mở link Web online toàn cầu
+├── nap_code_esp32.bat                     # 1-Click: Tự động nạp toàn bộ firmware vào ESP32
 │
-├── docs/                          # Tài liệu thiết kế & phân tích kỹ thuật
-│   ├── pinout_config.md           # Sơ đồ gán chân GPIO vi điều khiển
-│   ├── system_architecture.md     # Sơ đồ khối kiến trúc hệ thống & truyền thông
-│   └── project_context.md         # Bối cảnh & đặc tả chi tiết cho phát triển / bàn giao
+├── docs/                                  # Tài liệu thiết kế & phân tích kỹ thuật
+│   ├── pinout_config.md                   # Sơ đồ gán chân GPIO vi điều khiển
+│   ├── system_architecture.md             # Sơ đồ khối kiến trúc hệ thống & truyền thông
+│   └── project_context.md                 # Bối cảnh & đặc tả kỹ thuật chi tiết
 │
-├── firmware/                      # Mã nguồn nhúng nạp vào vi điều khiển ESP32
-│   ├── config.py                  # Cấu hình chân GPIO, tần số PWM, ngưỡng cảm biến
-│   ├── main.py                    # Vòng lặp điều khiển chính & máy trạng thái (FSM)
+├── firmware/                              # Mã nguồn nhúng nạp vào vi điều khiển ESP32
+│   ├── config.py                          # Cấu hình danh sách Wi-Fi ưu tiên, chu kỳ xe
+│   ├── boot.py                            # Khởi chạy chương trình tự động khi cấp điện
+│   ├── main.py                            # Vòng lặp điều khiển chính & báo cáo trạng thái real-time
+│   ├── nap_code_esp32.py                  # Script nạp firmware tự động qua Serial
 │   └── modules/
-│       ├── motor_driver.py        # Module điều khiển TB6612FNG (tiến/lùi/rẽ/phanh)
-│       ├── line_sensor.py         # Module đọc TCRT5000 & tính toán sai số PID
-│       ├── ultrasonic.py          # Module đo khoảng cách cảm biến RCWL-1601
-│       └── robot_arm.py           # Module điều khiển 4 servo SG90 & làm mượt góc
+│       ├── wifi_client.py                 # Module quét & kết nối Wi-Fi thông minh
+│       ├── motor_driver.py                # Điều khiển động cơ DC qua TB6612FNG
+│       ├── line_sensor.py                 # Đọc cảm biến TCRT5000 & tính sai số PID
+│       ├── ultrasonic.py                  # Đo cự ly cảm biến RCWL-1601
+│       └── robot_arm.py                   # Điều khiển các servo cánh tay robot
 │
-├── python_app/                    # Ứng dụng Backend Python chạy trên máy tính (USB mode)
-│   ├── app.py                     # Web Server & trạm điều phối WebSocket thời gian thực
-│   ├── requirements.txt           # Danh sách các thư viện Python phụ thuộc
+├── python_app/                            # Ứng dụng Backend Server chạy trên máy chủ
+│   ├── app.py                             # Máy chủ Web HTTP & WebSocket điều phối dữ liệu
+│   ├── requirements.txt                   # Thư viện Python phụ thuộc
 │   ├── controllers/
-│   │   ├── esp32_bridge.py        # Cầu nối truyền nhận dữ liệu Serial USB / Wi-Fi
-│   │   ├── arm_controller.py      # Giới hạn góc an toàn & kịch bản gắp vật tự động
-│   │   └── car_controller.py      # Bộ chuyển đổi trạng thái Auto / Manual
+│   │   ├── esp32_bridge.py                # Cầu nối truyền nhận dữ liệu với ESP32
+│   │   ├── arm_controller.py              # Giới hạn an toàn & preset gắp vật
+│   │   └── car_controller.py              # Chuyển đổi trạng thái Auto / Manual
 │   └── models/
-│       └── telemetry.py           # Quản lý trạng thái xe & dữ liệu cảm biến live
+│       └── telemetry.py                   # Quản lý state xe & dữ liệu cảm biến
 │
-└── web/                           # Giao diện Web điều khiển thời gian thực
+└── web/                                   # Giao diện Web điều khiển
     ├── templates/
-    │   └── index.html             # Giao diện HTML (Trailer, Login, Dashboard)
+    │   └── index.html                     # Giao diện HTML (Trailer, Đăng nhập, Bảng điều khiển)
     └── static/
         ├── css/
-        │   └── style.css          # Định kiểu giao diện Dark Cyberpunk (Chakra Petch & Be Vietnam Pro)
+        │   └── style.css                  # Giao diện Dark Cyberpunk công nghệ cao
         └── js/
-            ├── main.js            # Xử lý chuyển cảnh, xác thực đăng nhập, Remember Me
-            ├── websocket_client.js# Giao tiếp WebSocket với Server
-            └── arm_ui.js          # Xử lý sự kiện thanh trượt điều khiển cánh tay
+            └── main.js                    # Xử lý tương tác, WebSocket và cập nhật real-time
 ```
 
 ---
 
-## 🚀 Hướng Dẫn Trải Nghiệm Nhanh Giao Diện Web
+## 🌐 Hướng Dẫn Truy Cập Web
 
-Hiện tại giao diện Web đã hoàn thiện đầy đủ và có thể mở trực tiếp không cần cài đặt thêm phần mềm:
+Giao diện điều khiển Web có thể truy cập linh hoạt từ máy tính hoặc điện thoại thông qua các đường link sau:
 
-1. Điều hướng tới thư mục: `D:\ki5\line_follower_robot_arm\web	emplates\`
-2. Nhấp đúp chuột vào tệp **`index.html`** để mở trên trình duyệt (Google Chrome, Edge, Cốc Cốc).
-3. **Các giai đoạn hiển thị:**
-   * **Trailer mở đầu (2.6s):** Hiệu ứng quét radar công nghệ $360^\circ$ và thanh nạp năng lượng.
-   * **Đăng nhập xác thực:** Form đăng nhập có nền đồ họa chuyển động (xe chạy quay bánh, cánh tay robot CAD SPKT Team 3, robot mascot nháy mắt).
-     * *Tài khoản thử nghiệm:* `admin`
-     * *Mật khẩu:* `robot2026` (bấm vào icon con mắt `👁️` để ẩn/hiện mật khẩu).
-   * **Bảng điều khiển:** Màn hình chính sau khi xác thực thành công.
+1. **Khởi động hệ thống:**
+   - Nhấp đúp chuột vào tệp **`khoi_dong_server_global_online.bat`** tại thư mục gốc để khởi chạy máy chủ và kết nối mạng toàn cầu.
 
----
+2. **Truy cập giao diện điều khiển:**
+   - **Truy cập Online (Internet toàn cầu từ điện thoại 4G hoặc máy tính từ xa):**  
+     Truy cập vào đường link cố định của hệ thống:  
+     👉 **`https://saturday-sarcasm-quarrel.ngrok-free.dev`**
+   - **Truy cập Nội bộ (Mạng LAN / Localhost trên máy tính):**  
+     👉 **`http://localhost:5000`**
 
-## 📅 Lộ Trình Phát Triển Tiếp Theo
-
-- [x] Thiết kế cấu trúc thư mục module hóa toàn diện.
-- [x] Thiết kế giao diện Web hoàn chỉnh: Trailer, Login Form bảo mật, Hoạt họa CSS nền.
-- [ ] Xây dựng bảng điều khiển chi tiết (Sliders góc servo, nút gắp/nhả, nút đổi chế độ).
-- [ ] Lập sơ đồ phân bổ chân GPIO trên ESP32 (`docs/pinout_config.md`).
-- [ ] Viết Backend Python Server (`python_app/app.py`) kết nối WebSocket và Serial USB.
-- [ ] Viết Firmware nhúng điều khiển động cơ, PID bám line và cánh tay robot trên ESP32.
-
----
-
-## 👥 Nhóm Thực Hiện
-* **Đồ án:** Nhập môn Cơ điện tử - Mạng truyền thông & Kiến trúc máy tính
-* **Phiên bản tài liệu:** v1.0.0
+3. **Vào hệ thống điều khiển:**
+   - Sau khi truy cập đường link trên, hệ thống sẽ mở màn hình xác thực quyền điều khiển.
+   - Người dùng tiến hành đăng nhập bằng tài khoản được cấp quyền truy cập để vào màn hình Bảng điều khiển và theo dõi trạng thái xe robot.
