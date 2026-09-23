@@ -318,10 +318,11 @@ class UltrasonicChartController {
         this.isStreaming = false;
         this.isMeasuringOnce = false;
 
-        // Giới hạn trục Y (0 -> 100 cm)
-        this.maxY = 100;
+        // Giới hạn trục Y (0 -> 40 cm)
+        this.maxY = 40;
         this.minY = 0;
         this.dangerThreshold = 10.0; // cm
+        this.statsVisible = true;    // Trạng thái bật/tắt hiển thị & tính toán phân tích thống kê
 
         this.init();
     }
@@ -336,6 +337,15 @@ class UltrasonicChartController {
                 this.draw();
             }
         });
+
+        // Bắt sự kiện nút Ẩn/Hiện thông số phân tích
+        const btnToggleStats = document.getElementById('btn-toggle-stats');
+        if (btnToggleStats) {
+            btnToggleStats.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.toggleStats();
+            });
+        }
     }
 
     resizeCanvas() {
@@ -443,14 +453,54 @@ class UltrasonicChartController {
             gaugeReading.textContent = `${displayDist.toFixed(1)} cm`;
         }
 
-        // 4. Cập nhật thống kê nhanh Min / Max / Avg / Samples
-        this.updateStats();
+        // 4. Cập nhật phân tích số liệu (CHỈ tính toán khi statsVisible = true)
+        if (this.statsVisible) {
+            this.updateStats();
+        }
+    }
+
+    toggleStats(forceState = null) {
+        this.statsVisible = forceState !== null ? forceState : !this.statsVisible;
+
+        const grid = document.getElementById('stats-overview-grid');
+        const btn = document.getElementById('btn-toggle-stats');
+        const icon = document.getElementById('toggle-stats-icon');
+        const text = document.getElementById('toggle-stats-text');
+        const badge = document.getElementById('stats-calc-status');
+
+        if (this.statsVisible) {
+            if (grid) grid.style.display = 'grid';
+            if (btn) btn.classList.remove('hidden-state');
+            if (icon) icon.textContent = '👁️';
+            if (text) text.textContent = 'Ẩn thông số';
+            if (badge) {
+                badge.textContent = 'Đang tính toán';
+                badge.className = 'stats-header-badge badge-active';
+            }
+            // Khi hiện: Kích hoạt tính toán và hiển thị ngay lập tức
+            this.updateStats();
+        } else {
+            if (grid) grid.style.display = 'none';
+            if (btn) btn.classList.add('hidden-state');
+            if (icon) icon.textContent = '👁️‍🗨️';
+            if (text) text.textContent = 'Hiện thông số';
+            if (badge) {
+                badge.textContent = 'Tạm dừng tính toán';
+                badge.className = 'stats-header-badge badge-paused';
+            }
+            // Khi ẩn: Không hiển thị và KHÔNG thực hiện tính toán
+        }
     }
 
     updateStats() {
-        const minEl = document.getElementById('stat-min');
+        // ĐẢM BẢO YÊU CẦU: Nếu đang ẩn thì TUYỆT ĐỐI KHÔNG tính toán
+        if (!this.statsVisible) return;
+
         const avgEl = document.getElementById('stat-avg');
-        const maxEl = document.getElementById('stat-max');
+        const stdEl = document.getElementById('stat-std');
+        const q1El = document.getElementById('stat-q1');
+        const q2El = document.getElementById('stat-q2');
+        const q3El = document.getElementById('stat-q3');
         const samplesEl = document.getElementById('stat-samples');
 
         const validDistances = this.dataPoints
@@ -462,20 +512,48 @@ class UltrasonicChartController {
         }
 
         if (validDistances.length === 0) {
-            if (minEl) minEl.textContent = '--.- cm';
             if (avgEl) avgEl.textContent = '--.- cm';
-            if (maxEl) maxEl.textContent = '--.- cm';
+            if (stdEl) stdEl.textContent = '--.- cm';
+            if (q1El) q1El.textContent = '--.- cm';
+            if (q2El) q2El.textContent = '--.- cm';
+            if (q3El) q3El.textContent = '--.- cm';
             return;
         }
 
-        const min = Math.min(...validDistances);
-        const max = Math.max(...validDistances);
+        // 1. Cự ly trung bình (Mean / Avg)
+        const n = validDistances.length;
         const sum = validDistances.reduce((acc, v) => acc + v, 0);
-        const avg = sum / validDistances.length;
+        const avg = sum / n;
 
-        if (minEl) minEl.textContent = `${min.toFixed(1)} cm`;
-        if (maxEl) maxEl.textContent = `${max.toFixed(1)} cm`;
+        // 2. Độ lệch chuẩn (Sample Standard Deviation)
+        let std = 0;
+        if (n > 1) {
+            const variance = validDistances.reduce((acc, v) => acc + Math.pow(v - avg, 2), 0) / (n - 1);
+            std = Math.sqrt(variance);
+        }
+
+        // 3. Tứ phân vị Q1, Q2 (Median), Q3 (Nội suy tuyến tính phân vị chuẩn)
+        const sorted = [...validDistances].sort((a, b) => a - b);
+        const getPercentile = (arr, p) => {
+            if (arr.length === 0) return 0;
+            if (arr.length === 1) return arr[0];
+            const idx = (arr.length - 1) * p;
+            const low = Math.floor(idx);
+            const high = Math.ceil(idx);
+            const weight = idx - low;
+            return arr[low] * (1 - weight) + arr[high] * weight;
+        };
+
+        const q1 = getPercentile(sorted, 0.25);
+        const q2 = getPercentile(sorted, 0.50);
+        const q3 = getPercentile(sorted, 0.75);
+
+        // Hiển thị kết quả ra giao diện
         if (avgEl) avgEl.textContent = `${avg.toFixed(1)} cm`;
+        if (stdEl) stdEl.textContent = `±${std.toFixed(2)} cm`;
+        if (q1El) q1El.textContent = `${q1.toFixed(1)} cm`;
+        if (q2El) q2El.textContent = `${q2.toFixed(1)} cm`;
+        if (q3El) q3El.textContent = `${q3.toFixed(1)} cm`;
     }
 
     draw() {
@@ -495,14 +573,14 @@ class UltrasonicChartController {
 
         if (chartW <= 0 || chartH <= 0) return;
 
-        // 1. Vẽ lưới ngang và nhãn trục Y (0 - 100 cm)
-        const ySteps = 5; // 0, 20, 40, 60, 80, 100
+        // 1. Vẽ lưới ngang và nhãn trục Y (0 - 40 cm)
+        const ySteps = 4; // 0, 10, 20, 30, 40 cm
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
         ctx.font = '600 11px "Chakra Petch", sans-serif';
 
         for (let i = 0; i <= ySteps; i++) {
-            const val = (this.maxY / ySteps) * i;
+            const val = Math.round((this.maxY / ySteps) * i);
             const y = padTop + chartH - (i / ySteps) * chartH;
 
             // Đường kẻ ngang mờ

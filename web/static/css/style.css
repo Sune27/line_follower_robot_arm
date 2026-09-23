@@ -2345,21 +2345,107 @@ body {
     display: block;
 }
 
-/* LƯỚI THỐNG KÊ NHANH */
+/* KHU VỰC PHÂN TÍCH THỐNG KÊ DỮ LIỆU CHUYÊN SÂU */
+.stats-analytics-section {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stats-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+}
+
+.stats-header-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #cbd5e1;
+    letter-spacing: 0.5px;
+}
+
+.stats-header-icon {
+    font-size: 1.05rem;
+}
+
+.stats-header-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.stats-header-badge.badge-active {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.stats-header-badge.badge-paused {
+    background: rgba(148, 163, 184, 0.12);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.btn-toggle-stats {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38bdf8;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-toggle-stats:hover {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: #38bdf8;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+    transform: translateY(-1px);
+}
+
+.btn-toggle-stats.hidden-state {
+    background: rgba(30, 41, 59, 0.6);
+    border-color: rgba(148, 163, 184, 0.3);
+    color: #94a3b8;
+}
+
+.btn-toggle-stats.hidden-state:hover {
+    border-color: #94a3b8;
+    color: #e2e8f0;
+    box-shadow: 0 0 10px rgba(148, 163, 184, 0.2);
+}
+
+/* LƯỚI THỐNG KÊ 6 CHỈ SỐ */
 .stats-overview-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    transition: all 0.25s ease;
 }
 
 .stat-tile {
     background: rgba(11, 19, 41, 0.65);
     border: 1px solid rgba(100, 116, 139, 0.22);
     border-radius: 14px;
-    padding: 14px 16px;
+    padding: 12px 14px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
@@ -2369,16 +2455,23 @@ body {
 }
 
 .stat-tile-label {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     color: #94a3b8;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .stat-tile-value {
     font-family: 'Chakra Petch', monospace;
-    font-size: 1.35rem;
+    font-size: 1.3rem;
     font-weight: 700;
-    line-height: 1;
+    line-height: 1.1;
+}
+
+.stat-tile-sub {
+    font-size: 0.68rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-top: 2px;
 }
 
 .stat-tile-value.val-red {
@@ -2401,6 +2494,21 @@ body {
     text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
 }
 
+.stat-tile-value.val-purple {
+    color: #c084fc;
+    text-shadow: 0 0 10px rgba(192, 132, 252, 0.35);
+}
+
+.stat-tile-value.val-blue {
+    color: #60a5fa;
+    text-shadow: 0 0 10px rgba(96, 165, 250, 0.35);
+}
+
+.stat-tile-value.val-orange {
+    color: #fb923c;
+    text-shadow: 0 0 10px rgba(251, 146, 60, 0.35);
+}
+
 /* RESPONSIVE DESIGN */
 @media (max-width: 1120px) {
     .ultrasonic-dashboard-grid {
@@ -2408,6 +2516,12 @@ body {
     }
     .canvas-wrapper {
         height: 320px;
+    }
+}
+
+@media (max-width: 768px) {
+    .stats-overview-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -2421,13 +2535,24 @@ body {
     .ultrasonic-main-content {
         padding: 16px 14px;
     }
-    .stats-overview-grid {
-        grid-template-columns: repeat(2, 1fr);
+    .stats-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .btn-toggle-stats {
+        align-self: flex-start;
     }
     .neon-number-value {
         font-size: 3.6rem;
     }
     .canvas-wrapper {
         height: 260px;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-overview-grid {
+        grid-template-columns: 1fr;
     }
 }

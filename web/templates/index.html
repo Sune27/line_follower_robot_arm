@@ -470,13 +470,13 @@
                             </div>
                             <div class="optical-gauge-track">
                                 <div class="optical-gauge-fill" id="gauge-bar-fill" style="width: 0%;"></div>
-                                <div class="gauge-danger-line" title="Ngưỡng nguy hiểm 10cm" style="left: 10%;"></div>
+                                <div class="gauge-danger-line" title="Ngưỡng nguy hiểm 10cm" style="left: 25%;"></div>
                             </div>
                             <div class="optical-gauge-scale">
                                 <span>0 cm</span>
                                 <span class="scale-danger">10 cm (Cảnh báo)</span>
-                                <span>50 cm</span>
-                                <span>100 cm</span>
+                                <span>20 cm</span>
+                                <span>40 cm</span>
                             </div>
                         </div>
                     </div>
@@ -515,23 +515,52 @@
                             <canvas id="ultrasonic-canvas"></canvas>
                         </div>
 
-                        <!-- Hộp thống kê nhanh: Min, Max, Avg, Tổng mẫu -->
-                        <div class="stats-overview-grid">
-                            <div class="stat-tile">
-                                <div class="stat-tile-label">Cự ly nhỏ nhất (Min)</div>
-                                <div class="stat-tile-value val-red" id="stat-min">--.- cm</div>
+                        <!-- KHU VỰC PHÂN TÍCH THỐNG KÊ MỞ RỘNG (Analytics Panel) -->
+                        <div class="stats-analytics-section">
+                            <div class="stats-section-header">
+                                <div class="stats-header-title">
+                                    <span class="stats-header-icon">📊</span>
+                                    <span class="stats-header-text">PHÂN TÍCH THỐNG KÊ DỮ LIỆU</span>
+                                    <span class="stats-header-badge badge-active" id="stats-calc-status">Đang tính toán</span>
+                                </div>
+                                <button type="button" class="btn-toggle-stats" id="btn-toggle-stats" title="Bật/Tắt tính toán và hiển thị thông số">
+                                    <span class="toggle-icon" id="toggle-stats-icon">👁️</span>
+                                    <span class="toggle-text" id="toggle-stats-text">Ẩn thông số</span>
+                                </button>
                             </div>
-                            <div class="stat-tile">
-                                <div class="stat-tile-label">Cự ly trung bình (Avg)</div>
-                                <div class="stat-tile-value val-yellow" id="stat-avg">--.- cm</div>
-                            </div>
-                            <div class="stat-tile">
-                                <div class="stat-tile-label">Cự ly lớn nhất (Max)</div>
-                                <div class="stat-tile-value val-green" id="stat-max">--.- cm</div>
-                            </div>
-                            <div class="stat-tile">
-                                <div class="stat-tile-label">Tổng số mẫu đo</div>
-                                <div class="stat-tile-value val-cyan" id="stat-samples">0</div>
+
+                            <!-- Lưới 6 thẻ thông số phân tích (Bỏ Min & Max) -->
+                            <div class="stats-overview-grid" id="stats-overview-grid">
+                                <div class="stat-tile">
+                                    <div class="stat-tile-label">Cự ly trung bình (&mu;)</div>
+                                    <div class="stat-tile-value val-yellow" id="stat-avg">--.- cm</div>
+                                    <div class="stat-tile-sub">Kỳ vọng trung bình</div>
+                                </div>
+                                <div class="stat-tile">
+                                    <div class="stat-tile-label">Độ lệch chuẩn (&sigma;)</div>
+                                    <div class="stat-tile-value val-purple" id="stat-std">--.- cm</div>
+                                    <div class="stat-tile-sub">Mức độ phân tán/dao động</div>
+                                </div>
+                                <div class="stat-tile">
+                                    <div class="stat-tile-label">Tứ phân vị 1 (Q1 - 25%)</div>
+                                    <div class="stat-tile-value val-blue" id="stat-q1">--.- cm</div>
+                                    <div class="stat-tile-sub">Phân vị dưới (25% nhỏ hơn)</div>
+                                </div>
+                                <div class="stat-tile">
+                                    <div class="stat-tile-label">Trung vị (Q2 - 50%)</div>
+                                    <div class="stat-tile-value val-cyan" id="stat-q2">--.- cm</div>
+                                    <div class="stat-tile-sub">Giá trị giữa mẫu đo</div>
+                                </div>
+                                <div class="stat-tile">
+                                    <div class="stat-tile-label">Tứ phân vị 3 (Q3 - 75%)</div>
+                                    <div class="stat-tile-value val-orange" id="stat-q3">--.- cm</div>
+                                    <div class="stat-tile-sub">Phân vị trên (75% nhỏ hơn)</div>
+                                </div>
+                                <div class="stat-tile">
+                                    <div class="stat-tile-label">Tổng số mẫu đo (N)</div>
+                                    <div class="stat-tile-value val-green" id="stat-samples">0</div>
+                                    <div class="stat-tile-sub">Số mẫu trong đệm 30 điểm</div>
+                                </div>
                             </div>
                         </div>
                     </div>
