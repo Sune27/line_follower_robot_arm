@@ -448,12 +448,12 @@ body {
 /* THẺ CHỨC NĂNG HÌNH CHỮ NHẬT */
 .function-card {
     position: relative;
-    width: 290px;
-    min-height: 230px;
+    width: 280px;
+    height: 220px;
     background: rgba(15, 23, 42, 0.85); /* Nền tiệp với gam màu xanh đen của hệ thống */
     border: 1px solid rgba(6, 182, 212, 0.3);
     border-radius: 16px;
-    padding: 25px 20px;
+    padding: 18px 16px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -482,23 +482,23 @@ body {
 
 /* KHUNG BIỂU TƯỢNG (ICON WRAPPER) */
 .card-icon-wrapper {
-    width: 64px;
-    height: 64px;
-    border-radius: 16px;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
     background: rgba(6, 182, 212, 0.1);
     border: 1px solid rgba(6, 182, 212, 0.35);
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
     box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
     transition: all 0.3s ease;
 }
 
 /* BIỂU TƯỢNG WI-FI LAPTOP SVG */
 .wifi-laptop-icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     color: #06b6d4;
     transition: all 0.3s ease;
     filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.7));
@@ -514,8 +514,8 @@ body {
 
 /* BIỂU TƯỢNG CẢM BIẾN SIÊU ÂM RCWL-1601 SVG */
 .sensor-ultrasonic-icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     color: #06b6d4;
     transition: all 0.3s ease;
     filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.7));
@@ -556,19 +556,19 @@ body {
 
 .card-title {
     font-family: 'Chakra Petch', sans-serif;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: #f8fafc;
-    letter-spacing: 0.5px;
-    margin-bottom: 6px;
-    line-height: 1.3;
+    letter-spacing: 0.4px;
+    margin-bottom: 4px;
+    line-height: 1.25;
     transition: color 0.3s ease;
 }
 
 .card-desc {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     color: #94a3b8;
-    line-height: 1.4;
+    line-height: 1.35;
 }
 
 /* ============================================================
@@ -583,9 +583,9 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
+    padding: 3px 12px;
     border-radius: 20px;
-    margin-top: 10px;
+    margin-top: 6px;
     transition: all 0.3s ease;
 }
 
