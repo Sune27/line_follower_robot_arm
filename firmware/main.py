@@ -1,14 +1,18 @@
 # ==============================================================================
-# MAIN.PY – CHƯƠNG TRÌNH KHỞI ĐỘNG VÀ BÁO CÁO REAL-TIME CỦA ESP32 (FIRMWARE)
+# MAIN.PY – CHƯƠNG TRÌNH KHỞI ĐỘNG VÀ ĐIỀU KHIỂN CHÍNH TRÊN ESP32 (FIRMWARE)
 # ==============================================================================
 
 import time
 import ujson
+from machine import Pin
 import config
 from modules.wifi_client import WiFiStationManager
+from modules.ultrasonic import UltrasonicSensor
 
 def main():
-    print("[Hệ thống] Đang khởi động ESP32...")
+    print("\n" + "=" * 55)
+    print("[ESP32] KHOI DONG HE THONG DIEU KHIEN & CAM BIEN")
+    print("=" * 55)
 
     # 1. Khởi tạo đối tượng quản lý Wi-Fi với danh sách ưu tiên từ config.py
     wifi_mgr = WiFiStationManager(
@@ -17,48 +21,79 @@ def main():
         led_pin=2 # Chân đèn LED xanh tích hợp trên ESP32
     )
 
-    # 2. Thực hiện quét và tự động kết nối ban đầu
+    # 2. Thực hiện quét và tự động kết nối Wi-Fi ban đầu
     connected = wifi_mgr.connect()
 
-    print("[Hệ thống] Bắt đầu vòng lặp giám sát kết nối thời gian thực...")
+    # 3. Khởi tạo Cảm biến siêu âm RCWL-1601 (OOP)
+    print(f"[Cam bien] Khoi tao RCWL-1601: Trig=GPIO{config.PIN_ULTRASONIC_TRIG}, Echo=GPIO{config.PIN_ULTRASONIC_ECHO}")
+    ultrasonic = UltrasonicSensor(
+        trig_pin=config.PIN_ULTRASONIC_TRIG,
+        echo_pin=config.PIN_ULTRASONIC_ECHO
+    )
+
+    print("[He thong] Bat dau chu ky do khoang cach real-time...")
+    print("-" * 55)
 
     check_counter = 0
 
     while True:
         try:
-            curr_connected = wifi_mgr.is_connected()
+            # --- A. ĐO KHOẢNG CÁCH TỪ CẢM BIẾN SIÊU ÂM ---
+            distance = ultrasonic.measure_distance()
+            is_obstacle = (0 < distance <= config.OBSTACLE_DISTANCE_THRESHOLD_CM)
 
-            # Nếu bị mất kết nối Wi-Fi (ví dụ người dùng tắt phát Wi-Fi)
+            if distance < 0:
+                dist_str = "--.- cm (Ngoai tam do)"
+                status_str = "[OK] DUONG TRONG"
+            elif is_obstacle:
+                dist_str = f"{distance:>5.1f} cm"
+                status_str = f"[CANH BAO] CO VAT CAN (<{config.OBSTACLE_DISTANCE_THRESHOLD_CM}cm)!"
+            else:
+                dist_str = f"{distance:>5.1f} cm"
+                status_str = "[OK] AN TOAN"
+
+            # In thông tin hiển thị trực quan lên Terminal / Serial
+            print(f"[KHOANG CACH]: {dist_str} | Trang thai: {status_str}")
+
+            # --- B. GIÁM SÁT KẾT NỐI WI-FI ---
+            curr_connected = wifi_mgr.is_connected()
             if not curr_connected:
-                # Tắt đèn LED báo mất kết nối
-                if wifi_mgr.led:
-                    wifi_mgr.led.value(0)
-                
-                # Cứ mỗi 5 giây thử quét và kết nối lại 1 lần
                 check_counter += 1
-                if check_counter >= 5:
+                if check_counter >= 10:  # Thử kết nối lại mỗi ~5 giây (10 * 500ms)
                     check_counter = 0
                     curr_connected = wifi_mgr.connect()
             else:
                 check_counter = 0
-                # Đèn LED xanh sáng khi có kết nối
-                if wifi_mgr.led:
-                    wifi_mgr.led.value(1)
 
-            # In gói tin JSON định kỳ mỗi 1 giây để Python Server / Web cập nhật real-time
-            status_data = {
-                "event": "wifi_heartbeat",
-                "connected": curr_connected,
-                "ssid": "Sune" if curr_connected else "—",
-                "ip": wifi_mgr.get_ip() if curr_connected else "—",
-                "security": "WPA2-PSK" if curr_connected else "—"
+            # Điều khiển LED báo trạng thái:
+            # - Khi phát hiện vật cản gần: nhấp nháy LED cảnh báo
+            # - Khi bình thường: LED sáng nếu có wifi, tắt nếu mất wifi
+            if wifi_mgr.led:
+                if is_obstacle:
+                    wifi_mgr.led.value(not wifi_mgr.led.value())
+                else:
+                    wifi_mgr.led.value(1 if curr_connected else 0)
+
+            # In gói tin JSON định kỳ để hệ thống Web / Server cập nhật
+            telemetry_data = {
+                "event": "telemetry",
+                "wifi": {
+                    "connected": curr_connected,
+                    "ssid": "Sune" if curr_connected else "—",
+                    "ip": wifi_mgr.get_ip() if curr_connected else "—"
+                },
+                "sensor": {
+                    "distance_cm": distance,
+                    "obstacle_detected": is_obstacle
+                }
             }
-            print("HEARTBEAT:" + ujson.dumps(status_data))
+            print("TELEMETRY:" + ujson.dumps(telemetry_data))
 
         except Exception as e:
-            pass
+            print("[Lỗi vòng lặp]", e)
 
-        time.sleep(1)
+        time.sleep_ms(500)
 
 if __name__ == "__main__":
     main()
+

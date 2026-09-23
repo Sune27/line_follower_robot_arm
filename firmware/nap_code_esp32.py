@@ -19,25 +19,23 @@ def send_raw(ser, data, wait=0.1):
     time.sleep(wait)
 
 def enter_raw_repl(ser):
-    # Gui Ctrl+C nhieu lan de ngat code
+    # Gui Ctrl+C nhieu lan de ngat chuong trinh dang chay tren ESP32
     for _ in range(5):
         ser.write(b'\r\x03')
-        time.sleep(0.1)
+        time.sleep(0.15)
     ser.read_all()
     
     # Gui Ctrl+A vao Raw REPL
-    ser.write(b'\r\x01')
-    time.sleep(0.4)
-    resp = ser.read_all()
-    if b'raw REPL' in resp:
-        print("[OK] Đã vào chế độ Raw REPL thành công.")
-        return True
-    
-    # Thu tiep Ctrl+B roi Ctrl+C roi Ctrl+A
-    ser.write(b'\r\x02\r\x03\x03\r\x01')
-    time.sleep(0.5)
-    resp2 = ser.read_all()
-    return b'raw REPL' in resp2
+    for attempt in range(3):
+        ser.write(b'\r\x01')
+        time.sleep(0.3)
+        resp = ser.read_all()
+        if b'raw REPL' in resp:
+            print("[OK] Đã vào chế độ Raw REPL thành công.")
+            return True
+        ser.write(b'\r\x02\r\x03')
+        time.sleep(0.2)
+    return False
 
 def exec_raw(ser, code_str):
     payload = code_str.encode('utf-8') + b'\x04'
@@ -74,7 +72,9 @@ def upload_file(ser, local_path, remote_path):
 def main():
     print(f"[Serial] Kết nối tới {PORT}...")
     ser = serial.Serial(PORT, BAUD, timeout=1)
-    time.sleep(0.2)
+    ser.dtr = False
+    ser.rts = False
+    time.sleep(1.5)
     
     if not enter_raw_repl(ser):
         print("[ERR] Không thể vào Raw REPL trên ESP32!")
@@ -88,6 +88,7 @@ def main():
     base = Path("D:/ki5/line_follower_robot_arm/firmware")
     upload_file(ser, base / "config.py", "config.py")
     upload_file(ser, base / "modules" / "wifi_client.py", "modules/wifi_client.py")
+    upload_file(ser, base / "modules" / "ultrasonic.py", "modules/ultrasonic.py")
     upload_file(ser, base / "boot.py", "boot.py")
     upload_file(ser, base / "main.py", "main.py")
     

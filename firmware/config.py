@@ -5,32 +5,24 @@
 # ==============================================================================
 # 1. DANH SÁCH MẠNG WI-FI ƯU TIÊN KẾT NỐI (STATION MODE - STA)
 # ==============================================================================
-# ESP32 sẽ quét các mạng Wi-Fi xung quanh và ưu tiên kết nối theo thứ tự từ trên xuống.
-# Bạn có thể thêm nhiều Wi-Fi (nhà riêng, phòng trọ, trường học, hotspot điện thoại...)
 WIFI_NETWORKS = [
     {
         "ssid": "Sune",
         "password": "khongcomatkhau"
-    },
-    # Bạn có thể bổ sung thêm các mạng dự phòng khác tại đây, ví dụ:
-    # {
-    #     "ssid": "WiFi_Phong_Tro",
-    #     "password": "mat_khau_phong_tro"
-    # },
-    # {
-    #     "ssid": "Hotspot_Dien_Thoai",
-    #     "password": "12345678"
-    # }
+    }
 ]
 
-# Thời gian tối đa chờ kết nối mỗi mạng Wi-Fi (giây) trước khi thử mạng tiếp theo
 WIFI_CONNECT_TIMEOUT_SEC = 10
-
-# Thời gian nghỉ giữa các lần thử quét lại nếu không tìm thấy mạng nào (giây)
 WIFI_RETRY_DELAY_SEC = 5
 
 # ==============================================================================
-# 2. CẤU HÌNH THÔNG SỐ XE & CHU KỲ ĐIỀU KHIỂN
+# 2. CẤU HÌNH CẢM BIẾN SIÊU ÂM RCWL-1601 / HC-SR04
 # ==============================================================================
-# Chu kỳ vòng lặp điều khiển xe (ms)
+PIN_ULTRASONIC_TRIG = 5      # Chân phát xung siêu âm (D5)
+PIN_ULTRASONIC_ECHO = 18     # Chân thu xung hồi tiếp (D18)
+OBSTACLE_DISTANCE_THRESHOLD_CM = 10.0  # Ngưỡng phát hiện vật cản (cm)
+
+# ==============================================================================
+# 3. CẤU HÌNH CHU KỲ VÒNG LẶP ĐIỀU KHIỂN XE
+# ==============================================================================
 CONTROL_LOOP_INTERVAL_MS = 20
