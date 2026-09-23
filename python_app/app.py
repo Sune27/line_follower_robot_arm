@@ -64,6 +64,23 @@ class RobotControllerServer:
             "security": "WPA2-PSK"
         }
         self.running = True
+        self.ser = None
+        self.ser_lock = threading.Lock()
+
+    def send_serial(self, cmd_str):
+        """Gửi lệnh chuỗi xuống ESP32 qua cổng Serial an toàn đa luồng"""
+        with self.ser_lock:
+            if self.ser and self.ser.is_open:
+                try:
+                    if not cmd_str.endswith('\n'):
+                        cmd_str += '\n'
+                    self.ser.write(cmd_str.encode('utf-8'))
+                    self.ser.flush()
+                    print(f"[Serial TX] -> {cmd_str.strip()}")
+                except Exception as e:
+                    print(f"[Serial Error] Không thể gửi lệnh: {e}")
+            else:
+                print(f"[Serial Warn] Chưa kết nối ESP32, không thể gửi: {cmd_str.strip()}")
 
     async def _broadcast(self, message):
         if not self.connected_clients:
@@ -102,13 +119,27 @@ class RobotControllerServer:
                 else:
                     await client.send(reply)
 
+            elif cmd == "ultrasonic_measure_once":
+                print("[Server] 🎯 Nhận lệnh từ Web: ĐO 1 LẦN -> Gửi CMD:MEASURE_ONCE xuống ESP32")
+                self.send_serial("CMD:MEASURE_ONCE")
+
+            elif cmd == "ultrasonic_start_stream":
+                print("[Server] ▶ Nhận lệnh từ Web: BẮT ĐẦU ĐO LIÊN TỤC -> Gửi CMD:START_STREAM xuống ESP32")
+                self.send_serial("CMD:START_STREAM")
+
+            elif cmd == "ultrasonic_stop_stream":
+                print("[Server] ⏸ Nhận lệnh từ Web: DỪNG ĐO LIÊN TỤC -> Gửi CMD:STOP_STREAM xuống ESP32")
+                self.send_serial("CMD:STOP_STREAM")
+
             elif cmd == "logout_and_stop" or cmd == "logout":
+                # Đưa cảm biến về nghỉ khi logout
+                self.send_serial("CMD:STOP_STREAM")
                 print("[System] [LOGOUT] Người dùng đã đăng xuất trên Web. Server vẫn tiếp tục hoạt động để sẵn sàng cho lần đăng nhập tiếp theo.")
         except json.JSONDecodeError:
             pass
 
     def serial_listener_loop(self):
-        """Lắng nghe dòng Serial in từ ESP32 để bắt các sự kiện Wi-Fi theo thời gian thực"""
+        """Lắng nghe dòng Serial in từ ESP32 để bắt các sự kiện Wi-Fi và Telemetry cảm biến theo thời gian thực"""
         try:
             import serial
         except ImportError:
@@ -120,31 +151,50 @@ class RobotControllerServer:
                 if ser is None:
                     try:
                         ser = serial.Serial(SERIAL_PORT, SERIAL_BAUD, timeout=1)
+                        ser.dtr = False
+                        ser.rts = False
+                        with self.ser_lock:
+                            self.ser = ser
                         print(f"[Serial Monitor] Đã kết nối lắng nghe ESP32 tại {SERIAL_PORT}")
                     except Exception:
                         ser = None
+                        with self.ser_lock:
+                            self.ser = None
                         time.sleep(2)
                         continue
 
                 line = ser.readline().decode('utf-8', errors='ignore').strip()
                 if line:
-                    # Kiểm tra xem có phải dòng HEARTBEAT hoặc kết quả scan/connect không
-                    if line.startswith("TELEMETRY:"):
+                    # In log các dòng thông tin đo từ ESP32
+                    if "[DO 1 LAN]:" in line or "[STREAM]:" in line or "[CMD_ACK]" in line:
+                        print(f"[ESP32] {line}")
+
+                    # Kiểm tra xem có phải dòng TELEMETRY (khoảng cách + wifi) không
+                    if "TELEMETRY:" in line:
                         try:
-                            telem = json.loads(line[10:])
-                            wifi = telem.get("wifi", {})
-                            self.wifi_state = {
-                                "event": "wifi_status",
-                                "connected": wifi.get("connected", False),
-                                "ssid": wifi.get("ssid", "—"),
-                                "ip": wifi.get("ip", "—"),
-                                "security": "WPA2-PSK"
-                            }
+                            idx = line.find("TELEMETRY:")
+                            json_str = line[idx + 10:].strip()
+                            telem = json.loads(json_str)
+                            wifi = telem.get("wifi")
+                            if wifi:
+                                self.wifi_state = {
+                                    "event": "wifi_status",
+                                    "connected": wifi.get("connected", False),
+                                    "ssid": wifi.get("ssid", "—"),
+                                    "ip": wifi.get("ip", "—"),
+                                    "security": "WPA2-PSK"
+                                }
+                            # Log kết quả cự ly đo được
+                            dist_val = telem.get("sensor", {}).get("distance_cm")
+                            obst_val = telem.get("sensor", {}).get("obstacle_detected")
+                            print(f"[Telemetry Broadcast] Cự ly: {dist_val} cm | Vật cản: {obst_val}")
+
+                            # Đẩy toàn bộ telemetry (gồm cự ly cảm biến) lên tất cả client Web
                             if self.loop and self.connected_clients:
-                                msg_str = json.dumps(self.wifi_state)
-                                asyncio.run_coroutine_threadsafe(self._broadcast(msg_str), self.loop)
-                        except Exception:
-                            pass
+                                telem_str = json.dumps(telem)
+                                asyncio.run_coroutine_threadsafe(self._broadcast(telem_str), self.loop)
+                        except Exception as e:
+                            print(f"[Serial] Lỗi giải mã JSON telemetry: {e}")
                     elif line.startswith("HEARTBEAT:"):
                         try:
                             hb = json.loads(line[10:])
@@ -181,10 +231,12 @@ class RobotControllerServer:
                 else:
                     time.sleep(0.05)
             except Exception:
-                if ser:
-                    try: ser.close()
-                    except Exception: pass
-                    ser = None
+                with self.ser_lock:
+                    if ser:
+                        try: ser.close()
+                        except Exception: pass
+                        ser = None
+                    self.ser = None
                 time.sleep(2)
 
     async def aiohttp_ws_handler(self, request):

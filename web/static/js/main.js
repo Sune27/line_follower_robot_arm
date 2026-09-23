@@ -201,6 +201,7 @@ class WebSocketClient {
     constructor() {
         this.ws = null;
         this.connected = false;
+        this.telemetryCallback = null;
         this.init();
     }
 
@@ -222,11 +223,28 @@ class WebSocketClient {
             this.ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    console.log('[WebSocket] 📥 Nhận dữ liệu:', data);
+                    // console.log('[WebSocket] 📥 Nhận gói tin:', data);
 
                     // Xử lý cập nhật thông tin Wi-Fi thời gian thực (Real-time)
                     if (data.event === 'wifi_status' || data.event === 'wifi_heartbeat') {
                         this.updateWifiRealtimeUI(data);
+                    } else if (data.event === 'telemetry') {
+                        if (data.wifi) {
+                            this.updateWifiRealtimeUI(data.wifi);
+                        }
+                        const sensorData = data.sensor || data;
+                        if (this.telemetryCallback) {
+                            this.telemetryCallback(sensorData);
+                        } else if (window.app && window.app.ultrasonicController) {
+                            window.app.ultrasonicController.handleTelemetry(sensorData);
+                        }
+                    } else if (data.sensor || data.distance_cm !== undefined) {
+                        const sensorData = data.sensor || data;
+                        if (this.telemetryCallback) {
+                            this.telemetryCallback(sensorData);
+                        } else if (window.app && window.app.ultrasonicController) {
+                            window.app.ultrasonicController.handleTelemetry(sensorData);
+                        }
                     }
                 } catch (e) {
                     console.error('[WebSocket] Lỗi giải mã JSON:', e);
@@ -274,15 +292,411 @@ class WebSocketClient {
     }
 
     send(data) {
+        const payload = typeof data === 'string' ? data : JSON.stringify(data);
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(typeof data === 'string' ? data : JSON.stringify(data));
+            console.log('[WebSocket] 📤 Gửi lệnh:', payload);
+            this.ws.send(payload);
+        } else {
+            console.warn('[WebSocket] ⚠ Chưa kết nối tới server máy chủ! Trạng thái readyState:', this.ws ? this.ws.readyState : 'null');
         }
     }
 }
 
 
 // ==============================================================================
-// 5. CLASS DASHBOARD_APP (Lớp ứng dụng trung tâm - Điều phối toàn bộ hệ thống)
+// 5. CLASS ULTRASONIC_CHART_CONTROLLER (Quản lý Cảm biến RCWL-1601 & Biểu đồ Canvas)
+// ==============================================================================
+class UltrasonicChartController {
+    constructor(wsClient) {
+        this.wsClient = wsClient;
+        this.canvas = document.getElementById('ultrasonic-canvas');
+        this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+        this.wrapper = document.getElementById('canvas-wrapper');
+
+        this.dataPoints = []; // Mảng chứa các mẫu đo: { timestamp, distance, isObstacle }
+        this.maxPoints = 30;  // Hiển thị tối đa 30 mẫu trượt trên màn hình
+        this.isStreaming = false;
+        this.isMeasuringOnce = false;
+
+        // Giới hạn trục Y (0 -> 100 cm)
+        this.maxY = 100;
+        this.minY = 0;
+        this.dangerThreshold = 10.0; // cm
+
+        this.init();
+    }
+
+    init() {
+        if (!this.canvas) return;
+
+        // Lắng nghe thay đổi kích thước cửa sổ để tự co giãn biểu đồ
+        window.addEventListener('resize', () => {
+            if (document.getElementById('ultrasonic-screen')?.classList.contains('active')) {
+                this.resizeCanvas();
+                this.draw();
+            }
+        });
+    }
+
+    resizeCanvas() {
+        if (!this.canvas || !this.wrapper) return;
+        const rect = this.wrapper.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+
+        this.canvas.width = Math.floor(rect.width * dpr);
+        this.canvas.height = Math.floor(rect.height * dpr);
+
+        if (this.ctx) {
+            this.ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset scale
+            this.ctx.scale(dpr, dpr);
+        }
+        this.displayWidth = rect.width;
+        this.displayHeight = rect.height;
+    }
+
+    onScreenActivated() {
+        setTimeout(() => {
+            this.resizeCanvas();
+            this.draw();
+        }, 60);
+    }
+
+    onScreenDeactivated() {
+        if (this.isStreaming) {
+            this.toggleStream(false);
+        }
+    }
+
+    handleTelemetry(sensorData) {
+        if (!sensorData) return;
+        const distance = typeof sensorData.distance_cm === 'number' 
+            ? sensorData.distance_cm 
+            : parseFloat(sensorData.distance_cm);
+
+        const isObstacle = sensorData.obstacle_detected === true || (distance > 0 && distance <= this.dangerThreshold);
+
+        console.log(`[Ultrasonic] 📊 Cập nhật: ${distance} cm | Vật cản: ${isObstacle}`);
+        this.addPoint(distance, isObstacle);
+    }
+
+    addPoint(distance, isObstacle) {
+        const point = {
+            time: new Date(),
+            distance: distance,
+            isObstacle: isObstacle
+        };
+
+        this.dataPoints.push(point);
+        if (this.dataPoints.length > this.maxPoints) {
+            this.dataPoints.shift();
+        }
+
+        this.updateUI(distance, isObstacle);
+        this.draw();
+    }
+
+    updateUI(distance, isObstacle) {
+        const valEl = document.getElementById('distance-display-val');
+        const alarmBanner = document.getElementById('alarm-banner');
+        const alarmIcon = document.getElementById('alarm-icon');
+        const alarmText = document.getElementById('alarm-text');
+        const gaugeFill = document.getElementById('gauge-bar-fill');
+        const gaugeReading = document.getElementById('gauge-reading-text');
+
+        // 1. Số Neon lớn
+        if (valEl) {
+            valEl.classList.remove('neon-danger', 'neon-out-range');
+            if (distance < 0) {
+                valEl.textContent = '--.-';
+                valEl.classList.add('neon-out-range');
+            } else {
+                valEl.textContent = distance.toFixed(1);
+                if (isObstacle) {
+                    valEl.classList.add('neon-danger');
+                }
+            }
+        }
+
+        // 2. Banner Cảnh báo
+        if (alarmBanner && alarmText && alarmIcon) {
+            alarmBanner.classList.remove('banner-safe', 'banner-danger');
+            if (distance < 0) {
+                alarmBanner.classList.add('banner-safe');
+                alarmIcon.textContent = 'ℹ️';
+                alarmText.textContent = '[THÔNG BÁO] NGOÀI TẦM ĐO / TIMEOUT';
+            } else if (isObstacle) {
+                alarmBanner.classList.add('banner-danger');
+                alarmIcon.textContent = '⚠️';
+                alarmText.textContent = `[CẢNH BÁO] CÓ VẬT CẢN (<${this.dangerThreshold}cm)!`;
+            } else {
+                alarmBanner.classList.add('banner-safe');
+                alarmIcon.textContent = '🛡️';
+                alarmText.textContent = '[OK] ĐƯỜNG TRỐNG AN TOÀN';
+            }
+        }
+
+        // 3. Vạch thước đo quang học Gauge
+        if (gaugeFill && gaugeReading) {
+            const displayDist = distance > 0 ? distance : 0;
+            const pct = Math.min(100, Math.max(0, (displayDist / this.maxY) * 100));
+            gaugeFill.style.width = `${pct}%`;
+            gaugeReading.textContent = `${displayDist.toFixed(1)} cm`;
+        }
+
+        // 4. Cập nhật thống kê nhanh Min / Max / Avg / Samples
+        this.updateStats();
+    }
+
+    updateStats() {
+        const minEl = document.getElementById('stat-min');
+        const avgEl = document.getElementById('stat-avg');
+        const maxEl = document.getElementById('stat-max');
+        const samplesEl = document.getElementById('stat-samples');
+
+        const validDistances = this.dataPoints
+            .map(p => p.distance)
+            .filter(d => d > 0);
+
+        if (samplesEl) {
+            samplesEl.textContent = this.dataPoints.length;
+        }
+
+        if (validDistances.length === 0) {
+            if (minEl) minEl.textContent = '--.- cm';
+            if (avgEl) avgEl.textContent = '--.- cm';
+            if (maxEl) maxEl.textContent = '--.- cm';
+            return;
+        }
+
+        const min = Math.min(...validDistances);
+        const max = Math.max(...validDistances);
+        const sum = validDistances.reduce((acc, v) => acc + v, 0);
+        const avg = sum / validDistances.length;
+
+        if (minEl) minEl.textContent = `${min.toFixed(1)} cm`;
+        if (maxEl) maxEl.textContent = `${max.toFixed(1)} cm`;
+        if (avgEl) avgEl.textContent = `${avg.toFixed(1)} cm`;
+    }
+
+    draw() {
+        if (!this.ctx || !this.canvas) return;
+        const ctx = this.ctx;
+        const w = this.displayWidth || this.canvas.width;
+        const h = this.displayHeight || this.canvas.height;
+
+        ctx.clearRect(0, 0, w, h);
+
+        const padLeft = 52;
+        const padRight = 30;
+        const padTop = 32;
+        const padBottom = 35;
+        const chartW = w - padLeft - padRight;
+        const chartH = h - padTop - padBottom;
+
+        if (chartW <= 0 || chartH <= 0) return;
+
+        // 1. Vẽ lưới ngang và nhãn trục Y (0 - 100 cm)
+        const ySteps = 5; // 0, 20, 40, 60, 80, 100
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.font = '600 11px "Chakra Petch", sans-serif';
+
+        for (let i = 0; i <= ySteps; i++) {
+            const val = (this.maxY / ySteps) * i;
+            const y = padTop + chartH - (i / ySteps) * chartH;
+
+            // Đường kẻ ngang mờ
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(100, 116, 139, 0.16)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.moveTo(padLeft, y);
+            ctx.lineTo(padLeft + chartW, y);
+            ctx.stroke();
+
+            // Nhãn số
+            ctx.fillStyle = '#64748b';
+            ctx.fillText(`${val}cm`, padLeft - 10, y);
+        }
+
+        // 2. Vẽ đường kẻ đỏ cảnh báo ngưỡng 10cm
+        const dangerY = padTop + chartH - (this.dangerThreshold / this.maxY) * chartH;
+        ctx.beginPath();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([6, 4]);
+        ctx.shadowColor = 'rgba(239, 68, 68, 0.6)';
+        ctx.shadowBlur = 6;
+        ctx.moveTo(padLeft, dangerY);
+        ctx.lineTo(padLeft + chartW, dangerY);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset dash
+        ctx.shadowBlur = 0;  // Reset shadow
+
+        // Nhãn cảnh báo 10cm trên biểu đồ
+        ctx.fillStyle = '#ef4444';
+        ctx.textAlign = 'right';
+        ctx.font = '700 10px "Chakra Petch", sans-serif';
+        ctx.fillText('NGƯỠNG CẢNH BÁO: 10 CM', padLeft + chartW - 6, dangerY - 9);
+
+        // 3. Nếu chưa có dữ liệu, hiển thị thông báo
+        if (this.dataPoints.length === 0) {
+            ctx.fillStyle = '#64748b';
+            ctx.textAlign = 'center';
+            ctx.font = '500 13px "Be Vietnam Pro", sans-serif';
+            ctx.fillText('Chưa có dữ liệu đo. Nhấn "Đo 1 lần" hoặc "Bắt đầu đo liên tục" để ghi nhận.', padLeft + chartW / 2, padTop + chartH / 2);
+            return;
+        }
+
+        // 4. Tính toán tọa độ các điểm
+        const points = [];
+        const n = this.dataPoints.length;
+
+        for (let i = 0; i < n; i++) {
+            const p = this.dataPoints[i];
+            const dist = p.distance > 0 ? Math.min(this.maxY, Math.max(0, p.distance)) : 0;
+            // Dồn điểm về bên phải nếu chưa đầy buffer
+            const x = padLeft + (this.maxPoints - n + i) * (chartW / (this.maxPoints - 1));
+            const y = padTop + chartH - (dist / this.maxY) * chartH;
+            points.push({ x, y, dist: p.distance, isObstacle: p.isObstacle });
+        }
+
+        // 5. Tô nền dải màu chuyển tiếp bên dưới đường (Gradient Area Fill)
+        const areaGrad = ctx.createLinearGradient(0, padTop, 0, padTop + chartH);
+        areaGrad.addColorStop(0, 'rgba(6, 182, 212, 0.32)');
+        areaGrad.addColorStop(0.7, 'rgba(6, 182, 212, 0.08)');
+        areaGrad.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
+
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, padTop + chartH);
+        ctx.lineTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.lineTo(points[points.length - 1].x, padTop + chartH);
+        ctx.closePath();
+        ctx.fillStyle = areaGrad;
+        ctx.fill();
+
+        // 6. Vẽ đường nối chính (Line Stroke) phát sáng Neon
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // 7. Vẽ các điểm tròn nhỏ
+        for (let i = 0; i < points.length; i++) {
+            const pt = points[i];
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+            ctx.fillStyle = pt.isObstacle ? '#ef4444' : '#38bdf8';
+            ctx.fill();
+        }
+
+        // 8. Điểm cuối cùng (Mới nhất): Vòng tròn phát sáng lớn và nhãn giá trị
+        const lastPt = points[points.length - 1];
+        ctx.beginPath();
+        ctx.arc(lastPt.x, lastPt.y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = lastPt.isObstacle ? '#ef4444' : '#06b6d4';
+        ctx.shadowColor = lastPt.isObstacle ? 'rgba(239, 68, 68, 0.9)' : 'rgba(6, 182, 212, 0.9)';
+        ctx.shadowBlur = 14;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Nhãn số cự ly gắn ngay trên điểm cuối cùng
+        ctx.font = '700 11px "Chakra Petch", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = lastPt.isObstacle ? '#f87171' : '#38bdf8';
+        const labelY = Math.max(padTop + 14, lastPt.y - 12);
+        const labelText = lastPt.dist > 0 ? `${lastPt.dist.toFixed(1)} cm` : '--.-';
+        ctx.fillText(labelText, lastPt.x, labelY);
+    }
+
+    measureOnce() {
+        const now = Date.now();
+        if (this._lastMeasureTime && (now - this._lastMeasureTime < 350)) {
+            return;
+        }
+        this._lastMeasureTime = now;
+
+        // Nếu đang bật đo liên tục thì dừng đo liên tục trước
+        if (this.isStreaming) {
+            this.toggleStream(false);
+        }
+
+        console.log('[Ultrasonic] 🎯 Bắt đầu Đo 1 lần...');
+        const modeTag = document.getElementById('current-mode-tag');
+        if (modeTag) {
+            modeTag.textContent = 'Đang đo 1 lần...';
+            modeTag.className = 'mode-status-tag tag-measuring';
+        }
+
+        this.wsClient.send({ cmd: 'ultrasonic_measure_once' });
+
+        setTimeout(() => {
+            if (!this.isStreaming && modeTag) {
+                modeTag.textContent = 'Nghỉ (Standby)';
+                modeTag.className = 'mode-status-tag tag-standby';
+            }
+        }, 1200);
+    }
+
+    toggleStream(forceState = null) {
+        const now = Date.now();
+        if (this._lastToggleTime && (now - this._lastToggleTime < 350)) {
+            console.warn('[Ultrasonic] ⚠ Bỏ qua click lặp quá nhanh (debounce)');
+            return;
+        }
+        this._lastToggleTime = now;
+
+        const nextState = forceState !== null ? forceState : !this.isStreaming;
+        this.isStreaming = nextState;
+
+        const btn = document.getElementById('btn-stream-toggle');
+        const icon = document.getElementById('stream-btn-icon');
+        const text = document.getElementById('stream-btn-text');
+        const modeTag = document.getElementById('current-mode-tag');
+
+        if (this.isStreaming) {
+            console.log('[Ultrasonic] ▶ BẮT ĐẦU ĐO LIÊN TỤC');
+            if (btn) btn.classList.add('streaming');
+            if (icon) icon.textContent = '⏸';
+            if (text) text.textContent = 'Dừng đo liên tục';
+            if (modeTag) {
+                modeTag.textContent = 'Đang đo liên tục';
+                modeTag.className = 'mode-status-tag tag-streaming';
+            }
+            this.wsClient.send({ cmd: 'ultrasonic_start_stream' });
+        } else {
+            console.log('[Ultrasonic] ⏸ DỪNG ĐO LIÊN TỤC');
+            if (btn) btn.classList.remove('streaming');
+            if (icon) icon.textContent = '▶';
+            if (text) text.textContent = 'Bắt đầu đo liên tục';
+            if (modeTag) {
+                modeTag.textContent = 'Nghỉ (Standby)';
+                modeTag.className = 'mode-status-tag tag-standby';
+            }
+            this.wsClient.send({ cmd: 'ultrasonic_stop_stream' });
+        }
+    }
+
+    clearData() {
+        this.dataPoints = [];
+        this.updateUI(-1, false);
+        this.draw();
+    }
+}
+
+
+// ==============================================================================
+// 6. CLASS DASHBOARD_APP (Lớp ứng dụng trung tâm - Điều phối toàn bộ hệ thống)
 // ==============================================================================
 class DashboardApp {
     constructor() {
@@ -291,6 +705,12 @@ class DashboardApp {
         this.authManager = new AuthManager();
         this.pwController = new PasswordFieldController('#password', '#eye-icon');
         this.wsClient = new WebSocketClient();
+        this.ultrasonicController = new UltrasonicChartController(this.wsClient);
+        
+        // Kết nối bộ nhận dữ liệu Telemetry trực tiếp từ WebSocket tới Controller
+        this.wsClient.telemetryCallback = (sensorData) => {
+            this.ultrasonicController.handleTelemetry(sensorData);
+        };
     }
 
     /**
@@ -371,6 +791,57 @@ class DashboardApp {
         if (wifiModal) {
             wifiModal.addEventListener('click', (e) => {
                 if (e.target === wifiModal) closeWifiModal();
+            });
+        }
+
+        // 6. Thẻ Cảm biến khoảng cách RCWL-1601: Click vào để mở Phòng Lab Cảm biến
+        const ultrasonicCard = document.getElementById('card-ultrasonic');
+        const backUltrasonicBtn = document.getElementById('btn-back-ultrasonic');
+
+        if (ultrasonicCard) {
+            ultrasonicCard.removeAttribute('onclick');
+            ultrasonicCard.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.screenManager.show('ultrasonic-screen');
+                this.ultrasonicController.onScreenActivated();
+            });
+        }
+
+        if (backUltrasonicBtn) {
+            backUltrasonicBtn.removeAttribute('onclick');
+            backUltrasonicBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.ultrasonicController.onScreenDeactivated();
+                this.screenManager.show('dashboard-screen');
+            });
+        }
+
+        // 7. Các nút điều khiển cảm biến RCWL-1601
+        const btnMeasureOnce = document.getElementById('btn-measure-once');
+        const btnStreamToggle = document.getElementById('btn-stream-toggle');
+        const btnClearChart = document.getElementById('btn-clear-chart');
+
+        if (btnMeasureOnce) {
+            btnMeasureOnce.removeAttribute('onclick');
+            btnMeasureOnce.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.ultrasonicController.measureOnce();
+            });
+        }
+
+        if (btnStreamToggle) {
+            btnStreamToggle.removeAttribute('onclick');
+            btnStreamToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.ultrasonicController.toggleStream();
+            });
+        }
+
+        if (btnClearChart) {
+            btnClearChart.removeAttribute('onclick');
+            btnClearChart.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.ultrasonicController.clearData();
             });
         }
     }
@@ -501,6 +972,7 @@ let app = null;
 
 window.addEventListener('DOMContentLoaded', () => {
     app = new DashboardApp();
+    window.app = app;
     app.init();
 });
 
@@ -515,4 +987,43 @@ function togglePasswordVisibility() {
 
 function handleLogout() {
     if (app) app.handleUserLogout();
+}
+
+function handleOpenUltrasonicScreen() {
+    if (window.app) {
+        window.app.screenManager.show('ultrasonic-screen');
+        if (window.app.ultrasonicController) {
+            window.app.ultrasonicController.onScreenActivated();
+        }
+    }
+}
+
+function handleBackUltrasonic() {
+    if (window.app) {
+        if (window.app.ultrasonicController) {
+            window.app.ultrasonicController.onScreenDeactivated();
+        }
+        window.app.screenManager.show('dashboard-screen');
+    }
+}
+
+function handleMeasureOnce() {
+    console.log('[Global] 👉 Gọi hàm handleMeasureOnce()');
+    if (window.app && window.app.ultrasonicController) {
+        window.app.ultrasonicController.measureOnce();
+    }
+}
+
+function handleStreamToggle() {
+    console.log('[Global] 👉 Gọi hàm handleStreamToggle()');
+    if (window.app && window.app.ultrasonicController) {
+        window.app.ultrasonicController.toggleStream();
+    }
+}
+
+function handleClearChart() {
+    console.log('[Global] 👉 Gọi hàm handleClearChart()');
+    if (window.app && window.app.ultrasonicController) {
+        window.app.ultrasonicController.clearData();
+    }
 }

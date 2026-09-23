@@ -1,11 +1,11 @@
-<DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Xe Dò Line & Cánh Tay Robot 4 Bậc</title>
     <!-- Nhúng file CSS định dạng giao diện -->
-    <link rel="stylesheet" href="../static/css/style.css?v=2.6">
+    <link rel="stylesheet" href="../static/css/style.css?v=2.8">
     <!-- Font chữ Chakra Petch (phong cách Robot/Công nghệ) và Be Vietnam Pro (tối ưu 100% tiếng Việt có dấu) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -330,7 +330,7 @@
                     </div>
 
                     <!-- THẺ 2: CẢM BIẾN KHOẢNG CÁCH RCWL-1601 -->
-                    <div class="function-card" id="card-ultrasonic" title="Cảm biến khoảng cách RCWL-1601">
+                    <div class="function-card" id="card-ultrasonic" title="Cảm biến khoảng cách RCWL-1601" style="cursor: pointer;">
                         <div class="card-glow-overlay"></div>
                         <div class="card-icon-wrapper">
                             <!-- Biểu tượng cảm biến siêu âm RCWL-1601 công nghệ cao -->
@@ -357,13 +357,186 @@
                             <h3 class="card-title">Cảm biến khoảng cách RCWL-1601</h3>
                             <p class="card-desc">Đo cự ly và nhận diện chướng ngại vật bằng sóng siêu âm</p>
                         </div>
-                        <div class="card-status-badge status-in-progress">
+                        <div class="card-status-badge status-ready">
                             <span class="status-indicator"></span>
-                            <span class="status-text">Đang phát triển</span>
+                            <span class="status-text">Sẵn sàng</span>
                         </div>
                     </div>
 
                 </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MÀN HÌNH 4: PHÒNG LAB CẢM BIẾN RCWL-1601 (Phương Án 1: 2 Cột)  -->
+    <!-- Tác dụng: Bảng điều khiển chuyên sâu cảm biến khoảng cách     -->
+    <!-- ============================================================ -->
+    <div id="ultrasonic-screen" class="screen">
+        <!-- THANH TIÊU ĐỀ TOPBAR CHUYÊN NGHIỆP -->
+        <header class="ultrasonic-header">
+            <div class="ultrasonic-header-left">
+                <button type="button" class="btn-screen-back" id="btn-back-ultrasonic" title="Quay lại Bảng điều khiển">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                    <span>Quay lại</span>
+                </button>
+                <div class="ultrasonic-title-box">
+                    <h2 class="ultrasonic-main-title">CẢM BIẾN KHOẢNG CÁCH RCWL-1601</h2>
+                    <span class="ultrasonic-sub-tag">HỆ THỐNG ĐO SIÊU ÂM THỜI GIAN THỰC</span>
+                </div>
+            </div>
+            
+            <div class="ultrasonic-header-right">
+                <div class="sensor-hardware-badge">
+                    <span class="hardware-pulse-dot" id="ultrasonic-hw-dot"></span>
+                    <span class="hardware-label" id="ultrasonic-hw-status">RCWL-1601 • SẴN SÀNG</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- KHU VỰC NỘI DUNG 2 CỘT SONG SONG (LAB DASHBOARD) -->
+        <main class="ultrasonic-main-content">
+            <div class="ultrasonic-dashboard-grid">
+
+                <!-- ==================================================== -->
+                <!-- CỘT 1 (BÊN TRÁI): CỤM ĐIỀU KHIỂN & HIỂN THỊ CỰ LY     -->
+                <!-- ==================================================== -->
+                <div class="ultrasonic-col-left">
+
+                    <!-- CARD 1.1: BẢNG ĐIỀU KHIỂN CHẾ ĐỘ ON-DEMAND -->
+                    <div class="lab-card ctrl-card">
+                        <div class="lab-card-header">
+                            <span class="lab-card-icon">⚡</span>
+                            <div class="lab-card-titles">
+                                <h3 class="lab-card-title">ĐIỀU KHIỂN ĐO (ON-DEMAND)</h3>
+                                <p class="lab-card-sub">Tiết kiệm năng lượng & Tối ưu CPU xe</p>
+                            </div>
+                        </div>
+
+                        <!-- Cụm nút bấm tương tác -->
+                        <div class="ctrl-actions-group">
+                            <button type="button" class="btn-lab btn-lab-measure" id="btn-measure-once" title="Đo khoảng cách đúng 1 lần">
+                                <span class="btn-lab-icon">🎯</span>
+                                <span class="btn-lab-text">Đo 1 lần</span>
+                            </button>
+
+                            <button type="button" class="btn-lab btn-lab-stream" id="btn-stream-toggle" title="Bắt đầu hoặc dừng đo liên tục">
+                                <span class="btn-lab-icon" id="stream-btn-icon">▶</span>
+                                <span class="btn-lab-text" id="stream-btn-text">Bắt đầu đo liên tục</span>
+                            </button>
+
+                            <button type="button" class="btn-lab btn-lab-clear" id="btn-clear-chart" title="Xóa dữ liệu cũ trên đồ thị">
+                                <span class="btn-lab-icon">🔄</span>
+                                <span class="btn-lab-text">Xóa đồ thị</span>
+                            </button>
+                        </div>
+
+                        <!-- Trạng thái chế độ làm việc hiện tại -->
+                        <div class="mode-status-indicator">
+                            <span class="mode-status-label">Chế độ hiện tại:</span>
+                            <span class="mode-status-tag tag-standby" id="current-mode-tag">Nghỉ (Standby)</span>
+                        </div>
+                    </div>
+
+                    <!-- CARD 1.2: HIỂN THỊ CỰ LY SỐ NEON & THANH QUANG HỌC GAUGE -->
+                    <div class="lab-card display-card">
+                        <div class="lab-card-header">
+                            <span class="lab-card-icon">📏</span>
+                            <div class="lab-card-titles">
+                                <h3 class="lab-card-title">CỰ LY THỜI GIAN THỰC</h3>
+                                <p class="lab-card-sub">Khoảng cách tới vật cản gần nhất</p>
+                            </div>
+                        </div>
+
+                        <!-- Khối số đo Neon kích thước lớn -->
+                        <div class="neon-number-container">
+                            <div class="neon-number-value" id="distance-display-val">--.-</div>
+                            <div class="neon-number-unit">cm</div>
+                        </div>
+
+                        <!-- Nhãn báo động: An toàn / Cảnh báo vật cản -->
+                        <div class="alarm-banner banner-safe" id="alarm-banner">
+                            <span class="alarm-icon" id="alarm-icon">🛡️</span>
+                            <span class="alarm-text" id="alarm-text">[OK] ĐƯỜNG TRỐNG AN TOÀN</span>
+                        </div>
+
+                        <!-- Thước đo LED Bar Gauge quang học trực quan -->
+                        <div class="optical-gauge-container">
+                            <div class="optical-gauge-header">
+                                <span class="gauge-title">Thước đo vạch cự ly:</span>
+                                <span class="gauge-reading" id="gauge-reading-text">0.0 cm</span>
+                            </div>
+                            <div class="optical-gauge-track">
+                                <div class="optical-gauge-fill" id="gauge-bar-fill" style="width: 0%;"></div>
+                                <div class="gauge-danger-line" title="Ngưỡng nguy hiểm 10cm" style="left: 10%;"></div>
+                            </div>
+                            <div class="optical-gauge-scale">
+                                <span>0 cm</span>
+                                <span class="scale-danger">10 cm (Cảnh báo)</span>
+                                <span>50 cm</span>
+                                <span>100 cm</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ==================================================== -->
+                <!-- CỘT 2 (BÊN PHẢI): BIỂU ĐỒ ĐƯỜNG THỜI GIAN THỰC & STATS -->
+                <!-- ==================================================== -->
+                <div class="ultrasonic-col-right">
+                    <div class="lab-card chart-card">
+                        <div class="chart-card-top">
+                            <div class="lab-card-header">
+                                <span class="lab-card-icon">📈</span>
+                                <div class="lab-card-titles">
+                                    <h3 class="lab-card-title">BIỂU ĐỒ KHOẢNG CÁCH THEO THỜI GIAN</h3>
+                                    <p class="lab-card-sub">Đồ thị trượt thời gian thực 60 FPS (HTML5 Canvas)</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Chú thích đồ thị -->
+                            <div class="chart-legend-box">
+                                <div class="legend-item">
+                                    <span class="legend-chip chip-cyan"></span>
+                                    <span>Cự ly đo (cm)</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-chip chip-red"></span>
+                                    <span>Ngưỡng an toàn (10 cm)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Khung chứa Canvas vẽ đồ thị -->
+                        <div class="canvas-wrapper" id="canvas-wrapper">
+                            <canvas id="ultrasonic-canvas"></canvas>
+                        </div>
+
+                        <!-- Hộp thống kê nhanh: Min, Max, Avg, Tổng mẫu -->
+                        <div class="stats-overview-grid">
+                            <div class="stat-tile">
+                                <div class="stat-tile-label">Cự ly nhỏ nhất (Min)</div>
+                                <div class="stat-tile-value val-red" id="stat-min">--.- cm</div>
+                            </div>
+                            <div class="stat-tile">
+                                <div class="stat-tile-label">Cự ly trung bình (Avg)</div>
+                                <div class="stat-tile-value val-yellow" id="stat-avg">--.- cm</div>
+                            </div>
+                            <div class="stat-tile">
+                                <div class="stat-tile-label">Cự ly lớn nhất (Max)</div>
+                                <div class="stat-tile-value val-green" id="stat-max">--.- cm</div>
+                            </div>
+                            <div class="stat-tile">
+                                <div class="stat-tile-label">Tổng số mẫu đo</div>
+                                <div class="stat-tile-value val-cyan" id="stat-samples">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </main>
     </div>
@@ -454,6 +627,6 @@
     </div>
 
     <!-- Nhúng file Javascript xử lý logic tương tác -->
-    <script src="../static/js/main.js?v=2.4"></script>
+    <script src="../static/js/main.js?v=2.7"></script>
 </body>
 </html>
