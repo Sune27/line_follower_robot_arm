@@ -102,10 +102,8 @@ class RobotControllerServer:
                 else:
                     await client.send(reply)
 
-            elif cmd == "logout_and_stop":
-                print("[System] [LOGOUT] Nhận tín hiệu Đăng xuất từ Web. Đang tự động dừng Python App...")
-                self.running = False
-                self.loop.call_later(0.5, lambda: os._exit(0))
+            elif cmd == "logout_and_stop" or cmd == "logout":
+                print("[System] [LOGOUT] Người dùng đã đăng xuất trên Web. Server vẫn tiếp tục hoạt động để sẵn sàng cho lần đăng nhập tiếp theo.")
         except json.JSONDecodeError:
             pass
 
@@ -131,7 +129,23 @@ class RobotControllerServer:
                 line = ser.readline().decode('utf-8', errors='ignore').strip()
                 if line:
                     # Kiểm tra xem có phải dòng HEARTBEAT hoặc kết quả scan/connect không
-                    if line.startswith("HEARTBEAT:"):
+                    if line.startswith("TELEMETRY:"):
+                        try:
+                            telem = json.loads(line[10:])
+                            wifi = telem.get("wifi", {})
+                            self.wifi_state = {
+                                "event": "wifi_status",
+                                "connected": wifi.get("connected", False),
+                                "ssid": wifi.get("ssid", "—"),
+                                "ip": wifi.get("ip", "—"),
+                                "security": "WPA2-PSK"
+                            }
+                            if self.loop and self.connected_clients:
+                                msg_str = json.dumps(self.wifi_state)
+                                asyncio.run_coroutine_threadsafe(self._broadcast(msg_str), self.loop)
+                        except Exception:
+                            pass
+                    elif line.startswith("HEARTBEAT:"):
                         try:
                             hb = json.loads(line[10:])
                             self.wifi_state = {

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Xe Dò Line & Cánh Tay Robot 4 Bậc</title>
     <!-- Nhúng file CSS định dạng giao diện -->
-    <link rel="stylesheet" href="../static/css/style.css?v=2.4">
+    <link rel="stylesheet" href="../static/css/style.css?v=2.5">
     <!-- Font chữ Chakra Petch (phong cách Robot/Công nghệ) và Be Vietnam Pro (tối ưu 100% tiếng Việt có dấu) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -322,6 +322,40 @@
                         <div class="card-info">
                             <h3 class="card-title">Wi-Fi</h3>
                             <p class="card-desc">Cấu hình kết nối và giám sát đường truyền không dây</p>
+                        </div>
+                        <div class="card-status-badge status-in-progress">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Đang phát triển</span>
+                        </div>
+                    </div>
+
+                    <!-- THẺ 2: CẢM BIẾN KHOẢNG CÁCH RCWL-1601 -->
+                    <div class="function-card" id="card-ultrasonic" title="Cảm biến khoảng cách RCWL-1601">
+                        <div class="card-glow-overlay"></div>
+                        <div class="card-icon-wrapper">
+                            <!-- Biểu tượng cảm biến siêu âm RCWL-1601 công nghệ cao -->
+                            <svg class="sensor-ultrasonic-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <!-- Thân bo mạch cảm biến PCB -->
+                                <rect x="6" y="16" width="36" height="22" rx="4" class="sensor-board-path" fill="rgba(6, 182, 212, 0.08)" stroke="currentColor" stroke-width="2"/>
+                                <!-- 4 chân giao tiếp VCC, Trig, Echo, GND -->
+                                <line x1="15" y1="38" x2="15" y2="44" stroke="currentColor" stroke-width="2.2"/>
+                                <line x1="21" y1="38" x2="21" y2="44" stroke="currentColor" stroke-width="2.2"/>
+                                <line x1="27" y1="38" x2="27" y2="44" stroke="currentColor" stroke-width="2.2"/>
+                                <line x1="33" y1="38" x2="33" y2="44" stroke="currentColor" stroke-width="2.2"/>
+                                <!-- Loa phát sóng siêu âm Transmitter (T) -->
+                                <circle cx="16" cy="27" r="6" class="transducer-ring" stroke="currentColor" stroke-width="2"/>
+                                <circle cx="16" cy="27" r="2.2" class="transducer-core" fill="currentColor"/>
+                                <!-- Loa thu sóng hồi tiếp Receiver (R) -->
+                                <circle cx="32" cy="27" r="6" class="transducer-ring" stroke="currentColor" stroke-width="2"/>
+                                <circle cx="32" cy="27" r="2.2" class="transducer-core" fill="currentColor"/>
+                                <!-- Sóng siêu âm lan tỏa phía trước -->
+                                <path d="M19 10a7 7 0 0 1 10 0" class="sonar-wave-inner" stroke="currentColor" stroke-width="2.2"/>
+                                <path d="M15 6a13 13 0 0 1 18 0" class="sonar-wave-outer" stroke="currentColor" stroke-width="2.2"/>
+                            </svg>
+                        </div>
+                        <div class="card-info">
+                            <h3 class="card-title">Cảm biến khoảng cách RCWL-1601</h3>
+                            <p class="card-desc">Đo cự ly và nhận diện chướng ngại vật bằng sóng siêu âm</p>
                         </div>
                         <div class="card-status-badge status-in-progress">
                             <span class="status-indicator"></span>
