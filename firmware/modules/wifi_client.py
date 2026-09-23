@@ -121,6 +121,7 @@ class WiFiStationManager:
                 return False
 
         # 7. Kết nối thành công!
+        self.current_ssid = ssid
         ip_info = self.sta.ifconfig()
         print("\n" + "*"*50)
         print(f" [WiFi] 🎉 KẾT NỐI THÀNH CÔNG TỚI: '{ssid}'")
@@ -143,3 +144,8 @@ class WiFiStationManager:
         if self.is_connected():
             return self.sta.ifconfig()[0]
         return None
+
+    def get_ssid(self):
+        if self.is_connected():
+            return getattr(self, 'current_ssid', "Sune")
+        return "—"

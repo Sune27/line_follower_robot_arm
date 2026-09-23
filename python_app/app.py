@@ -113,6 +113,8 @@ class RobotControllerServer:
                     await client.send(reply)
 
             elif cmd == "get_wifi_status":
+                print("[Server] 📡 Nhận yêu cầu get_wifi_status từ Web -> Gửi CMD:GET_WIFI_STATUS xuống ESP32")
+                self.send_serial("CMD:GET_WIFI_STATUS")
                 reply = json.dumps(self.wifi_state)
                 if hasattr(client, 'send_str'):
                     await client.send_str(reply)
@@ -166,11 +168,64 @@ class RobotControllerServer:
                 line = ser.readline().decode('utf-8', errors='ignore').strip()
                 if line:
                     # In log các dòng thông tin đo từ ESP32
-                    if "[DO 1 LAN]:" in line or "[STREAM]:" in line or "[CMD_ACK]" in line:
+                    if "[DO 1 LAN]:" in line or "[STREAM]:" in line or "[CMD_ACK]" in line or "[FAILSAFE" in line:
                         print(f"[ESP32] {line}")
 
-                    # Kiểm tra xem có phải dòng TELEMETRY (khoảng cách + wifi) không
-                    if "TELEMETRY:" in line:
+                    # 1. Nhận gói tin trạng thái Wi-Fi từ lệnh GET_WIFI_STATUS
+                    if "WIFI_STATUS:" in line:
+                        try:
+                            idx = line.find("WIFI_STATUS:")
+                            json_str = line[idx + 12:].strip()
+                            wifi_info = json.loads(json_str)
+                            self.wifi_state = {
+                                "event": "wifi_status",
+                                "connected": wifi_info.get("connected", False),
+                                "ssid": wifi_info.get("ssid", "—"),
+                                "ip": wifi_info.get("ip", "—"),
+                                "emergency_mode": wifi_info.get("emergency_mode", False),
+                                "security": "WPA2-PSK"
+                            }
+                            print(f"[WiFi Status Broadcast] Wi-Fi: {self.wifi_state['ssid']} | IP: {self.wifi_state['ip']}")
+                            if self.loop and self.connected_clients:
+                                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
+                        except Exception as e:
+                            print(f"[Serial] Lỗi giải mã WIFI_STATUS: {e}")
+
+                    # 2. Nhận gói tin CẢNH BÁO KHẨN CẤP khi mất Wi-Fi
+                    elif "EMERGENCY:" in line:
+                        try:
+                            idx = line.find("EMERGENCY:")
+                            json_str = line[idx + 10:].strip()
+                            em_data = json.loads(json_str)
+                            print(f"[🚨 CẢNH BÁO KHẨN CẤP] {em_data.get('msg')}")
+                            self.wifi_state["connected"] = False
+                            self.wifi_state["emergency_mode"] = True
+                            if self.loop and self.connected_clients:
+                                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(em_data)), self.loop)
+                                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
+                        except Exception as e:
+                            print(f"[Serial] Lỗi giải mã EMERGENCY: {e}")
+
+                    # 3. Nhận gói tin KHÔI PHỤC KẾT NỐI KHẨN CẤP THÀNH CÔNG
+                    elif "EMERGENCY_RESOLVED:" in line:
+                        try:
+                            idx = line.find("EMERGENCY_RESOLVED:")
+                            json_str = line[idx + 19:].strip()
+                            res_data = json.loads(json_str)
+                            print(f"[🎉 KHÔI PHỤC KHẨN CẤP] {res_data.get('msg')}")
+                            self.wifi_state["connected"] = True
+                            self.wifi_state["emergency_mode"] = False
+                            wifi_res = res_data.get("wifi", {})
+                            if wifi_res.get("ssid"): self.wifi_state["ssid"] = wifi_res.get("ssid")
+                            if wifi_res.get("ip"): self.wifi_state["ip"] = wifi_res.get("ip")
+                            if self.loop and self.connected_clients:
+                                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(res_data)), self.loop)
+                                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
+                        except Exception as e:
+                            print(f"[Serial] Lỗi giải mã EMERGENCY_RESOLVED: {e}")
+
+                    # 4. Kiểm tra dòng TELEMETRY (khoảng cách + wifi)
+                    elif "TELEMETRY:" in line:
                         try:
                             idx = line.find("TELEMETRY:")
                             json_str = line[idx + 10:].strip()
@@ -187,7 +242,6 @@ class RobotControllerServer:
                             # Log kết quả cự ly đo được
                             dist_val = telem.get("sensor", {}).get("distance_cm")
                             obst_val = telem.get("sensor", {}).get("obstacle_detected")
-                            print(f"[Telemetry Broadcast] Cự ly: {dist_val} cm | Vật cản: {obst_val}")
 
                             # Đẩy toàn bộ telemetry (gồm cự ly cảm biến) lên tất cả client Web
                             if self.loop and self.connected_clients:

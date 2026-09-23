@@ -5,13 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Xe Dò Line & Cánh Tay Robot 4 Bậc</title>
     <!-- Nhúng file CSS định dạng giao diện -->
-    <link rel="stylesheet" href="../static/css/style.css?v=2.8">
+    <link rel="stylesheet" href="../static/css/style.css?v=2.9">
     <!-- Font chữ Chakra Petch (phong cách Robot/Công nghệ) và Be Vietnam Pro (tối ưu 100% tiếng Việt có dấu) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+
+    <!-- BANNER CẢNH BÁO KHẨN CẤP TOÀN HỆ THỐNG KHI MẤT KẾT NỐI WI-FI -->
+    <div id="global-emergency-banner" class="global-emergency-banner" style="display: none;">
+        <div class="emergency-banner-inner">
+            <span class="emergency-flashing-icon">🚨</span>
+            <div class="emergency-banner-texts">
+                <div class="emergency-banner-title">[CHẾ ĐỘ KHẨN CẤP] MẤT KẾT NỐI WI-FI VỚI XE!</div>
+                <div class="emergency-banner-desc" id="emergency-banner-desc">Hệ thống đã tự động dừng mọi hoạt động. ESP32 đang tự động quét và kết nối lại sóng Wi-Fi...</div>
+            </div>
+            <span class="emergency-status-badge">FAILSAFE ACTIVE</span>
+        </div>
+    </div>
 
     <!-- ============================================================ -->
     <!-- MÀN HÌNH 1: TRAILER / SPLASH SCREEN (Mở màn công nghệ cao)    -->
@@ -650,12 +662,20 @@
                         <span class="wifi-info-value">Chỉ kết nối mạng chỉ định</span>
                     </div>
 
+                    <!-- 6. NÚT CẬP NHẬT TRẠNG THÁI WI-FI THỦ CÔNG (ON-DEMAND) -->
+                    <div class="wifi-modal-actions">
+                        <button type="button" class="btn-refresh-wifi" id="btn-refresh-wifi" title="Yêu cầu ESP32 đọc và cập nhật trạng thái Wi-Fi mới nhất">
+                            <span class="refresh-spinner" id="refresh-wifi-spinner">🔄</span>
+                            <span id="btn-refresh-wifi-text">Cập nhật trạng thái Wi-Fi</span>
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Nhúng file Javascript xử lý logic tương tác -->
-    <script src="../static/js/main.js?v=2.7"></script>
+    <script src="../static/js/main.js?v=2.8"></script>
 </body>
 </html>

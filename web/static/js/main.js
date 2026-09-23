@@ -228,6 +228,33 @@ class WebSocketClient {
                     // Xử lý cập nhật thông tin Wi-Fi thời gian thực (Real-time)
                     if (data.event === 'wifi_status' || data.event === 'wifi_heartbeat') {
                         this.updateWifiRealtimeUI(data);
+                        // Tắt xoay spinner nếu đang bấm nút làm mới
+                        const btnRefresh = document.getElementById('btn-refresh-wifi');
+                        const textRefresh = document.getElementById('btn-refresh-wifi-text');
+                        if (btnRefresh) btnRefresh.classList.remove('spinning');
+                        if (textRefresh) textRefresh.textContent = 'Cập nhật trạng thái Wi-Fi';
+
+                    } else if (data.event === 'emergency') {
+                        console.warn('[HỆ THỐNG] 🚨 CHẾ ĐỘ KHẨN CẤP ĐÃ KÍCH HOẠT:', data.msg);
+                        const banner = document.getElementById('global-emergency-banner');
+                        const bannerDesc = document.getElementById('emergency-banner-desc');
+                        if (banner) banner.style.display = 'block';
+                        if (bannerDesc && data.msg) bannerDesc.textContent = data.msg;
+
+                        // Tự động dừng đo liên tục nếu đang bật
+                        if (window.app && window.app.ultrasonicController && window.app.ultrasonicController.isStreaming) {
+                            window.app.ultrasonicController.toggleStream(false);
+                        }
+
+                    } else if (data.event === 'emergency_resolved') {
+                        console.log('[HỆ THỐNG] 🎉 CHẾ ĐỘ KHẨN CẤP ĐÃ ĐƯỢC GIẢI QUYẾT:', data.msg);
+                        const banner = document.getElementById('global-emergency-banner');
+                        if (banner) banner.style.display = 'none';
+
+                        if (data.wifi) {
+                            this.updateWifiRealtimeUI(data.wifi);
+                        }
+
                     } else if (data.event === 'telemetry') {
                         if (data.wifi) {
                             this.updateWifiRealtimeUI(data.wifi);
@@ -869,6 +896,24 @@ class DashboardApp {
         if (wifiModal) {
             wifiModal.addEventListener('click', (e) => {
                 if (e.target === wifiModal) closeWifiModal();
+            });
+        }
+
+        // Nút Cập nhật trạng thái Wi-Fi thủ công (On-Demand)
+        const refreshWifiBtn = document.getElementById('btn-refresh-wifi');
+        if (refreshWifiBtn) {
+            refreshWifiBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                refreshWifiBtn.classList.add('spinning');
+                const textRefresh = document.getElementById('btn-refresh-wifi-text');
+                if (textRefresh) textRefresh.textContent = 'Đang kiểm tra...';
+                this.wsClient.send({ cmd: 'get_wifi_status' });
+
+                // Tự động gỡ spinning sau 4s nếu timeout
+                setTimeout(() => {
+                    refreshWifiBtn.classList.remove('spinning');
+                    if (textRefresh) textRefresh.textContent = 'Cập nhật trạng thái Wi-Fi';
+                }, 4000);
             });
         }
 
