@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=2.0">
     <link rel="alternate icon" href="../static/favicon.svg?v=2.0">
     <!-- Nhúng file CSS định dạng giao diện -->
-    <link rel="stylesheet" href="../static/css/style.css?v=2.9">
+    <link rel="stylesheet" href="../static/css/style.css?v=3.3">
     <!-- Font chữ Chakra Petch (phong cách Robot/Công nghệ) và Be Vietnam Pro (tối ưu 100% tiếng Việt có dấu) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -256,7 +256,7 @@
             <div class="login-header">
                 <div class="mini-logo">⚙️</div>
                 <h2>XÁC THỰC TRUY CẬP</h2>
-                <p class="queue-notice">⚠️ Chế độ độc quyền: 1 người điều khiển</p>
+                <p class="queue-notice is-available" id="queue-notice"><span class="queue-status-icon">🟢</span> <span class="queue-status-text">Sẵn sàng nhận 1 người điều khiển</span></p>
             </div>
 
             <!-- Biểu mẫu nhập liệu -->
@@ -277,14 +277,6 @@
                             <span id="eye-icon">👁️</span>
                         </button>
                     </div>
-                </div>
-
-                <!-- Checkbox ghi nhớ đăng nhập (tránh phải đăng nhập lại nhiều lần khi thi) -->
-                <div class="checkbox-group">
-                    <label class="remember-label">
-                        <input type="checkbox" id="remember-me" checked>
-                        <span>Ghi nhớ đăng nhập trên thiết bị này</span>
-                    </label>
                 </div>
 
                 <!-- Thông báo lỗi khi nhập sai -->
@@ -375,6 +367,41 @@
                         <div class="card-status-badge status-ready">
                             <span class="status-indicator"></span>
                             <span class="status-text">Sẵn sàng</span>
+                        </div>
+                    </div>
+
+                    <!-- THẺ 3: CẢM BIẾN DÒ LINE TCRT5000 (ĐANG PHÁT TRIỂN) -->
+                    <div class="function-card" id="card-tcrt5000" title="Cảm biến dò line TCRT5000 (Đang phát triển)" style="cursor: pointer;">
+                        <div class="card-glow-overlay"></div>
+                        <div class="card-icon-wrapper">
+                            <!-- Biểu tượng cảm biến dò line TCRT5000 công nghệ cao -->
+                            <svg class="sensor-tcrt-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <!-- Thân bo mạch cảm biến PCB -->
+                                <rect x="8" y="14" width="32" height="22" rx="4" class="sensor-board-path" fill="rgba(245, 158, 11, 0.08)" stroke="currentColor" stroke-width="2"/>
+                                <!-- 4 chân cắm VCC, GND, D0, A0 -->
+                                <line x1="15" y1="36" x2="15" y2="44" stroke="currentColor" stroke-width="2.2"/>
+                                <line x1="21" y1="36" x2="21" y2="44" stroke="currentColor" stroke-width="2.2"/>
+                                <line x1="27" y1="36" x2="27" y2="44" stroke="currentColor" stroke-width="2.2"/>
+                                <line x1="33" y1="36" x2="33" y2="44" stroke="currentColor" stroke-width="2.2"/>
+                                <!-- Mắt phát hồng ngoại IR LED -->
+                                <rect x="14" y="20" width="8" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                                <circle cx="18" cy="25" r="2" fill="currentColor"/>
+                                <!-- Mắt thu quang Phototransistor -->
+                                <rect x="26" y="20" width="8" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                                <circle cx="30" cy="25" r="2" fill="currentColor"/>
+                                <!-- Tia hồng ngoại quét xuống vạch line -->
+                                <path d="M16 10 L18 14" stroke="#f59e0b" stroke-width="2" stroke-dasharray="2 2"/>
+                                <path d="M32 10 L30 14" stroke="#f59e0b" stroke-width="2" stroke-dasharray="2 2"/>
+                                <line x1="12" y1="8" x2="36" y2="8" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="card-info">
+                            <h3 class="card-title">Cảm biến dò line TCRT5000</h3>
+                            <p class="card-desc">Hệ thống dẫn hướng quang học và bám vạch đường tự động</p>
+                        </div>
+                        <div class="card-status-badge status-in-progress">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Đang phát triển</span>
                         </div>
                     </div>
 
@@ -679,6 +706,6 @@
     </div>
 
     <!-- Nhúng file Javascript xử lý logic tương tác -->
-    <script src="../static/js/main.js?v=3.2"></script>
+    <script src="../static/js/main.js?v=3.6"></script>
 </body>
 </html>

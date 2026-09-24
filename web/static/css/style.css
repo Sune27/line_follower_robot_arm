@@ -202,9 +202,37 @@ body {
 }
 
 .queue-notice {
-    font-size: 0.85rem;
-    color: #fbbf24; /* Vàng cảnh báo */
-    font-weight: 500;
+    font-size: 0.88rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    color: #00ff88;
+    transition: color 0.3s ease;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+.queue-notice .queue-status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    line-height: 1;
+}
+
+.queue-notice .queue-status-text {
+    line-height: 1.2;
+    display: inline-block;
+}
+
+.queue-notice.is-available {
+    color: #00ff88;
+}
+
+.queue-notice.is-busy {
+    color: #ef4444;
 }
 
 /* Các trường input */
@@ -292,25 +320,6 @@ body {
     transform: scale(1.15);
 }
 
-.checkbox-group {
-    margin-bottom: 20px;
-}
-
-.remember-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
-    color: #94a3b8;
-    cursor: pointer;
-}
-
-.remember-label input {
-    accent-color: #06b6d4;
-    cursor: pointer;
-    width: 16px;
-    height: 16px;
-}
 
 .error-msg {
     color: #ef4444;
@@ -544,6 +553,20 @@ body {
         opacity: 1;
         stroke: #38bdf8;
     }
+}
+
+/* BIỂU TƯỢNG CẢM BIẾN DÒ LINE TCRT5000 SVG */
+.sensor-tcrt-icon {
+    width: 36px;
+    height: 36px;
+    color: #f59e0b;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.7));
+}
+
+.function-card:hover .sensor-tcrt-icon {
+    color: #fbbf24;
+    filter: drop-shadow(0 0 12px #fbbf24);
 }
 
 /* THÔNG TIN VĂN BẢN TRÊN THẺ */

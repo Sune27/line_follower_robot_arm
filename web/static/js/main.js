@@ -44,9 +44,14 @@ class ScreenManager {
 // ==============================================================================
 class AuthManager {
     constructor() {
-        // Khóa định danh lưu trong bộ nhớ trình duyệt
+        // Khóa định danh lưu trong bộ nhớ phiên làm việc của trình duyệt
         this.storageKey = 'robot_car_active_user';
         
+        // Xóa sạch mọi phiên ghi nhớ cũ trong localStorage nếu có
+        try {
+            localStorage.removeItem(this.storageKey);
+        } catch (e) {}
+
         // Danh sách các tài khoản hợp lệ được cấp quyền truy cập hệ thống
         this.authorizedAccounts = [
             { username: 'sune', password: '24021197' }, // Tài khoản quản trị chính
@@ -99,22 +104,18 @@ class AuthManager {
     /**
      * Lưu phiên đăng nhập sau khi được Server cấp quyền điều khiển
      */
-    saveSession(username, rememberMe) {
-        if (rememberMe) {
-            localStorage.setItem(this.storageKey, username);
-        } else {
-            sessionStorage.setItem(this.storageKey, username);
-        }
+    saveSession(username) {
+        sessionStorage.setItem(this.storageKey, username);
     }
 
     /**
      * Xác thực thông tin đăng nhập (cục bộ)
      */
-    login(username, password, rememberMe) {
+    login(username, password) {
         const check = this.checkCredentials(username, password);
         if (!check.success) return check;
 
-        this.saveSession(check.user, rememberMe);
+        this.saveSession(check.user);
         return {
             success: true,
             message: 'Đăng nhập thành công',
@@ -126,8 +127,10 @@ class AuthManager {
      * Đăng xuất và giải phóng quyền điều khiển cho người tiếp theo
      */
     logout() {
-        localStorage.removeItem(this.storageKey);
         sessionStorage.removeItem(this.storageKey);
+        try {
+            localStorage.removeItem(this.storageKey);
+        } catch (e) {}
     }
 
     /**
@@ -135,7 +138,7 @@ class AuthManager {
      * @returns {string|null}
      */
     getActiveUser() {
-        return localStorage.getItem(this.storageKey) || sessionStorage.getItem(this.storageKey);
+        return sessionStorage.getItem(this.storageKey);
     }
 
     /**
@@ -1007,6 +1010,16 @@ class DashboardApp {
                 this.ultrasonicController.clearData();
             });
         }
+
+        // 8. Thẻ Cảm biến dò line TCRT5000 (Chức năng đang phát triển - Chưa có hành động thực thi)
+        const tcrtCard = document.getElementById('card-tcrt5000');
+        if (tcrtCard) {
+            tcrtCard.removeAttribute('onclick');
+            tcrtCard.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Hiện tại đang ở chế độ 'Đang phát triển', khi ấn vào thì chưa có chức năng gì được thực thi
+            });
+        }
     }
 
     /**
@@ -1018,7 +1031,6 @@ class DashboardApp {
 
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
-        const rememberCheckbox = document.getElementById('remember-me');
         const errorMsgElement = document.getElementById('error-message');
         const submitBtn = document.querySelector('.btn-submit');
 
@@ -1047,8 +1059,7 @@ class DashboardApp {
         }
 
         this.pendingLogin = {
-            username: credCheck.user,
-            rememberMe: rememberCheckbox ? rememberCheckbox.checked : false
+            username: credCheck.user
         };
 
         // Gửi yêu cầu xin quyền độc quyền tới Server
@@ -1086,7 +1097,7 @@ class DashboardApp {
 
         if (resp && resp.success) {
             if (this.pendingLogin) {
-                this.authManager.saveSession(this.pendingLogin.username, this.pendingLogin.rememberMe);
+                this.authManager.saveSession(this.pendingLogin.username);
             }
             if (errorMsgElement) errorMsgElement.innerText = '';
             const user = resp.user || (this.pendingLogin ? this.pendingLogin.username : 'User');
@@ -1108,9 +1119,11 @@ class DashboardApp {
         if (!queueNotice) return;
 
         if (status.is_locked) {
-            queueNotice.innerHTML = `🔒 <span style="color: #ef4444; font-weight: 600;">Hệ thống đang bận: '${status.active_user}' đang điều khiển!</span>`;
+            queueNotice.className = 'queue-notice is-busy';
+            queueNotice.innerHTML = `<span class="queue-status-icon">🔒</span> <span class="queue-status-text">'${status.active_user}' đang điều khiển!</span>`;
         } else {
-            queueNotice.innerHTML = `🟢 <span style="color: #00ff88; font-weight: 600;">Chế độ độc quyền: Sẵn sàng nhận 1 người điều khiển</span>`;
+            queueNotice.className = 'queue-notice is-available';
+            queueNotice.innerHTML = `<span class="queue-status-icon">🟢</span> <span class="queue-status-text">Sẵn sàng nhận 1 người điều khiển</span>`;
         }
     }
 
