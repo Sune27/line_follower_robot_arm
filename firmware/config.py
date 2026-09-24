@@ -26,3 +26,10 @@ OBSTACLE_DISTANCE_THRESHOLD_CM = 10.0  # Ngưỡng phát hiện vật cản (cm)
 # 3. CẤU HÌNH CHU KỲ VÒNG LẶP ĐIỀU KHIỂN XE
 # ==============================================================================
 CONTROL_LOOP_INTERVAL_MS = 20
+
+# ==============================================================================
+# 4. CẤU HÌNH CẢM BIẾN DÒ LINE QUANG HỌC TCRT5000
+# ==============================================================================
+PIN_LINE_LEFT = 19           # Mắt Trái nối chân DO vào GPIO 19 (D19)
+PIN_LINE_RIGHT = 21          # Mắt Phải nối chân DO vào GPIO 21 (D21)
+

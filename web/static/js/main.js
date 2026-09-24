@@ -831,6 +831,222 @@ class UltrasonicChartController {
 
 
 // ==============================================================================
+
+// ==============================================================================
+// 5.5 CLASS TCRT5000_CONTROLLER (Dieu khien mo phong 2D Cam bien Do Line TCRT5000)
+// ==============================================================================
+class TCRT5000Controller {
+    constructor() {
+        this.leftEnabled = true;
+        this.rightEnabled = true;
+        this.leftIsBlack = false;
+        this.rightIsBlack = false;
+        this.currentSim = 'forward';
+
+        this.chkLeft = null;
+        this.chkRight = null;
+        this.chassis = null;
+        this.eyeLeft = null;
+        this.eyeRight = null;
+        this.boxLeft = null;
+        this.boxRight = null;
+        this.statusBadgeLeft = null;
+        this.statusBadgeRight = null;
+        this.statusDotLeft = null;
+        this.statusDotRight = null;
+        this.statusTextLeft = null;
+        this.statusTextRight = null;
+        this.logicValLeft = null;
+        this.logicValRight = null;
+        this.voltValLeft = null;
+        this.voltValRight = null;
+        this.simButtons = {};
+    }
+
+    init() {
+        this.chkLeft = document.getElementById('chk-sensor-left');
+        this.chkRight = document.getElementById('chk-sensor-right');
+        this.chassis = document.getElementById('tcrt-robot-chassis');
+        this.eyeLeft = document.getElementById('tcrt-eye-left');
+        this.eyeRight = document.getElementById('tcrt-eye-right');
+        this.boxLeft = document.getElementById('telemetry-box-left');
+        this.boxRight = document.getElementById('telemetry-box-right');
+
+        this.statusBadgeLeft = document.getElementById('status-badge-left');
+        this.statusBadgeRight = document.getElementById('status-badge-right');
+        this.statusDotLeft = document.getElementById('status-dot-left');
+        this.statusDotRight = document.getElementById('status-dot-right');
+        this.statusTextLeft = document.getElementById('status-text-left');
+        this.statusTextRight = document.getElementById('status-text-right');
+        this.logicValLeft = document.getElementById('logic-val-left');
+        this.logicValRight = document.getElementById('logic-val-right');
+        this.voltValLeft = document.getElementById('volt-val-left');
+        this.voltValRight = document.getElementById('volt-val-right');
+
+        if (this.chkLeft) {
+            this.chkLeft.addEventListener('change', () => {
+                if (!this.chkLeft.checked && !this.chkRight.checked) {
+                    this.chkLeft.checked = true;
+                    return;
+                }
+                this.leftEnabled = this.chkLeft.checked;
+                this.render();
+            });
+        }
+
+        if (this.chkRight) {
+            this.chkRight.addEventListener('change', () => {
+                if (!this.chkLeft.checked && !this.chkRight.checked) {
+                    this.chkRight.checked = true;
+                    return;
+                }
+                this.rightEnabled = this.chkRight.checked;
+                this.render();
+            });
+        }
+
+        if (this.eyeLeft) {
+            this.eyeLeft.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (!this.leftEnabled) return;
+                this.leftIsBlack = !this.leftIsBlack;
+                this.render();
+            });
+        }
+
+        if (this.eyeRight) {
+            this.eyeRight.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (!this.rightEnabled) return;
+                this.rightIsBlack = !this.rightIsBlack;
+                this.render();
+            });
+        }
+
+        const simKeys = ['forward', 'left-black', 'right-black', 'both-black'];
+        simKeys.forEach(key => {
+            const btn = document.getElementById(`btn-sim-${key}`);
+            if (btn) {
+                this.simButtons[key] = btn;
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.applyScenario(key);
+                });
+            }
+        });
+
+        this.applyScenario('forward');
+    }
+
+    onScreenActivated() {
+        this.render();
+    }
+
+    onScreenDeactivated() {
+    }
+
+    applyScenario(scenario) {
+        this.currentSim = scenario;
+        Object.keys(this.simButtons).forEach(key => {
+            if (this.simButtons[key]) {
+                this.simButtons[key].classList.toggle('active', key === scenario);
+            }
+        });
+
+        switch (scenario) {
+            case 'forward':
+                this.leftIsBlack = false;
+                this.rightIsBlack = false;
+                if (this.chassis) this.chassis.style.transform = 'translateX(0px) rotate(0deg)';
+                break;
+            case 'left-black':
+                this.leftIsBlack = true;
+                this.rightIsBlack = false;
+                if (this.chassis) this.chassis.style.transform = 'translateX(24px) rotate(5deg)';
+                break;
+            case 'right-black':
+                this.leftIsBlack = false;
+                this.rightIsBlack = true;
+                if (this.chassis) this.chassis.style.transform = 'translateX(-24px) rotate(-5deg)';
+                break;
+            case 'both-black':
+                this.leftIsBlack = true;
+                this.rightIsBlack = true;
+                if (this.chassis) this.chassis.style.transform = 'translateX(0px) rotate(0deg)';
+                break;
+        }
+
+        this.render();
+    }
+
+    render() {
+        if (this.eyeLeft) {
+            if (!this.leftEnabled) {
+                this.eyeLeft.className = 'tcrt-eye-pod is-disabled';
+            } else {
+                this.eyeLeft.className = `tcrt-eye-pod ${this.leftIsBlack ? 'is-black' : 'is-white'}`;
+            }
+        }
+        if (this.boxLeft) {
+            this.boxLeft.classList.toggle('box-disabled', !this.leftEnabled);
+        }
+        if (this.statusBadgeLeft && this.statusDotLeft && this.statusTextLeft) {
+            if (!this.leftEnabled) {
+                this.statusBadgeLeft.className = 'telemetry-badge badge-disabled';
+                this.statusDotLeft.className = 'badge-dot dot-gray';
+                this.statusTextLeft.textContent = 'ĐÃ TẮT';
+                if (this.logicValLeft) this.logicValLeft.textContent = '--';
+                if (this.voltValLeft) this.voltValLeft.textContent = '--';
+            } else if (this.leftIsBlack) {
+                this.statusBadgeLeft.className = 'telemetry-badge badge-black';
+                this.statusDotLeft.className = 'badge-dot dot-red';
+                this.statusTextLeft.textContent = 'ĐEN';
+                if (this.logicValLeft) this.logicValLeft.textContent = '1 (HIGH)';
+                if (this.voltValLeft) this.voltValLeft.textContent = '3.3V';
+            } else {
+                this.statusBadgeLeft.className = 'telemetry-badge badge-white';
+                this.statusDotLeft.className = 'badge-dot dot-green';
+                this.statusTextLeft.textContent = 'TRẮNG';
+                if (this.logicValLeft) this.logicValLeft.textContent = '0 (LOW)';
+                if (this.voltValLeft) this.voltValLeft.textContent = '0.0V';
+            }
+        }
+
+        if (this.eyeRight) {
+            if (!this.rightEnabled) {
+                this.eyeRight.className = 'tcrt-eye-pod is-disabled';
+            } else {
+                this.eyeRight.className = `tcrt-eye-pod ${this.rightIsBlack ? 'is-black' : 'is-white'}`;
+            }
+        }
+        if (this.boxRight) {
+            this.boxRight.classList.toggle('box-disabled', !this.rightEnabled);
+        }
+        if (this.statusBadgeRight && this.statusDotRight && this.statusTextRight) {
+            if (!this.rightEnabled) {
+                this.statusBadgeRight.className = 'telemetry-badge badge-disabled';
+                this.statusDotRight.className = 'badge-dot dot-gray';
+                this.statusTextRight.textContent = 'ĐÃ TẮT';
+                if (this.logicValRight) this.logicValRight.textContent = '--';
+                if (this.voltValRight) this.voltValRight.textContent = '--';
+            } else if (this.rightIsBlack) {
+                this.statusBadgeRight.className = 'telemetry-badge badge-black';
+                this.statusDotRight.className = 'badge-dot dot-red';
+                this.statusTextRight.textContent = 'ĐEN';
+                if (this.logicValRight) this.logicValRight.textContent = '1 (HIGH)';
+                if (this.voltValRight) this.voltValRight.textContent = '3.3V';
+            } else {
+                this.statusBadgeRight.className = 'telemetry-badge badge-white';
+                this.statusDotRight.className = 'badge-dot dot-green';
+                this.statusTextRight.textContent = 'TRẮNG';
+                if (this.logicValRight) this.logicValRight.textContent = '0 (LOW)';
+                if (this.voltValRight) this.voltValRight.textContent = '0.0V';
+            }
+        }
+    }
+}
+
+
 // 6. CLASS DASHBOARD_APP (Lớp ứng dụng trung tâm - Điều phối toàn bộ hệ thống)
 // ==============================================================================
 class DashboardApp {
@@ -841,6 +1057,7 @@ class DashboardApp {
         this.pwController = new PasswordFieldController('#password', '#eye-icon');
         this.wsClient = new WebSocketClient();
         this.ultrasonicController = new UltrasonicChartController(this.wsClient);
+        this.tcrtController = new TCRT5000Controller();
         
         this.pendingLogin = null;
         this.loginTimeoutTimer = null;
@@ -870,6 +1087,7 @@ class DashboardApp {
 
         // Gắn kết các sự kiện lắng nghe tương tác
         this.bindEvents();
+        this.tcrtController.init();
     }
 
     /**
@@ -1011,13 +1229,29 @@ class DashboardApp {
             });
         }
 
-        // 8. Thẻ Cảm biến dò line TCRT5000 (Chức năng đang phát triển - Chưa có hành động thực thi)
+        // 8. Thẻ Cảm biến dò line TCRT5000 (Chassis Visualizer 2D)
         const tcrtCard = document.getElementById('card-tcrt5000');
+        const backTcrtBtn = document.getElementById('btn-back-tcrt5000');
+
         if (tcrtCard) {
             tcrtCard.removeAttribute('onclick');
             tcrtCard.addEventListener('click', (e) => {
                 e.preventDefault();
-                // Hiện tại đang ở chế độ 'Đang phát triển', khi ấn vào thì chưa có chức năng gì được thực thi
+                this.screenManager.show('tcrt5000-screen');
+                if (this.tcrtController) {
+                    this.tcrtController.onScreenActivated();
+                }
+            });
+        }
+
+        if (backTcrtBtn) {
+            backTcrtBtn.removeAttribute('onclick');
+            backTcrtBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (this.tcrtController) {
+                    this.tcrtController.onScreenDeactivated();
+                }
+                this.screenManager.show('dashboard-screen');
             });
         }
     }

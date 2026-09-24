@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=2.0">
     <link rel="alternate icon" href="../static/favicon.svg?v=2.0">
     <!-- Nhúng file CSS định dạng giao diện -->
-    <link rel="stylesheet" href="../static/css/style.css?v=3.3">
+    <link rel="stylesheet" href="../static/css/style.css?v=3.4">
     <!-- Font chữ Chakra Petch (phong cách Robot/Công nghệ) và Be Vietnam Pro (tối ưu 100% tiếng Việt có dấu) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -399,9 +399,9 @@
                             <h3 class="card-title">Cảm biến dò line TCRT5000</h3>
                             <p class="card-desc">Hệ thống dẫn hướng quang học và bám vạch đường tự động</p>
                         </div>
-                        <div class="card-status-badge status-in-progress">
+                        <div class="card-status-badge status-ready">
                             <span class="status-indicator"></span>
-                            <span class="status-text">Đang phát triển</span>
+                            <span class="status-text">Sẵn sàng</span>
                         </div>
                     </div>
 
@@ -613,6 +613,182 @@
     </div>
 
     <!-- ============================================================ -->
+    <!-- MÀN HÌNH 5: CẢM BIẾN DÒ LINE TCRT5000 (Mô phỏng 2D Chassis)   -->
+    <!-- Tác dụng: Bảng giám sát quang học & mô phỏng vị trí đầu xe    -->
+    <!-- ============================================================ -->
+    <div id="tcrt5000-screen" class="screen">
+        <!-- THANH TIÊU ĐỀ TOPBAR CHUYÊN NGHIỆP -->
+        <header class="ultrasonic-header">
+            <div class="ultrasonic-header-left">
+                <button type="button" class="btn-screen-back" id="btn-back-tcrt5000" title="Quay lại Bảng điều khiển">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                    <span>Quay lại</span>
+                </button>
+                <div class="ultrasonic-title-box">
+                    <h2 class="ultrasonic-main-title">CẢM BIẾN DÒ LINE TCRT5000</h2>
+                    <span class="ultrasonic-sub-tag" style="color: #fbbf24; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3);">HỆ THỐNG DẪN HƯỚNG QUANG HỌC 2D</span>
+                </div>
+            </div>
+            
+            <div class="ultrasonic-header-right">
+                <div class="sensor-hardware-badge" style="border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08);">
+                    <span class="hardware-pulse-dot" style="background: #f59e0b; box-shadow: 0 0 8px #f59e0b;"></span>
+                    <span class="hardware-label" style="color: #fbbf24;">TCRT5000 • CHASSIS VISUALIZER</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- KHU VỰC NỘI DUNG CHÍNH (CĂN GIỮA ĐẸP MẮT THEO MẪU SƠ ĐỒ) -->
+        <main class="ultrasonic-main-content tcrt-main-container">
+            <div class="tcrt-central-card">
+
+                <!-- 1. CẤU HÌNH Ô TICK MẮT CẢM BIẾN (Theo yêu cầu: Mắt Trái D19, Mắt Phải D21) -->
+                <div class="tcrt-header-config">
+                    <span class="tcrt-config-title">⚙️ CẤU HÌNH MẮT DÒ LINE:</span>
+                    <div class="tcrt-checkboxes-group">
+                        <!-- Ô tick Mắt Trái (Mặc định cắm D19) -->
+                        <label class="tcrt-checkbox-label" for="chk-sensor-left">
+                            <input type="checkbox" id="chk-sensor-left" checked>
+                            <span class="checkbox-text">Mắt Trái <b class="pin-badge">GPIO 19</b></span>
+                        </label>
+
+                        <!-- Ô tick Mắt Phải (Mặc định cắm D21) -->
+                        <label class="tcrt-checkbox-label" for="chk-sensor-right">
+                            <input type="checkbox" id="chk-sensor-right" checked>
+                            <span class="checkbox-text">Mắt Phải <b class="pin-badge">GPIO 21</b></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 2. KHUNG SÂN CHẠY & ĐẦU XE ROBOT 2D (Theo sơ đồ trực quan) -->
+                <div class="tcrt-stage-wrapper">
+                    <div class="tcrt-track-floor" id="tcrt-track-floor">
+                        <!-- Vạch line màu đen chạy dọc -->
+                        <div class="tcrt-black-line" id="tcrt-black-line">
+                            <div class="tcrt-line-stripe"></div>
+                            <span class="tcrt-line-watermark">VẠCH ĐEN</span>
+                        </div>
+
+                        <!-- Mô hình 2D ĐẦU XE ROBOT -->
+                        <div class="tcrt-robot-chassis" id="tcrt-robot-chassis">
+                            <div class="tcrt-chassis-shell">
+                                <div class="tcrt-bumper"></div>
+                                <div class="tcrt-headlights">
+                                    <div class="tcrt-hl hl-l"></div>
+                                    <div class="tcrt-hl hl-r"></div>
+                                </div>
+                                <div class="tcrt-chassis-title">ĐẦU XE ROBOT</div>
+                                
+                                <!-- 2 Mắt cảm biến trên đầu xe -->
+                                <div class="tcrt-sensors-row">
+                                    <!-- Mắt Trái -->
+                                    <div class="tcrt-eye-pod is-white" id="tcrt-eye-left" data-sensor="left" title="Click để chuyển đổi Trắng / Đen thử nghiệm">
+                                        <div class="eye-lens" id="lens-left">
+                                            <div class="eye-core"></div>
+                                        </div>
+                                        <div class="eye-label" id="label-eye-left">Mắt Trái</div>
+                                        <div class="eye-pin">D19</div>
+                                    </div>
+
+                                    <!-- Mắt Phải -->
+                                    <div class="tcrt-eye-pod is-white" id="tcrt-eye-right" data-sensor="right" title="Click để chuyển đổi Trắng / Đen thử nghiệm">
+                                        <div class="eye-lens" id="lens-right">
+                                            <div class="eye-core"></div>
+                                        </div>
+                                        <div class="eye-label" id="label-eye-right">Mắt Phải</div>
+                                        <div class="eye-pin">D21</div>
+                                    </div>
+                                </div>
+
+                                <!-- Bánh xe 2 bên mô phỏng -->
+                                <div class="tcrt-wheel wheel-left"></div>
+                                <div class="tcrt-wheel wheel-right"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. BẢNG THÔNG SỐ ĐO LƯỜNG VÀ LOGIC TỪNG MẮT (Theo sơ đồ) -->
+                <div class="tcrt-telemetry-grid">
+                    
+                    <!-- BẢNG MẮT TRÁI (D19) -->
+                    <div class="tcrt-telemetry-box" id="telemetry-box-left">
+                        <div class="telemetry-box-header">
+                            <span class="box-channel-icon">◀️</span>
+                            <span class="box-channel-name">MẮT TRÁI (GPIO D19)</span>
+                        </div>
+                        <div class="telemetry-status-row">
+                            <span class="telemetry-label">Trạng thái:</span>
+                            <span class="telemetry-badge badge-white" id="status-badge-left">
+                                <span class="badge-dot dot-green" id="status-dot-left"></span>
+                                <span id="status-text-left">TRẮNG</span>
+                            </span>
+                        </div>
+                        <div class="telemetry-metrics-row">
+                            <div class="metric-item">
+                                <span class="metric-lbl">Logic:</span>
+                                <span class="metric-val" id="logic-val-left">0 (LOW)</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-lbl">Điện áp:</span>
+                                <span class="metric-val" id="volt-val-left">0.0V</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BẢNG MẮT PHẢI (D21) -->
+                    <div class="tcrt-telemetry-box" id="telemetry-box-right">
+                        <div class="telemetry-box-header">
+                            <span class="box-channel-icon">▶️</span>
+                            <span class="box-channel-name">MẮT PHẢI (GPIO D21)</span>
+                        </div>
+                        <div class="telemetry-status-row">
+                            <span class="telemetry-label">Trạng thái:</span>
+                            <span class="telemetry-badge badge-white" id="status-badge-right">
+                                <span class="badge-dot dot-green" id="status-dot-right"></span>
+                                <span id="status-text-right">TRẮNG</span>
+                            </span>
+                        </div>
+                        <div class="telemetry-metrics-row">
+                            <div class="metric-item">
+                                <span class="metric-lbl">Logic:</span>
+                                <span class="metric-val" id="logic-val-right">0 (LOW)</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-lbl">Điện áp:</span>
+                                <span class="metric-val" id="volt-val-right">0.0V</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 4. THANH NÚT THỬ NGHIỆM TÌNH HUỐNG (DEMO BENCH) -->
+                <div class="tcrt-demo-bench">
+                    <span class="demo-bench-label">🧪 Thử nghiệm kịch bản nhanh:</span>
+                    <div class="demo-actions-row">
+                        <button type="button" class="btn-tcrt-sim active" id="btn-sim-forward" data-sim="forward" title="Cả 2 mắt ở nền trắng">
+                            <span>1. Cả 2 ở Nền Trắng</span>
+                        </button>
+                        <button type="button" class="btn-tcrt-sim" id="btn-sim-left-black" data-sim="left-black" title="Trái Đen - Phải Trắng">
+                            <span>2. Mắt Trái Đen • Phải Trắng</span>
+                        </button>
+                        <button type="button" class="btn-tcrt-sim" id="btn-sim-right-black" data-sim="right-black" title="Trái Trắng - Phải Đen">
+                            <span>3. Mắt Trái Trắng • Phải Đen</span>
+                        </button>
+                        <button type="button" class="btn-tcrt-sim" id="btn-sim-both-black" data-sim="both-black" title="Cả 2 mắt đều chạm vạch đen">
+                            <span>4. Cả 2 cùng Vạch Đen</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ============================================================ -->
     <!-- BẢNG THÔNG TIN KẾT NỐI WI-FI (MODAL POP-UP HIỆN ĐẠI)          -->
     <!-- ============================================================ -->
     <div id="wifi-info-modal" class="wifi-modal-backdrop" style="display: none;">
@@ -706,6 +882,6 @@
     </div>
 
     <!-- Nhúng file Javascript xử lý logic tương tác -->
-    <script src="../static/js/main.js?v=3.6"></script>
+    <script src="../static/js/main.js?v=3.7"></script>
 </body>
 </html>

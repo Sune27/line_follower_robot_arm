@@ -2705,3 +2705,493 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+
+/* ============================================================
+   MAN HINH 5: CAM BIEN DO LINE TCRT5000 (Chassis Visualizer 2D)
+   ============================================================ */
+.tcrt-main-container {
+    padding: 20px 16px 40px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.tcrt-central-card {
+    width: 100%;
+    max-width: 800px;
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.55), inset 0 0 25px rgba(245, 158, 11, 0.03);
+    border-radius: 18px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    backdrop-filter: blur(14px);
+}
+
+/* 1. Header cau hinh o tick */
+.tcrt-header-config {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.tcrt-config-title {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fbbf24;
+    letter-spacing: 0.5px;
+}
+
+.tcrt-checkboxes-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.tcrt-checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    cursor: pointer;
+    user-select: none;
+    background: rgba(2, 6, 23, 0.65);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    padding: 7px 14px;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+}
+
+.tcrt-checkbox-label input[type="checkbox"] {
+    accent-color: #f59e0b;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.tcrt-checkbox-label:hover {
+    border-color: #f59e0b;
+    color: #f8fafc;
+    background: rgba(245, 158, 11, 0.08);
+}
+
+.tcrt-checkbox-label .pin-badge {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.76rem;
+    font-family: 'Chakra Petch', sans-serif;
+    margin-left: 4px;
+}
+
+/* 2. Khung san chay va dau xe 2D */
+.tcrt-stage-wrapper {
+    width: 100%;
+    height: 290px;
+    border-radius: 14px;
+    background: radial-gradient(circle at center, #0f192e 0%, #060a14 100%);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
+}
+
+.tcrt-track-floor {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: 
+        linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+.tcrt-black-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 48px;
+    background: #020617;
+    border-left: 2px dashed rgba(245, 158, 11, 0.45);
+    border-right: 2px dashed rgba(245, 158, 11, 0.45);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 8px;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tcrt-line-stripe {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: rgba(245, 158, 11, 0.25);
+}
+
+.tcrt-line-watermark {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 700;
+    color: rgba(245, 158, 11, 0.4);
+    letter-spacing: 1px;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    position: absolute;
+    bottom: 10px;
+}
+
+/* Mo hinh dau xe 2D */
+.tcrt-robot-chassis {
+    position: relative;
+    z-index: 5;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tcrt-chassis-shell {
+    position: relative;
+    width: 196px;
+    height: 170px;
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    border: 2px solid #38bdf8;
+    border-radius: 34px 34px 14px 14px;
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.25), inset 0 0 15px rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 12px;
+}
+
+.tcrt-bumper {
+    position: absolute;
+    top: -5px;
+    width: 136px;
+    height: 8px;
+    background: #0284c7;
+    border-radius: 4px;
+    box-shadow: 0 0 10px #0284c7;
+}
+
+.tcrt-headlights {
+    display: flex;
+    justify-content: space-between;
+    width: 116px;
+    margin-top: 2px;
+}
+
+.tcrt-hl {
+    width: 14px;
+    height: 7px;
+    border-radius: 4px;
+    background: #e0f2fe;
+    box-shadow: 0 0 10px #38bdf8;
+}
+
+.tcrt-chassis-title {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 1.5px;
+    margin-top: 8px;
+}
+
+.tcrt-sensors-row {
+    display: flex;
+    justify-content: space-around;
+    width: 148px;
+    margin-top: 12px;
+}
+
+.tcrt-eye-pod {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+}
+
+.tcrt-eye-pod:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.eye-lens {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #0b1322;
+    border: 2px solid #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+}
+
+.eye-core {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #334155;
+    transition: all 0.3s ease;
+}
+
+/* Trang thai Pod Mat: Nen Trang (Den Xanh) */
+.tcrt-eye-pod.is-white .eye-lens {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.15);
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.5);
+}
+
+.tcrt-eye-pod.is-white .eye-core {
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+}
+
+/* Trang thai Pod Mat: Vach Den (Den Do ruc ro) */
+.tcrt-eye-pod.is-black .eye-lens {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.25);
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.7);
+}
+
+.tcrt-eye-pod.is-black .eye-core {
+    background: #ef4444;
+    box-shadow: 0 0 12px #ef4444;
+}
+
+/* Trang thai Pod Mat: Bi tat (disabled) */
+.tcrt-eye-pod.is-disabled {
+    opacity: 0.3;
+    filter: grayscale(1);
+    cursor: not-allowed;
+}
+
+.eye-label {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #e2e8f0;
+}
+
+.eye-pin {
+    font-size: 0.62rem;
+    color: #94a3b8;
+    background: rgba(15, 23, 42, 0.85);
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.tcrt-wheel {
+    position: absolute;
+    width: 14px;
+    height: 48px;
+    background: #020617;
+    border: 2px solid #475569;
+    border-radius: 5px;
+    top: 60px;
+}
+
+.wheel-left { left: -15px; }
+.wheel-right { right: -15px; }
+
+/* 3. Bang Telemetry 2 ben */
+.tcrt-telemetry-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.tcrt-telemetry-box {
+    background: rgba(2, 6, 23, 0.75);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all 0.3s ease;
+}
+
+.tcrt-telemetry-box.box-disabled {
+    opacity: 0.38;
+    filter: grayscale(0.8);
+}
+
+.telemetry-box-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: #e2e8f0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.telemetry-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.telemetry-label {
+    font-size: 0.82rem;
+    color: #94a3b8;
+}
+
+.telemetry-badge {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.badge-white {
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #34d399;
+}
+
+.badge-black {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: #f87171;
+}
+
+.badge-disabled {
+    background: rgba(148, 163, 184, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: #94a3b8;
+}
+
+.badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+.dot-green {
+    background: #10b981;
+    box-shadow: 0 0 6px #10b981;
+}
+
+.dot-red {
+    background: #ef4444;
+    box-shadow: 0 0 8px #ef4444;
+}
+
+.dot-gray {
+    background: #64748b;
+}
+
+.telemetry-metrics-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(148, 163, 184, 0.1);
+    font-size: 0.8rem;
+}
+
+.metric-item {
+    display: flex;
+    gap: 6px;
+}
+
+.metric-lbl {
+    color: #94a3b8;
+}
+
+.metric-val {
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+/* 4. Demo bench kich ban nhanh */
+.tcrt-demo-bench {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.demo-bench-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+.demo-actions-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.btn-tcrt-sim {
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    font-size: 0.78rem;
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.btn-tcrt-sim:hover {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: #f59e0b;
+    color: #f8fafc;
+}
+
+.btn-tcrt-sim.active {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.15) 100%);
+    border-color: #f59e0b;
+    color: #fbbf24;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+@media (max-width: 768px) {
+    .tcrt-telemetry-grid {
+        grid-template-columns: 1fr;
+    }
+    .demo-actions-row {
+        grid-template-columns: 1fr 1fr;
+    }
+}
