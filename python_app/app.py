@@ -67,6 +67,22 @@ class RobotControllerServer:
         self.ser = None
         self.ser_lock = threading.Lock()
 
+        # Cơ chế Khóa Độc Quyền (Exclusive Controller Lock): Chỉ duy nhất 1 người được lái/điều khiển
+        self.active_controller_client = None
+        self.active_controller_user = None
+
+    def is_controller_alive(self):
+        """Kiểm tra xem client đang giữ quyền điều khiển có còn kết nối không"""
+        if self.active_controller_client is None:
+            return False
+        if self.active_controller_client not in self.connected_clients:
+            return False
+        if hasattr(self.active_controller_client, 'closed') and self.active_controller_client.closed:
+            return False
+        if hasattr(self.active_controller_client, 'open') and not self.active_controller_client.open:
+            return False
+        return True
+
     def send_serial(self, cmd_str):
         """Gửi lệnh chuỗi xuống ESP32 qua cổng Serial an toàn đa luồng"""
         with self.ser_lock:
@@ -102,41 +118,99 @@ class RobotControllerServer:
             cmd = msg.get("cmd")
             print(f"[WebSocket] [RX] {cmd}")
 
-            if cmd == "login_success":
-                user = msg.get('user', 'Admin')
-                print(f"[System] [LOGIN] Người dùng '{user}' đã đăng nhập thành công.")
-                # Gửi ngay trạng thái Wi-Fi hiện tại cho client
-                reply = json.dumps(self.wifi_state)
-                if hasattr(client, 'send_str'):
-                    await client.send_str(reply)
+            # 1. Yêu cầu cấp quyền điều khiển độc quyền (Login Handshake)
+            if cmd == "request_login":
+                user = msg.get('user', 'Người dùng')
+                # Kiểm tra xem có ai đang chiếm quyền điều khiển không
+                if not self.is_controller_alive() or self.active_controller_client == client:
+                    # CẤP QUYỀN THÀNH CÔNG
+                    self.active_controller_client = client
+                    self.active_controller_user = user
+                    print(f"[Security] [LOGIN GRANTED] Đã cấp quyền độc quyền cho '{user}'.")
+
+                    resp = json.dumps({
+                        "event": "login_response",
+                        "success": True,
+                        "user": user,
+                        "message": "Cấp quyền điều khiển độc quyền thành công"
+                    })
+                    if hasattr(client, 'send_str'): await client.send_str(resp)
+                    else: await client.send(resp)
+
+                    # Gửi trạng thái Wi-Fi cho người vừa đăng nhập
+                    reply_wifi = json.dumps(self.wifi_state)
+                    if hasattr(client, 'send_str'): await client.send_str(reply_wifi)
+                    else: await client.send(reply_wifi)
+
+                    # Phát sóng trạng thái bận cho các máy khác đang ở màn hình đăng nhập
+                    await self._broadcast(json.dumps({
+                        "event": "controller_status",
+                        "is_locked": True,
+                        "active_user": user
+                    }))
                 else:
-                    await client.send(reply)
+                    # TỪ CHỐI DO ĐANG CÓ NGƯỜI ĐIỀU KHIỂN
+                    print(f"[Security] [LOGIN REJECTED] Từ chối '{user}' do '{self.active_controller_user}' đang giữ quyền!")
+                    resp = json.dumps({
+                        "event": "login_response",
+                        "success": False,
+                        "message": f"❌ Hệ thống đang bận: '{self.active_controller_user}' đang điều khiển xe trên thiết bị khác! Vui lòng chờ người đó đăng xuất."
+                    })
+                    if hasattr(client, 'send_str'): await client.send_str(resp)
+                    else: await client.send(resp)
+
+            elif cmd == "login_success":
+                # Tương thích ngược: tự động nâng cấp client thành controller nếu đang rảnh
+                user = msg.get('user', 'Admin')
+                if not self.is_controller_alive():
+                    self.active_controller_client = client
+                    self.active_controller_user = user
+                reply = json.dumps(self.wifi_state)
+                if hasattr(client, 'send_str'): await client.send_str(reply)
+                else: await client.send(reply)
+
+            elif cmd in ("logout_and_stop", "logout"):
+                # Giải phóng phiên điều khiển độc quyền
+                if client == self.active_controller_client or not self.is_controller_alive():
+                    old_user = self.active_controller_user or "Người dùng"
+                    self.active_controller_client = None
+                    self.active_controller_user = None
+                    self.send_serial("CMD:STOP_STREAM")
+                    print(f"[Security] [LOGOUT] '{old_user}' đã đăng xuất. Phiên điều khiển đã được giải phóng.")
+                    await self._broadcast(json.dumps({
+                        "event": "controller_status",
+                        "is_locked": False,
+                        "active_user": None
+                    }))
 
             elif cmd == "get_wifi_status":
                 print("[Server] 📡 Nhận yêu cầu get_wifi_status từ Web -> Gửi CMD:GET_WIFI_STATUS xuống ESP32")
                 self.send_serial("CMD:GET_WIFI_STATUS")
                 reply = json.dumps(self.wifi_state)
-                if hasattr(client, 'send_str'):
-                    await client.send_str(reply)
-                else:
-                    await client.send(reply)
+                if hasattr(client, 'send_str'): await client.send_str(reply)
+                else: await client.send(reply)
 
-            elif cmd == "ultrasonic_measure_once":
-                print("[Server] 🎯 Nhận lệnh từ Web: ĐO 1 LẦN -> Gửi CMD:MEASURE_ONCE xuống ESP32")
-                self.send_serial("CMD:MEASURE_ONCE")
+            # Các lệnh điều khiển phần cứng: BẮT BUỘC phải là người đang giữ quyền điều khiển
+            elif cmd in ("ultrasonic_measure_once", "ultrasonic_start_stream", "ultrasonic_stop_stream"):
+                if self.is_controller_alive() and client != self.active_controller_client:
+                    print(f"[Security Block] Chặn lệnh '{cmd}' từ thiết bị không được ủy quyền!")
+                    reject_msg = json.dumps({
+                        "event": "command_rejected",
+                        "message": "❌ Bạn không có quyền điều khiển thiết bị này do đang có người khác làm chủ phiên!"
+                    })
+                    if hasattr(client, 'send_str'): await client.send_str(reject_msg)
+                    else: await client.send(reject_msg)
+                    return
 
-            elif cmd == "ultrasonic_start_stream":
-                print("[Server] ▶ Nhận lệnh từ Web: BẮT ĐẦU ĐO LIÊN TỤC -> Gửi CMD:START_STREAM xuống ESP32")
-                self.send_serial("CMD:START_STREAM")
-
-            elif cmd == "ultrasonic_stop_stream":
-                print("[Server] ⏸ Nhận lệnh từ Web: DỪNG ĐO LIÊN TỤC -> Gửi CMD:STOP_STREAM xuống ESP32")
-                self.send_serial("CMD:STOP_STREAM")
-
-            elif cmd == "logout_and_stop" or cmd == "logout":
-                # Đưa cảm biến về nghỉ khi logout
-                self.send_serial("CMD:STOP_STREAM")
-                print("[System] [LOGOUT] Người dùng đã đăng xuất trên Web. Server vẫn tiếp tục hoạt động để sẵn sàng cho lần đăng nhập tiếp theo.")
+                if cmd == "ultrasonic_measure_once":
+                    print("[Server] 🎯 Nhận lệnh từ Web: ĐO 1 LẦN -> Gửi CMD:MEASURE_ONCE xuống ESP32")
+                    self.send_serial("CMD:MEASURE_ONCE")
+                elif cmd == "ultrasonic_start_stream":
+                    print("[Server] ▶ Nhận lệnh từ Web: BẮT ĐẦU ĐO LIÊN TỤC -> Gửi CMD:START_STREAM xuống ESP32")
+                    self.send_serial("CMD:START_STREAM")
+                elif cmd == "ultrasonic_stop_stream":
+                    print("[Server] ⏸ Nhận lệnh từ Web: DỪNG ĐO LIÊN TỤC -> Gửi CMD:STOP_STREAM xuống ESP32")
+                    self.send_serial("CMD:STOP_STREAM")
         except json.JSONDecodeError:
             pass
 
@@ -301,8 +375,13 @@ class RobotControllerServer:
         print(f"[WebSocket AioHTTP] [Client Connected] {client_addr}")
         self.connected_clients.add(ws)
 
-        # Gửi ngay trạng thái Wi-Fi hiện tại cho client vừa kết nối
+        # Gửi ngay trạng thái Wi-Fi & trạng thái phiên điều khiển cho client vừa kết nối
         await ws.send_str(json.dumps(self.wifi_state))
+        await ws.send_str(json.dumps({
+            "event": "controller_status",
+            "is_locked": self.is_controller_alive(),
+            "active_user": self.active_controller_user if self.is_controller_alive() else None
+        }))
 
         try:
             async for raw_msg in ws:
@@ -314,6 +393,19 @@ class RobotControllerServer:
             if ws in self.connected_clients:
                 self.connected_clients.remove(ws)
             print(f"[WebSocket AioHTTP] [Client Disconnected] {client_addr}")
+            # Nếu người giữ quyền điều khiển thoát kết nối, tự động giải phóng phiên
+            if ws == self.active_controller_client:
+                old_user = self.active_controller_user or "Người dùng"
+                self.active_controller_client = None
+                self.active_controller_user = None
+                self.send_serial("CMD:STOP_STREAM")
+                print(f"[Security] Người điều khiển '{old_user}' đã ngắt kết nối. Đã giải phóng quyền điều khiển cho người tiếp theo!")
+                if self.loop and self.connected_clients:
+                    asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps({
+                        "event": "controller_status",
+                        "is_locked": False,
+                        "active_user": None
+                    })), self.loop)
         return ws
 
     async def ws_handler(self, websocket):
@@ -322,8 +414,13 @@ class RobotControllerServer:
         client_addr = websocket.remote_address
         print(f"[WebSocket 8765] [Client Connected] {client_addr}")
 
-        # Gửi ngay trạng thái Wi-Fi hiện tại
+        # Gửi ngay trạng thái Wi-Fi & trạng thái khóa phiên hiện tại
         await websocket.send(json.dumps(self.wifi_state))
+        await websocket.send(json.dumps({
+            "event": "controller_status",
+            "is_locked": self.is_controller_alive(),
+            "active_user": self.active_controller_user if self.is_controller_alive() else None
+        }))
 
         try:
             async for raw_message in websocket:
@@ -334,6 +431,18 @@ class RobotControllerServer:
             if websocket in self.connected_clients:
                 self.connected_clients.remove(websocket)
             print(f"[WebSocket 8765] [Client Disconnected] {client_addr}")
+            if websocket == self.active_controller_client:
+                old_user = self.active_controller_user or "Người dùng"
+                self.active_controller_client = None
+                self.active_controller_user = None
+                self.send_serial("CMD:STOP_STREAM")
+                print(f"[Security] Người điều khiển '{old_user}' đã ngắt kết nối 8765. Đã giải phóng quyền điều khiển!")
+                if self.loop and self.connected_clients:
+                    asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps({
+                        "event": "controller_status",
+                        "is_locked": False,
+                        "active_user": None
+                    })), self.loop)
 
     def run(self):
         """Khởi động máy chủ tích hợp"""

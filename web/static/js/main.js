@@ -51,7 +51,8 @@ class AuthManager {
         this.authorizedAccounts = [
             { username: 'sune', password: '24021197' }, // Tài khoản quản trị chính
             { username: 'tung', password: '24020000' }, // Tài khoản thành viên 2
-            { username: 'hung', password: '24020001' }  // Tài khoản thành viên 3
+            { username: 'hung', password: '24020001' }, // Tài khoản thành viên 3
+            { username: 'nghia', password: 'dcmnghiatruong' } // Tài khoản thành viên 4
         ];
     }
 
@@ -70,15 +71,14 @@ class AuthManager {
     }
 
     /**
-     * Xác thực thông tin đăng nhập
-     * @param {string} username - Tên đăng nhập
-     * @param {string} password - Mật khẩu
-     * @param {boolean} rememberMe - Có ghi nhớ phiên làm việc hay không
-     * @returns {Object} { success: boolean, message: string, user?: string }
+     * Kiểm tra thông tin tài khoản hợp lệ
+     * @param {string} username
+     * @param {string} password
+     * @returns {Object} { success: boolean, message?: string, user?: string }
      */
-    login(username, password, rememberMe) {
-        const cleanUser = username.trim();
-        const cleanPass = password.trim();
+    checkCredentials(username, password) {
+        const cleanUser = (username || '').trim();
+        const cleanPass = (password || '').trim();
 
         const matched = this.authorizedAccounts.find(
             acc => acc.username === cleanUser && acc.password === cleanPass
@@ -90,18 +90,35 @@ class AuthManager {
                 message: '❌ Sai tên đăng nhập hoặc mật khẩu!'
             };
         }
+        return {
+            success: true,
+            user: matched.username
+        };
+    }
 
-        // Lưu phiên đăng nhập
+    /**
+     * Lưu phiên đăng nhập sau khi được Server cấp quyền điều khiển
+     */
+    saveSession(username, rememberMe) {
         if (rememberMe) {
-            localStorage.setItem(this.storageKey, matched.username);
+            localStorage.setItem(this.storageKey, username);
         } else {
-            sessionStorage.setItem(this.storageKey, matched.username);
+            sessionStorage.setItem(this.storageKey, username);
         }
+    }
 
+    /**
+     * Xác thực thông tin đăng nhập (cục bộ)
+     */
+    login(username, password, rememberMe) {
+        const check = this.checkCredentials(username, password);
+        if (!check.success) return check;
+
+        this.saveSession(check.user, rememberMe);
         return {
             success: true,
             message: 'Đăng nhập thành công',
-            user: matched.username
+            user: check.user
         };
     }
 
@@ -272,6 +289,16 @@ class WebSocketClient {
                         } else if (window.app && window.app.ultrasonicController) {
                             window.app.ultrasonicController.handleTelemetry(sensorData);
                         }
+                    } else if (data.event === 'login_response') {
+                        if (this.loginResponseCallback) {
+                            this.loginResponseCallback(data);
+                        }
+                    } else if (data.event === 'controller_status') {
+                        if (this.controllerStatusCallback) {
+                            this.controllerStatusCallback(data);
+                        }
+                    } else if (data.event === 'command_rejected') {
+                        alert(data.message || '❌ Hành động bị từ chối!');
                     }
                 } catch (e) {
                     console.error('[WebSocket] Lỗi giải mã JSON:', e);
@@ -812,9 +839,22 @@ class DashboardApp {
         this.wsClient = new WebSocketClient();
         this.ultrasonicController = new UltrasonicChartController(this.wsClient);
         
+        this.pendingLogin = null;
+        this.loginTimeoutTimer = null;
+
         // Kết nối bộ nhận dữ liệu Telemetry trực tiếp từ WebSocket tới Controller
         this.wsClient.telemetryCallback = (sensorData) => {
             this.ultrasonicController.handleTelemetry(sensorData);
+        };
+
+        // Phản hồi xin cấp quyền điều khiển độc quyền từ Server
+        this.wsClient.loginResponseCallback = (resp) => {
+            this.handleLoginResponse(resp);
+        };
+
+        // Nhận trạng thái bận/rảnh của xe từ Server
+        this.wsClient.controllerStatusCallback = (status) => {
+            this.updateControllerStatusUI(status);
         };
     }
 
@@ -971,6 +1011,7 @@ class DashboardApp {
 
     /**
      * Xử lý sự kiện khi người dùng nhấn ĐĂNG NHẬP
+     * Gửi yêu cầu xin quyền độc quyền tới Server (Chỉ 1 người được điều khiển)
      */
     handleLoginFormSubmit(event) {
         if (event) event.preventDefault();
@@ -979,23 +1020,97 @@ class DashboardApp {
         const passwordInput = document.getElementById('password');
         const rememberCheckbox = document.getElementById('remember-me');
         const errorMsgElement = document.getElementById('error-message');
+        const submitBtn = document.querySelector('.btn-submit');
 
         if (!usernameInput || !passwordInput) return;
 
         if (errorMsgElement) errorMsgElement.innerText = '';
 
-        const result = this.authManager.login(
-            usernameInput.value,
-            passwordInput.value,
-            rememberCheckbox ? rememberCheckbox.checked : false
-        );
+        // 1. Kiểm tra tài khoản & mật khẩu cục bộ trước
+        const credCheck = this.authManager.checkCredentials(usernameInput.value, passwordInput.value);
+        if (!credCheck.success) {
+            if (errorMsgElement) errorMsgElement.innerText = credCheck.message;
+            return;
+        }
 
-        if (result.success) {
-            this.playTrailerAndEnterDashboard(result.user);
-        } else {
-            if (errorMsgElement) {
-                errorMsgElement.innerText = result.message;
+        // 2. Kiểm tra kết nối tới Server
+        if (!this.wsClient.connected) {
+            if (errorMsgElement) errorMsgElement.innerText = '❌ Chưa kết nối tới máy chủ! Vui lòng kiểm tra server Python.';
+            return;
+        }
+
+        // 3. Khóa nút đăng nhập và hiển thị trạng thái chờ cấp quyền
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.dataset.originalText = submitBtn.textContent;
+            submitBtn.textContent = '⏳ Đang xin quyền điều khiển...';
+        }
+
+        this.pendingLogin = {
+            username: credCheck.user,
+            rememberMe: rememberCheckbox ? rememberCheckbox.checked : false
+        };
+
+        // Gửi yêu cầu xin quyền độc quyền tới Server
+        this.wsClient.send({
+            cmd: 'request_login',
+            user: credCheck.user
+        });
+
+        // Timeout dự phòng sau 5s nếu server không phản hồi
+        if (this.loginTimeoutTimer) clearTimeout(this.loginTimeoutTimer);
+        this.loginTimeoutTimer = setTimeout(() => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = submitBtn.dataset.originalText || 'ĐĂNG NHẬP';
             }
+            if (errorMsgElement && errorMsgElement.innerText === '') {
+                errorMsgElement.innerText = '❌ Máy chủ không phản hồi yêu cầu cấp quyền. Vui lòng thử lại!';
+            }
+        }, 5000);
+    }
+
+    /**
+     * Nhận phản hồi cấp quyền từ Server Python
+     */
+    handleLoginResponse(resp) {
+        if (this.loginTimeoutTimer) clearTimeout(this.loginTimeoutTimer);
+
+        const submitBtn = document.querySelector('.btn-submit');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = submitBtn.dataset.originalText || 'ĐĂNG NHẬP';
+        }
+
+        const errorMsgElement = document.getElementById('error-message');
+
+        if (resp && resp.success) {
+            if (this.pendingLogin) {
+                this.authManager.saveSession(this.pendingLogin.username, this.pendingLogin.rememberMe);
+            }
+            if (errorMsgElement) errorMsgElement.innerText = '';
+            const user = resp.user || (this.pendingLogin ? this.pendingLogin.username : 'User');
+            this.playTrailerAndEnterDashboard(user);
+        } else {
+            // Bị từ chối do có người khác đang điều khiển!
+            if (errorMsgElement) {
+                errorMsgElement.innerText = resp.message || '❌ Yêu cầu đăng nhập bị từ chối!';
+            }
+        }
+        this.pendingLogin = null;
+    }
+
+    /**
+     * Cập nhật thông báo trạng thái khóa phiên điều khiển độc quyền lên giao diện
+     */
+    updateControllerStatusUI(status) {
+        const queueNotice = document.querySelector('.queue-notice');
+        if (!queueNotice) return;
+
+        if (status.is_locked) {
+            queueNotice.innerHTML = `🔒 <span style="color: #ef4444; font-weight: 600;">Hệ thống đang bận: '${status.active_user}' đang điều khiển!</span>`;
+        } else {
+            queueNotice.innerHTML = `🟢 <span style="color: #00ff88; font-weight: 600;">Chế độ độc quyền: Sẵn sàng nhận 1 người điều khiển</span>`;
         }
     }
 
@@ -1101,6 +1216,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Giữ lại các hàm Wrapper toàn cục có debounce để tương thích 100% nếu có gọi từ bên ngoài
 function handleLogin(event) {
+    if (event) event.preventDefault();
     if (app) app.handleLoginFormSubmit(event);
 }
 
