@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Nền bo góc tối màu để tương thích cả giao diện sáng & tối của trình duyệt -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#0b132b"/>
+
+  <!-- Anten Robot -->
+  <circle cx="32" cy="11" r="4.5" fill="#00f0ff"/>
+  <rect x="30" y="15" width="4" height="6" fill="#00f0ff" rx="1.5"/>
+
+  <!-- Tai Robot 2 bên -->
+  <rect x="9" y="27" width="5" height="15" rx="2.5" fill="#00b4d8"/>
+  <rect x="50" y="27" width="5" height="15" rx="2.5" fill="#00b4d8"/>
+
+  <!-- Khối đầu Robot màu Xanh Cyan sáng rõ ràng -->
+  <rect x="13" y="20" width="38" height="30" rx="8" fill="#00f0ff"/>
+
+  <!-- 2 Mắt to tròn, tương phản cao (nhìn từ xa vẫn thấy rõ) -->
+  <circle cx="24" cy="32" r="5" fill="#0b132b"/>
+  <circle cx="25.5" cy="30.5" r="1.8" fill="#ffffff"/>
+
+  <circle cx="40" cy="32" r="5" fill="#0b132b"/>
+  <circle cx="41.5" cy="30.5" r="1.8" fill="#ffffff"/>
+
+  <!-- Miệng Robot mỉm cười -->
+  <path d="M26 42 Q32 46 38 42" stroke="#0b132b" stroke-width="3" stroke-linecap="round" fill="none"/>
+</svg>

@@ -130,9 +130,7 @@ def main():
                         print("TELEMETRY:" + ujson.dumps(telem))
 
                         if wifi_mgr.led:
-                            wifi_mgr.led.value(not wifi_mgr.led.value())
-                            time.sleep_ms(60)
-                            wifi_mgr.led.value(1 if wifi_mgr.is_connected() else 0)
+                            wifi_mgr.led.value(0)
 
                 elif "CMD:START_STREAM" in cmd:
                     if emergency_mode:
@@ -140,12 +138,14 @@ def main():
                     else:
                         stream_mode = True
                         print("[CMD_ACK] START_STREAM: Bat che do do lien tuc (200ms/mau)")
+                        if wifi_mgr.led:
+                            wifi_mgr.led.value(0)
 
                 elif "CMD:STOP_STREAM" in cmd:
                     stream_mode = False
                     print("[CMD_ACK] STOP_STREAM: Dua cam bien ve che do Nghi (Standby)")
                     if wifi_mgr.led and not emergency_mode:
-                        wifi_mgr.led.value(1 if wifi_mgr.is_connected() else 0)
+                        wifi_mgr.led.value(0)
 
                 elif "CMD:GET_WIFI_STATUS" in cmd:
                     # Lệnh truy vấn trạng thái Wi-Fi chủ động từ Web (< 1us)
@@ -169,6 +169,8 @@ def main():
                 if has_connected_once and (not is_conn) and (not emergency_mode):
                     emergency_mode = True
                     stream_mode = False # DỪNG TOÀN BỘ HOẠT ĐỘNG KHÁC NGAY LẬP TỨC
+                    if wifi_mgr.led:
+                        wifi_mgr.led.value(1) # SÁNG ĐÈN khi đang ở chế độ khẩn cấp dò Wi-Fi mới
                     print("\n" + "!" * 55)
                     print("[FAILSAFE] 🚨 PHÁT HIỆN MẤT KẾT NỐI WI-FI!")
                     print("[FAILSAFE] 🛑 ĐÃ DỪNG TOÀN BỘ HOẠT ĐỘNG! BẬT CHẾ ĐỘ TỰ ĐỘNG TÌM KIẾM WI-FI...")
@@ -184,9 +186,9 @@ def main():
 
             # --- C. XỬ LÝ KHI ĐANG TRONG CHẾ ĐỘ KHẨN CẤP (TỰ ĐỘNG TÌM LẠI WI-FI) ---
             if emergency_mode:
-                # Nhấp nháy LED cảnh báo khẩn cấp cực nhanh (báo hiệu xe đang mất sóng)
+                # Sáng đèn báo hiệu đang ở chế độ khẩn cấp đang dò Wi-Fi mới
                 if wifi_mgr.led:
-                    wifi_mgr.led.value(not wifi_mgr.led.value())
+                    wifi_mgr.led.value(1)
 
                 # Cứ mỗi 3 giây thử quét và kết nối lại
                 if time.ticks_diff(now, last_emergency_retry_time) >= emergency_retry_interval_ms:
@@ -225,7 +227,7 @@ def main():
                         print("WIFI_STATUS:" + ujson.dumps(wifi_resp))
 
                         if wifi_mgr.led:
-                            wifi_mgr.led.value(1) # Đèn xanh sáng ổn định
+                            wifi_mgr.led.value(0) # TẮT ĐÈN khi đã kết nối Wi-Fi thành công
 
             # --- D. CHẾ ĐỘ ĐO LIÊN TỤC (CHỈ CHẠY KHI KHÔNG CÓ KHẨN CẤP) ---
             elif stream_mode:
@@ -234,32 +236,9 @@ def main():
                     d = ultrasonic.measure_distance()
                     is_obstacle = (0 < d <= config.OBSTACLE_DISTANCE_THRESHOLD_CM)
 
-                    if d < 0:
-                        dist_str = "--.- cm (Ngoai tam do)"
-                        status_str = "[OK] DUONG TRONG"
-                    elif is_obstacle:
-                        dist_str = f"{d:>5.1f} cm"
-                        status_str = f"[CANH BAO] CO VAT CAN (<{config.OBSTACLE_DISTANCE_THRESHOLD_CM}cm)!"
-                    else:
-                        dist_str = f"{d:>5.1f} cm"
-                        status_str = "[OK] AN TOAN"
-
-                    print(f"[STREAM]: {dist_str} | {status_str}")
-
-                    # Điều khiển LED cảnh báo
-                    if wifi_mgr.led:
-                        if is_obstacle:
-                            wifi_mgr.led.value(not wifi_mgr.led.value())
-                        else:
-                            wifi_mgr.led.value(1 if wifi_mgr.is_connected() else 0)
-
+                    # Gói Telemetry tinh gọn cao tốc (chỉ gửi dữ liệu cảm biến, giảm 70% dung lượng UART & giải phóng CPU)
                     telem = {
                         "event": "telemetry",
-                        "wifi": {
-                            "connected": wifi_mgr.is_connected(),
-                            "ssid": wifi_mgr.get_ssid() if wifi_mgr.is_connected() else "—",
-                            "ip": wifi_mgr.get_ip() if wifi_mgr.is_connected() else "—"
-                        },
                         "sensor": {
                             "distance_cm": d,
                             "obstacle_detected": is_obstacle

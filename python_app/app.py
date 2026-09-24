@@ -360,8 +360,16 @@ class RobotControllerServer:
                     'ngrok-skip-browser-warning': 'true'
                 })
 
+            async def favicon_handler(req):
+                return web.FileResponse(WEB_DIR / "static" / "favicon.svg", headers={
+                    'Content-Type': 'image/svg+xml',
+                    'Cache-Control': 'public, max-age=86400'
+                })
+
             app.router.add_get('/', index_handler)
             app.router.add_get('/templates/index.html', index_handler)
+            app.router.add_get('/favicon.ico', favicon_handler)
+            app.router.add_get('/favicon.svg', favicon_handler)
             app.router.add_static('/static', WEB_DIR / 'static')
             app.router.add_get('/ws', self.aiohttp_ws_handler)
 

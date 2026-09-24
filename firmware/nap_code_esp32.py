@@ -19,19 +19,23 @@ def send_raw(ser, data, wait=0.1):
     time.sleep(wait)
 
 def enter_raw_repl(ser):
-    # Gui Ctrl+C nhieu lan de ngat chuong trinh dang chay tren ESP32
-    for _ in range(5):
+    print("-> Đang đồng bộ và ngắt tiến trình trên ESP32...", end=" ", flush=True)
+    t0 = time.time()
+    # Gửi Ctrl+C liên tục cho đến khi ESP32 dừng và trả về prompt '>>>'
+    while time.time() - t0 < 6:
         ser.write(b'\r\x03')
-        time.sleep(0.15)
-    ser.read_all()
-    
-    # Gui Ctrl+A vao Raw REPL
-    for attempt in range(3):
+        time.sleep(0.25)
+        resp = ser.read_all()
+        if b'>>>' in resp or b'raw REPL' in resp:
+            break
+
+    # Gửi Ctrl+A để chuyển sang Raw REPL
+    for attempt in range(5):
         ser.write(b'\r\x01')
         time.sleep(0.3)
         resp = ser.read_all()
         if b'raw REPL' in resp:
-            print("[OK] Đã vào chế độ Raw REPL thành công.")
+            print("[OK] Đã vào chế độ Raw REPL.")
             return True
         ser.write(b'\r\x02\r\x03')
         time.sleep(0.2)

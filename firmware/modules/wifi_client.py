@@ -61,7 +61,6 @@ class WiFiStationManager:
 
         # 3. Quét các mạng Wi-Fi thực tế ở xung quanh
         print("[WiFi] 🔍 Đang quét các mạng Wi-Fi lân cận...")
-        self._blink_led(times=3, delay_ms=50)
 
         try:
             scan_results = self.sta.scan()
@@ -95,7 +94,7 @@ class WiFiStationManager:
             # Tắt anten Wi-Fi để tiết kiệm năng lượng và tránh bị can thiệp
             self.sta.active(False)
             if self.led:
-                self.led.value(0) # Đèn tắt hẳn
+                self.led.value(0)
             return False
 
         # 6. Tiến hành kết nối vào mạng đã chọn
@@ -107,9 +106,6 @@ class WiFiStationManager:
 
         start_time = time.time()
         while not self.sta.isconnected():
-            # Nhấp nháy đèn LED nhịp chậm khi đang đợi xác thực
-            if self.led:
-                self.led.value(not self.led.value())
             time.sleep_ms(200)
 
             if time.time() - start_time > self.timeout_sec:
@@ -131,9 +127,9 @@ class WiFiStationManager:
         print(f" [WiFi] 🧭 DNS Server: {ip_info[3]}")
         print("*"*50 + "\n")
 
-        # Giữ đèn LED xanh sáng liên tục báo hiệu đã có mạng
+        # Đã kết nối Wi-Fi thành công -> Đèn LED TẮT (không sáng khi đã bắt Wi-Fi)
         if self.led:
-            self.led.value(1)
+            self.led.value(0)
 
         return True
 
