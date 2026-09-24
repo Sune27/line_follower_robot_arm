@@ -1,0 +1,91 @@
+================================================================================
+HƯỚNG DẪN ĐẤU NỐI ĐỒNG THỜI CẢM BIẾN SIÊU ÂM RCWL-1601 VÀ DÒ LINE TCRT5000
+VỚI ESP32 & BẢNG MỞ RỘNG (30-PIN)
+Hệ Thống Xe Dò Line & Cánh Tay Robot 4 Bậc - FEMA Mechatronics
+================================================================================
+
+1. TỔNG QUAN HỆ THỐNG KHI CHẠY ĐỒNG THỜI 2 CẢM BIẾN
+--------------------------------------------------------------------------------
+- Cảm biến siêu âm RCWL-1601: Đặt ở đầu mũi xe, phát hiện vật cản phía trước.
+- Cảm biến hồng ngoại TCRT5000: Hướng xuống mặt sân, nhận diện vạch line đen/trắng.
+- Tổng dòng tiêu thụ cả 2 cảm biến: ~35mA - 40mA. Cổng USB Laptop và IC nguồn trên 
+  bo mạch ESP32 cấp hoàn toàn dư sức (chịu tải đến 500mA - 800mA).
+
+2. CÁP KẾT NỐI VÀ THIẾT LẬP NGUỒN AN TOÀN
+--------------------------------------------------------------------------------
+[1] CÁP KẾT NỐI VỚI LAPTOP:
+    - Board ESP32 cắm ngàm chặt lên giữa BẢNG MỞ RỘNG 30-PIN.
+    - Sợi cáp USB: CẮM TRỰC TIẾP VÀO CỔNG USB TRÊN THÂN BOARD ESP32.
+      (Không cắm vào cổng USB bảng mở rộng để Laptop nhận cổng COM3 truyền dữ liệu).
+
+[2] THIẾT LẬP JUMPER NGUỒN VÀNG TRÊN BẢNG MỞ RỘNG (Chọn 1 trong 2 cách):
+    * CÁCH 1 (KHUYÊN DÙNG - Cực kỳ tiện lợi & an toàn 100%):
+      - Gạt Jumper màu vàng sang nấc [ 3.3V ].
+      - Khi đó, TOÀN BỘ hàng chân [ V ] trên bảng mở rộng xuất điện áp 3.3V.
+      - Cả RCWL-1601 và TCRT5000 đều cắm thẳng vào hàng [ V ] và [ G ] tương ứng.
+      - Cả 2 module đều chạy rất nhạy, mức logic 3.3V tuyệt đối an toàn cho ESP32.
+
+    * CÁCH 2 (Nếu Jumper đang để [ 5V ] để chuẩn bị nuôi Servo cánh tay robot):
+      - RCWL-1601: Cắm chân VCC vào hàng [ V ] (5V).
+      - TCRT5000:  Cắm chân VCC vào chân [ 3V3 ] riêng của ESP32 (để an toàn).
+
+3. BẢNG PHÂN BỔ CHÂN NỐI CHI TIẾT TỔNG HỢP (CHUẨN S - V - G)
+--------------------------------------------------------------------------------
+
+A. CẢM BIẾN SIÊU ÂM RCWL-1601 (Đo khoảng cách vật cản):
++-------------------+-----------------------------------+-----------------------+
+| Chân trên cảm biến| Cắm vào hàng BẢNG MỞ RỘNG 30-PIN  | Chức năng             |
++-------------------+-----------------------------------+-----------------------+
+| 1. VCC            | Hàng [ V ] ở cột D5 (hoặc D18)    | Cấp nguồn             |
+| 2. GND            | Hàng [ G ] ở cột D5 (hoặc D18)    | Cực âm (Mass chung)   |
+| 3. Trig           | Hàng [ S ] ở cột D5  (GPIO 5)     | Chân phát xung sóng   |
+| 4. Echo           | Hàng [ S ] ở cột D18 (GPIO 18)    | Chân thu sóng phản xạ |
++-------------------+-----------------------------------+-----------------------+
+
+B. CẢM BIẾN DÒ LINE TCRT5000 (Chọn theo cấu hình xe của bạn):
+
+* NẾU BẠN DÙNG 1 MẮT TCRT5000 (Test tính năng cơ bản):
++-------------------+-----------------------------------+-----------------------+
+| Chân trên TCRT5000| Cắm vào hàng BẢNG MỞ RỘNG 30-PIN  | Chức năng             |
++-------------------+-----------------------------------+-----------------------+
+| 1. VCC            | Hàng [ V ] ở cột D19 (nấc 3.3V)   | Cấp nguồn 3.3V        |
+| 2. GND            | Hàng [ G ] ở cột D19              | Mass chung            |
+| 3. DO (Digital)   | Hàng [ S ] ở cột D19 (GPIO 19)    | Tín hiệu vạch (0/1)   |
+| 4. AO (Analog)    | Bỏ trống                          | Không cần dùng        |
++-------------------+-----------------------------------+-----------------------+
+
+* NẾU BẠN DÙNG 2 MẮT TCRT5000 (Dò line 2 bánh: Trái - Phải):
++ Mắt TRÁI (Left):
+  - VCC -> Hàng [ V ] (3.3V)
+  - GND -> Hàng [ G ]
+  - DO  -> Hàng [ S ] ở cột D19 (GPIO 19)
++ Mắt PHẢI (Right):
+  - VCC -> Hàng [ V ] (3.3V)
+  - GND -> Hàng [ G ]
+  - DO  -> Hàng [ S ] ở cột D21 (GPIO 21)
+
+* NẾU BẠN DÙNG 3 MẮT TCRT5000 (Dò line chuẩn thi đấu: Trái - Giữa - Phải):
++ Mắt TRÁI (L):   DO -> Hàng [ S ] ở cột D19 (GPIO 19)
++ Mắt GIỮA (C):   DO -> Hàng [ S ] ở cột D21 (GPIO 21)
++ Mắt PHẢI (R):   DO -> Hàng [ S ] ở cột D22 (GPIO 22)
+(Chân VCC và GND của cả 3 mắt đều cắm vào các chân [ V ] và [ G ] tương ứng).
+
+4. QUY TẮC AN TOÀN TRÁNH TRÙNG LẶP CHÂN
+--------------------------------------------------------------------------------
+- RCWL-1601 cố định tại: GPIO 5 (Trig) và GPIO 18 (Echo).
+- TCRT5000 sử dụng các chân: GPIO 19, GPIO 21, GPIO 22.
+- Tuyệt đối TRÁNH cắm vào:
+  + GPIO 1 và GPIO 3 (Kênh truyền thông Serial nạp code với máy tính).
+  + GPIO 0, 2, 12, 15 (Chân nạp & boot phần cứng của ESP32).
+
+5. QUY TRÌNH KIỂM TRA BẰNG MẮT THƯỜNG SAU KHI CẮM
+--------------------------------------------------------------------------------
+1. Cắm cáp USB vào ESP32 -> Đèn nguồn trên board ESP32 và module TCRT5000 đều sáng.
+2. Kiểm tra TCRT5000:
+   - Đưa tờ giấy trắng lại gần mắt dò line (~1cm) -> Đèn báo tín hiệu sáng.
+   - Để vào vạch đen -> Đèn báo tín hiệu tắt.
+   - Nếu chưa nhạy, xoay biến trở xanh trên module để tinh chỉnh.
+3. Kiểm tra RCWL-1601:
+   - Mở Web tại http://localhost:5000 -> Đăng nhập -> Chọn "Cảm biến Siêu âm".
+   - Bấm "Bắt đầu đo liên tục" -> Đưa tay chắn trước 2 mắt loa để xem cự ly nhảy số.
+================================================================================
