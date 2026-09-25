@@ -2710,6 +2710,15 @@ body {
 /* ============================================================
    MAN HINH 5: CAM BIEN DO LINE TCRT5000 (Chassis Visualizer 2D)
    ============================================================ */
+#tcrt5000-screen {
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100vw;
+    background: radial-gradient(circle at 50% 12%, #102142 0%, #080c14 100%);
+    position: relative;
+    overflow-y: auto;
+}
+
 .tcrt-main-container {
     padding: 20px 16px 40px;
     display: flex;
@@ -3139,59 +3148,8 @@ body {
     color: #f8fafc;
 }
 
-/* 4. Demo bench kich ban nhanh */
-.tcrt-demo-bench {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding-top: 10px;
-    border-top: 1px solid rgba(148, 163, 184, 0.15);
-}
-
-.demo-bench-label {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: #94a3b8;
-}
-
-.demo-actions-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-}
-
-.btn-tcrt-sim {
-    padding: 8px 10px;
-    border-radius: 8px;
-    background: rgba(15, 23, 42, 0.7);
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    color: #cbd5e1;
-    font-size: 0.78rem;
-    font-family: 'Chakra Petch', sans-serif;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: center;
-}
-
-.btn-tcrt-sim:hover {
-    background: rgba(245, 158, 11, 0.12);
-    border-color: #f59e0b;
-    color: #f8fafc;
-}
-
-.btn-tcrt-sim.active {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.15) 100%);
-    border-color: #f59e0b;
-    color: #fbbf24;
-    box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
-}
-
 @media (max-width: 768px) {
     .tcrt-telemetry-grid {
         grid-template-columns: 1fr;
-    }
-    .demo-actions-row {
-        grid-template-columns: 1fr 1fr;
     }
 }

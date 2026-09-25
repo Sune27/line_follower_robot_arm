@@ -860,7 +860,6 @@ class TCRT5000Controller {
         this.logicValRight = null;
         this.voltValLeft = null;
         this.voltValRight = null;
-        this.simButtons = {};
     }
 
     init() {
@@ -923,19 +922,7 @@ class TCRT5000Controller {
             });
         }
 
-        const simKeys = ['forward', 'left-black', 'right-black', 'both-black'];
-        simKeys.forEach(key => {
-            const btn = document.getElementById(`btn-sim-${key}`);
-            if (btn) {
-                this.simButtons[key] = btn;
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.applyScenario(key);
-                });
-            }
-        });
-
-        this.applyScenario('forward');
+        this.render();
     }
 
     onScreenActivated() {
@@ -945,41 +932,18 @@ class TCRT5000Controller {
     onScreenDeactivated() {
     }
 
-    applyScenario(scenario) {
-        this.currentSim = scenario;
-        Object.keys(this.simButtons).forEach(key => {
-            if (this.simButtons[key]) {
-                this.simButtons[key].classList.toggle('active', key === scenario);
+    render() {
+        // Cập nhật chuyển hướng mô hình đầu xe 2D theo mắt cảm biến
+        if (this.chassis) {
+            if (this.leftEnabled && this.leftIsBlack && (!this.rightEnabled || !this.rightIsBlack)) {
+                this.chassis.style.transform = 'translateX(24px) rotate(5deg)';
+            } else if (this.rightEnabled && this.rightIsBlack && (!this.leftEnabled || !this.leftIsBlack)) {
+                this.chassis.style.transform = 'translateX(-24px) rotate(-5deg)';
+            } else {
+                this.chassis.style.transform = 'translateX(0px) rotate(0deg)';
             }
-        });
-
-        switch (scenario) {
-            case 'forward':
-                this.leftIsBlack = false;
-                this.rightIsBlack = false;
-                if (this.chassis) this.chassis.style.transform = 'translateX(0px) rotate(0deg)';
-                break;
-            case 'left-black':
-                this.leftIsBlack = true;
-                this.rightIsBlack = false;
-                if (this.chassis) this.chassis.style.transform = 'translateX(24px) rotate(5deg)';
-                break;
-            case 'right-black':
-                this.leftIsBlack = false;
-                this.rightIsBlack = true;
-                if (this.chassis) this.chassis.style.transform = 'translateX(-24px) rotate(-5deg)';
-                break;
-            case 'both-black':
-                this.leftIsBlack = true;
-                this.rightIsBlack = true;
-                if (this.chassis) this.chassis.style.transform = 'translateX(0px) rotate(0deg)';
-                break;
         }
 
-        this.render();
-    }
-
-    render() {
         if (this.eyeLeft) {
             if (!this.leftEnabled) {
                 this.eyeLeft.className = 'tcrt-eye-pod is-disabled';
