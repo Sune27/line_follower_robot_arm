@@ -2943,7 +2943,12 @@ body {
     align-items: flex-end;
     justify-content: center;
     padding-bottom: 8px;
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tcrt-black-line.line-hidden {
+    opacity: 0 !important;
+    pointer-events: none;
 }
 
 .tcrt-line-stripe {
@@ -3066,28 +3071,28 @@ body {
     transition: all 0.3s ease;
 }
 
-/* Trang thai Pod Mat: Nen Trang (Den Xanh) */
+/* Trang thai Pod Mat: Nen Trang / FALSE (Mau xam diu, khong phat sang) */
 .tcrt-eye-pod.is-white .eye-lens {
-    border-color: #10b981;
-    background: rgba(16, 185, 129, 0.15);
-    box-shadow: 0 0 14px rgba(16, 185, 129, 0.5);
+    border-color: #64748b;
+    background: rgba(148, 163, 184, 0.12);
+    box-shadow: 0 0 8px rgba(148, 163, 184, 0.2);
 }
 
 .tcrt-eye-pod.is-white .eye-core {
-    background: #10b981;
-    box-shadow: 0 0 8px #10b981;
+    background: #475569;
+    box-shadow: none;
 }
 
-/* Trang thai Pod Mat: Vach Den (Den Do ruc ro) */
+/* Trang thai Pod Mat: Vach Den / TRUE -> Phat Sang Mau Xanh (Green Glow) */
 .tcrt-eye-pod.is-black .eye-lens {
-    border-color: #ef4444;
-    background: rgba(239, 68, 68, 0.25);
-    box-shadow: 0 0 18px rgba(239, 68, 68, 0.7);
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.25);
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.7);
 }
 
 .tcrt-eye-pod.is-black .eye-core {
-    background: #ef4444;
-    box-shadow: 0 0 12px #ef4444;
+    background: #10b981;
+    box-shadow: 0 0 12px #10b981;
 }
 
 /* Trang thai Pod Mat: Bi tat (disabled) */
@@ -3184,15 +3189,15 @@ body {
 }
 
 .badge-white {
-    background: rgba(16, 185, 129, 0.15);
-    border: 1px solid rgba(16, 185, 129, 0.4);
-    color: #34d399;
+    background: rgba(148, 163, 184, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: #cbd5e1;
 }
 
 .badge-black {
-    background: rgba(239, 68, 68, 0.2);
-    border: 1px solid rgba(239, 68, 68, 0.5);
-    color: #f87171;
+    background: rgba(16, 185, 129, 0.18);
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    color: #34d399;
 }
 
 .badge-disabled {

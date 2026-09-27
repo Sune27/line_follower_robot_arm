@@ -873,6 +873,7 @@ class TCRT5000Controller {
         this.voltRight = 0.0;
         this.isWorking = false; // Mặc định cảm biến ở chế độ TẮT (Nghỉ)
 
+        this.blackLine = null;
         this.btnTogglePower = null;
         this.powerDot = null;
         this.powerStatusText = null;
@@ -884,6 +885,7 @@ class TCRT5000Controller {
         this.chkLeft = document.getElementById('chk-sensor-left');
         this.chkRight = document.getElementById('chk-sensor-right');
         this.chassis = document.getElementById('tcrt-robot-chassis');
+        this.blackLine = document.getElementById('tcrt-black-line');
         this.eyeLeft = document.getElementById('tcrt-eye-left');
         this.eyeRight = document.getElementById('tcrt-eye-right');
         this.boxLeft = document.getElementById('telemetry-box-left');
@@ -1039,6 +1041,7 @@ class TCRT5000Controller {
         // TRƯỜNG HỢP 1: CẢM BIẾN ĐANG TẮT (NGHỈ)
         if (!this.isWorking) {
             if (this.chassis) this.chassis.style.transform = 'translateX(0px) rotate(0deg)';
+            if (this.blackLine) this.blackLine.classList.remove('line-hidden');
             if (this.eyeLeft) this.eyeLeft.className = 'tcrt-eye-pod is-disabled';
             if (this.eyeRight) this.eyeRight.className = 'tcrt-eye-pod is-disabled';
             if (this.boxLeft) this.boxLeft.classList.add('box-disabled');
@@ -1057,16 +1060,52 @@ class TCRT5000Controller {
         }
 
         // TRƯỜNG HỢP 2: CẢM BIẾN ĐANG BẬT (HOẠT ĐỘNG THỜI GIAN THỰC)
-        if (this.chassis) {
-            if (this.leftEnabled && this.leftIsBlack && (!this.rightEnabled || !this.rightIsBlack)) {
-                this.chassis.style.transform = 'translateX(24px) rotate(5deg)';
-            } else if (this.rightEnabled && this.rightIsBlack && (!this.leftEnabled || !this.leftIsBlack)) {
-                this.chassis.style.transform = 'translateX(-24px) rotate(-5deg)';
-            } else {
-                this.chassis.style.transform = 'translateX(0px) rotate(0deg)';
+        // 1. Logic hướng xe (chassis) và hiển thị vạch đen (blackLine)
+        if (this.leftEnabled && this.rightEnabled) {
+            // Cả 2 mắt đều đang bật kiểm tra
+            if (this.leftIsBlack && this.rightIsBlack) {
+                // Cả 2 đều TRUE (Đen): Hướng thẳng theo đường, vạch đen hiển thị
+                if (this.chassis) this.chassis.style.transform = 'translateX(0px) rotate(0deg)';
+                if (this.blackLine) this.blackLine.classList.remove('line-hidden');
+            } else if (!this.leftIsBlack && !this.rightIsBlack) {
+                // Cả 2 đều FALSE (Trắng): Hướng thẳng đứng, TẮT hiển thị đường đi
+                if (this.chassis) this.chassis.style.transform = 'translateX(0px) rotate(0deg)';
+                if (this.blackLine) this.blackLine.classList.add('line-hidden');
+            } else if (!this.leftIsBlack && this.rightIsBlack) {
+                // Mắt Trái D19 FALSE (Trắng), Mắt Phải D21 TRUE (Đen): Xe hướng sang trái
+                if (this.chassis) this.chassis.style.transform = 'translateX(-26px) rotate(-7deg)';
+                if (this.blackLine) this.blackLine.classList.remove('line-hidden');
+            } else if (this.leftIsBlack && !this.rightIsBlack) {
+                // Mắt Phải D21 FALSE (Trắng), Mắt Trái D19 TRUE (Đen): Xe hướng sang phải
+                if (this.chassis) this.chassis.style.transform = 'translateX(26px) rotate(7deg)';
+                if (this.blackLine) this.blackLine.classList.remove('line-hidden');
             }
+        } else if (this.leftEnabled && !this.rightEnabled) {
+            // Chỉ bật kiểm tra Mắt Trái (D19)
+            if (this.blackLine) this.blackLine.classList.remove('line-hidden');
+            if (this.leftIsBlack) {
+                // TRUE (Đen): Hướng thẳng theo đường
+                if (this.chassis) this.chassis.style.transform = 'translateX(0px) rotate(0deg)';
+            } else {
+                // FALSE (Trắng): Xe hướng sang trái
+                if (this.chassis) this.chassis.style.transform = 'translateX(-26px) rotate(-7deg)';
+            }
+        } else if (!this.leftEnabled && this.rightEnabled) {
+            // Chỉ bật kiểm tra Mắt Phải (D21)
+            if (this.blackLine) this.blackLine.classList.remove('line-hidden');
+            if (this.rightIsBlack) {
+                // TRUE (Đen): Hướng thẳng theo đường
+                if (this.chassis) this.chassis.style.transform = 'translateX(0px) rotate(0deg)';
+            } else {
+                // FALSE (Trắng): Xe hướng sang phải
+                if (this.chassis) this.chassis.style.transform = 'translateX(26px) rotate(7deg)';
+            }
+        } else {
+            if (this.chassis) this.chassis.style.transform = 'translateX(0px) rotate(0deg)';
+            if (this.blackLine) this.blackLine.classList.remove('line-hidden');
         }
 
+        // 2. Cập nhật giao diện Mắt Trái (D19)
         if (this.eyeLeft) {
             if (!this.leftEnabled) {
                 this.eyeLeft.className = 'tcrt-eye-pod is-disabled';
@@ -1085,20 +1124,23 @@ class TCRT5000Controller {
                 if (this.logicValLeft) this.logicValLeft.textContent = '--';
                 if (this.voltValLeft) this.voltValLeft.textContent = '--';
             } else if (this.leftIsBlack) {
+                // TRUE (Màu đen) -> Hiển thị màu xanh
                 this.statusBadgeLeft.className = 'telemetry-badge badge-black';
-                this.statusDotLeft.className = 'badge-dot dot-red';
-                this.statusTextLeft.textContent = 'ĐEN';
-                if (this.logicValLeft) this.logicValLeft.textContent = '1 (HIGH)';
+                this.statusDotLeft.className = 'badge-dot dot-green';
+                this.statusTextLeft.textContent = 'ĐEN (TRUE)';
+                if (this.logicValLeft) this.logicValLeft.textContent = '1 (TRUE)';
                 if (this.voltValLeft) this.voltValLeft.textContent = (this.voltLeft !== undefined ? Number(this.voltLeft).toFixed(2) : '3.30') + 'V';
             } else {
+                // FALSE (Màu trắng)
                 this.statusBadgeLeft.className = 'telemetry-badge badge-white';
-                this.statusDotLeft.className = 'badge-dot dot-green';
-                this.statusTextLeft.textContent = 'TRẮNG';
-                if (this.logicValLeft) this.logicValLeft.textContent = '0 (LOW)';
+                this.statusDotLeft.className = 'badge-dot dot-gray';
+                this.statusTextLeft.textContent = 'TRẮNG (FALSE)';
+                if (this.logicValLeft) this.logicValLeft.textContent = '0 (FALSE)';
                 if (this.voltValLeft) this.voltValLeft.textContent = (this.voltLeft !== undefined ? Number(this.voltLeft).toFixed(2) : '0.00') + 'V';
             }
         }
 
+        // 3. Cập nhật giao diện Mắt Phải (D21)
         if (this.eyeRight) {
             if (!this.rightEnabled) {
                 this.eyeRight.className = 'tcrt-eye-pod is-disabled';
@@ -1117,16 +1159,18 @@ class TCRT5000Controller {
                 if (this.logicValRight) this.logicValRight.textContent = '--';
                 if (this.voltValRight) this.voltValRight.textContent = '--';
             } else if (this.rightIsBlack) {
+                // TRUE (Màu đen) -> Hiển thị màu xanh
                 this.statusBadgeRight.className = 'telemetry-badge badge-black';
-                this.statusDotRight.className = 'badge-dot dot-red';
-                this.statusTextRight.textContent = 'ĐEN';
-                if (this.logicValRight) this.logicValRight.textContent = '1 (HIGH)';
+                this.statusDotRight.className = 'badge-dot dot-green';
+                this.statusTextRight.textContent = 'ĐEN (TRUE)';
+                if (this.logicValRight) this.logicValRight.textContent = '1 (TRUE)';
                 if (this.voltValRight) this.voltValRight.textContent = (this.voltRight !== undefined ? Number(this.voltRight).toFixed(2) : '3.30') + 'V';
             } else {
+                // FALSE (Màu trắng)
                 this.statusBadgeRight.className = 'telemetry-badge badge-white';
-                this.statusDotRight.className = 'badge-dot dot-green';
-                this.statusTextRight.textContent = 'TRẮNG';
-                if (this.logicValRight) this.logicValRight.textContent = '0 (LOW)';
+                this.statusDotRight.className = 'badge-dot dot-gray';
+                this.statusTextRight.textContent = 'TRẮNG (FALSE)';
+                if (this.logicValRight) this.logicValRight.textContent = '0 (FALSE)';
                 if (this.voltValRight) this.voltValRight.textContent = (this.voltRight !== undefined ? Number(this.voltRight).toFixed(2) : '0.00') + 'V';
             }
         }
