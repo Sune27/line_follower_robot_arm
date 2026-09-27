@@ -14,6 +14,7 @@ from machine import Pin
 import config
 from modules.wifi_client import WiFiStationManager
 from modules.ultrasonic import UltrasonicSensor
+from modules.line_sensor import LineFollowerSensor
 
 def setup_serial_poll():
     """Khởi tạo cơ chế kiểm tra cổng Serial non-blocking bằng uselect.poll()"""
@@ -34,7 +35,7 @@ def read_serial_command(poll):
 
 def main():
     print("\n" + "=" * 55)
-    print("[ESP32] KHOI DONG HE THONG DIEU KHIEN & CAM BIEN RCWL-1601")
+    print("[ESP32] KHOI DONG HE THONG DIEU KHIEN & CAM BIEN ROBOT")
     print("=" * 55)
 
     # 1. Khởi tạo đối tượng quản lý Wi-Fi với danh sách ưu tiên từ config.py
@@ -54,15 +55,25 @@ def main():
         echo_pin=config.PIN_ULTRASONIC_ECHO
     )
 
-    # 4. Khởi tạo trình lắng nghe Serial Non-blocking
+    # 4. Khởi tạo Cảm biến dò line quang học TCRT5000 (OOP)
+    print(f"[Cam bien] Khoi tao TCRT5000: Left=GPIO{config.PIN_LINE_LEFT}, Right=GPIO{config.PIN_LINE_RIGHT}")
+    line_sensor = LineFollowerSensor(
+        left_pin=config.PIN_LINE_LEFT,
+        right_pin=config.PIN_LINE_RIGHT
+    )
+
+    # 5. Khởi tạo trình lắng nghe Serial Non-blocking
     serial_poll = setup_serial_poll()
 
     # Trạng thái điều khiển cảm biến & Mạng
     has_connected_once = connected  # Ghi nhận cờ đã từng có kết nối Wi-Fi khi cắm nguồn
     emergency_mode = False       # Chế độ Khẩn cấp (Failsafe) khi mất Wi-Fi
-    stream_mode = False          # Mặc định: Chế độ nghỉ (Standby) để tiết kiệm pin & CPU
+    stream_mode = False          # Chế độ đo liên tục siêu âm
+    tcrt_stream_mode = False     # Chế độ stream cảm biến dò line TCRT5000 (Mặc định nghỉ)
     last_measure_time = 0
-    measure_interval_ms = 200    # Chu kỳ đo liên tục: 200ms (5 lần/giây - Siêu mượt, không giật lag)
+    measure_interval_ms = 200    # Chu kỳ đo liên tục siêu âm: 200ms
+    last_tcrt_time = 0
+    tcrt_interval_ms = 80        # Chu kỳ stream TCRT5000: 80ms (12.5Hz - Cực nhạy)
     last_wifi_check_time = time.ticks_ms()
     wifi_check_interval_ms = 1500 # Kiểm tra cờ trạng thái Wi-Fi nhanh (tốn < 1us)
     last_emergency_retry_time = 0
@@ -83,6 +94,7 @@ def main():
             "distance_cm": -1.0,
             "obstacle_detected": False
         },
+        "tcrt5000": line_sensor.read_status(),
         "mode": "standby"
     }
     print("TELEMETRY:" + ujson.dumps(initial_telem))
@@ -112,8 +124,6 @@ def main():
                             dist_str = f"{d:>5.1f} cm"
                             status_str = "[OK] AN TOAN"
 
-                        print(f"[DO 1 LAN]: {dist_str} | {status_str}")
-
                         telem = {
                             "event": "telemetry",
                             "wifi": {
@@ -125,6 +135,7 @@ def main():
                                 "distance_cm": d,
                                 "obstacle_detected": is_obstacle
                             },
+                            "tcrt5000": line_sensor.read_status(),
                             "mode": "once"
                         }
                         print("TELEMETRY:" + ujson.dumps(telem))
@@ -146,6 +157,14 @@ def main():
                     print("[CMD_ACK] STOP_STREAM: Dua cam bien ve che do Nghi (Standby)")
                     if wifi_mgr.led and not emergency_mode:
                         wifi_mgr.led.value(0)
+
+                elif "CMD:START_TCRT_STREAM" in cmd:
+                    tcrt_stream_mode = True
+                    print("[CMD_ACK] START_TCRT_STREAM: Bat luong doc TCRT5000")
+
+                elif "CMD:STOP_TCRT_STREAM" in cmd:
+                    tcrt_stream_mode = False
+                    print("[CMD_ACK] STOP_TCRT_STREAM: Dung luong doc TCRT5000")
 
                 elif "CMD:GET_WIFI_STATUS" in cmd:
                     # Lệnh truy vấn trạng thái Wi-Fi chủ động từ Web (< 1us)
@@ -229,21 +248,32 @@ def main():
                         if wifi_mgr.led:
                             wifi_mgr.led.value(0) # TẮT ĐÈN khi đã kết nối Wi-Fi thành công
 
-            # --- D. CHẾ ĐỘ ĐO LIÊN TỤC (CHỈ CHẠY KHI KHÔNG CÓ KHẨN CẤP) ---
-            elif stream_mode:
+            # --- D. CHẾ ĐỘ ĐO SIÊU ÂM LIÊN TỤC (CHỈ CHẠY KHI KHÔNG CÓ KHẨN CẤP) ---
+            if stream_mode and not emergency_mode:
                 if time.ticks_diff(now, last_measure_time) >= measure_interval_ms:
                     last_measure_time = now
                     d = ultrasonic.measure_distance()
                     is_obstacle = (0 < d <= config.OBSTACLE_DISTANCE_THRESHOLD_CM)
 
-                    # Gói Telemetry tinh gọn cao tốc (chỉ gửi dữ liệu cảm biến, giảm 70% dung lượng UART & giải phóng CPU)
                     telem = {
                         "event": "telemetry",
                         "sensor": {
                             "distance_cm": d,
                             "obstacle_detected": is_obstacle
                         },
+                        "tcrt5000": line_sensor.read_status(),
                         "mode": "streaming"
+                    }
+                    print("TELEMETRY:" + ujson.dumps(telem))
+
+            # --- E. CHẾ ĐỘ STREAM CẢM BIẾN DÒ LINE TCRT5000 (REAL-TIME CHO WEB) ---
+            if tcrt_stream_mode and not emergency_mode:
+                if time.ticks_diff(now, last_tcrt_time) >= tcrt_interval_ms:
+                    last_tcrt_time = now
+                    telem = {
+                        "event": "telemetry",
+                        "tcrt5000": line_sensor.read_status(),
+                        "mode": "tcrt_streaming"
                     }
                     print("TELEMETRY:" + ujson.dumps(telem))
 

@@ -211,6 +211,12 @@ class RobotControllerServer:
                 elif cmd == "ultrasonic_stop_stream":
                     print("[Server] ⏸ Nhận lệnh từ Web: DỪNG ĐO LIÊN TỤC -> Gửi CMD:STOP_STREAM xuống ESP32")
                     self.send_serial("CMD:STOP_STREAM")
+
+            elif cmd == "tcrt_start_stream":
+                self.send_serial("CMD:START_TCRT_STREAM")
+
+            elif cmd == "tcrt_stop_stream":
+                self.send_serial("CMD:STOP_TCRT_STREAM")
         except json.JSONDecodeError:
             pass
 
@@ -241,8 +247,8 @@ class RobotControllerServer:
 
                 line = ser.readline().decode('utf-8', errors='ignore').strip()
                 if line:
-                    # In log các dòng thông tin đo từ ESP32
-                    if "[DO 1 LAN]:" in line or "[STREAM]:" in line or "[CMD_ACK]" in line or "[FAILSAFE" in line:
+                    # Chỉ in các sự kiện hệ thống quan trọng (bỏ các dòng in đo lường liên tục ra terminal)
+                    if "[FAILSAFE" in line or "[FAILSAFE RECOVERED]" in line or "[ESP32] KHOI DONG" in line or "[CMD_ACK]" in line:
                         print(f"[ESP32] {line}")
 
                     # 1. Nhận gói tin trạng thái Wi-Fi từ lệnh GET_WIFI_STATUS
@@ -323,6 +329,53 @@ class RobotControllerServer:
                                 asyncio.run_coroutine_threadsafe(self._broadcast(telem_str), self.loop)
                         except Exception as e:
                             print(f"[Serial] Lỗi giải mã JSON telemetry: {e}")
+
+                    # 5. Xử lý trực tiếp dữ liệu TCRT5000 từ Serial (nhận dạng dòng Digital (DO) / TCRT)
+                    elif "Digital (DO):" in line or "TCRT:" in line:
+                        try:
+                            # Không in ra màn hình terminal theo yêu cầu của user
+                            is_black = False
+                            raw = 0
+                            volt = 0.0
+
+                            if "Digital (DO):" in line:
+                                is_black = ("HIGH" in line)
+                                raw = 1 if is_black else 0
+                                import re
+                                m_volt = re.search(r'\(([\d\.]+)V\)', line)
+                                volt = float(m_volt.group(1)) if m_volt else (3.3 if is_black else 0.0)
+                            elif "TCRT:" in line:
+                                parts = line.split(":")
+                                if len(parts) >= 3:
+                                    raw_l = int(parts[1])
+                                    is_black = (raw_l == 1)
+                                    raw = raw_l
+                                    volt = 3.3 if is_black else 0.0
+
+                            tcrt_telem = {
+                                "event": "telemetry",
+                                "tcrt5000": {
+                                    "left": {
+                                        "pin": 19,
+                                        "raw": raw,
+                                        "is_black": is_black,
+                                        "text": "DEN" if is_black else "TRANG",
+                                        "voltage": volt
+                                    },
+                                    "right": {
+                                        "pin": 21,
+                                        "raw": 0,
+                                        "is_black": False,
+                                        "text": "TRANG",
+                                        "voltage": 0.0
+                                    }
+                                },
+                                "mode": "tcrt_streaming"
+                            }
+                            if self.loop and self.connected_clients:
+                                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(tcrt_telem)), self.loop)
+                        except Exception:
+                            pass
                     elif line.startswith("HEARTBEAT:"):
                         try:
                             hb = json.loads(line[10:])

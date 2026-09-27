@@ -279,18 +279,26 @@ class WebSocketClient {
                         if (data.wifi) {
                             this.updateWifiRealtimeUI(data.wifi);
                         }
-                        const sensorData = data.sensor || data;
                         if (this.telemetryCallback) {
-                            this.telemetryCallback(sensorData);
-                        } else if (window.app && window.app.ultrasonicController) {
-                            window.app.ultrasonicController.handleTelemetry(sensorData);
+                            this.telemetryCallback(data);
+                        } else {
+                            if (window.app && window.app.ultrasonicController) {
+                                window.app.ultrasonicController.handleTelemetry(data.sensor || data);
+                            }
+                            if (window.app && window.app.tcrtController) {
+                                window.app.tcrtController.handleTelemetry(data);
+                            }
                         }
-                    } else if (data.sensor || data.distance_cm !== undefined) {
-                        const sensorData = data.sensor || data;
+                    } else if (data.sensor || data.tcrt5000 || data.distance_cm !== undefined) {
                         if (this.telemetryCallback) {
-                            this.telemetryCallback(sensorData);
-                        } else if (window.app && window.app.ultrasonicController) {
-                            window.app.ultrasonicController.handleTelemetry(sensorData);
+                            this.telemetryCallback(data);
+                        } else {
+                            if (window.app && window.app.ultrasonicController) {
+                                window.app.ultrasonicController.handleTelemetry(data.sensor || data);
+                            }
+                            if (window.app && window.app.tcrtController) {
+                                window.app.tcrtController.handleTelemetry(data);
+                            }
                         }
                     } else if (data.event === 'login_response') {
                         if (this.loginResponseCallback) {
@@ -836,7 +844,8 @@ class UltrasonicChartController {
 // 5.5 CLASS TCRT5000_CONTROLLER (Dieu khien mo phong 2D Cam bien Do Line TCRT5000)
 // ==============================================================================
 class TCRT5000Controller {
-    constructor() {
+    constructor(wsClient) {
+        this.wsClient = wsClient;
         this.leftEnabled = true;
         this.rightEnabled = true;
         this.leftIsBlack = false;
@@ -860,6 +869,15 @@ class TCRT5000Controller {
         this.logicValRight = null;
         this.voltValLeft = null;
         this.voltValRight = null;
+        this.voltLeft = 0.0;
+        this.voltRight = 0.0;
+        this.isWorking = false; // Mặc định cảm biến ở chế độ TẮT (Nghỉ)
+
+        this.btnTogglePower = null;
+        this.powerDot = null;
+        this.powerStatusText = null;
+        this.powerBtnIcon = null;
+        this.powerBtnText = null;
     }
 
     init() {
@@ -881,6 +899,20 @@ class TCRT5000Controller {
         this.logicValRight = document.getElementById('logic-val-right');
         this.voltValLeft = document.getElementById('volt-val-left');
         this.voltValRight = document.getElementById('volt-val-right');
+
+        // Nút bấm và bảng trạng thái Bật/Tắt hoạt động cảm biến
+        this.btnTogglePower = document.getElementById('btn-toggle-tcrt-power');
+        this.powerDot = document.getElementById('tcrt-power-dot');
+        this.powerStatusText = document.getElementById('tcrt-power-status-text');
+        this.powerBtnIcon = document.getElementById('tcrt-power-btn-icon');
+        this.powerBtnText = document.getElementById('tcrt-power-btn-text');
+
+        if (this.btnTogglePower) {
+            this.btnTogglePower.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.togglePower();
+            });
+        }
 
         if (this.chkLeft) {
             this.chkLeft.addEventListener('change', () => {
@@ -907,8 +939,9 @@ class TCRT5000Controller {
         if (this.eyeLeft) {
             this.eyeLeft.addEventListener('click', (e) => {
                 e.preventDefault();
-                if (!this.leftEnabled) return;
+                if (!this.isWorking || !this.leftEnabled) return;
                 this.leftIsBlack = !this.leftIsBlack;
+                this.voltLeft = this.leftIsBlack ? 3.3 : 0.0;
                 this.render();
             });
         }
@@ -916,8 +949,9 @@ class TCRT5000Controller {
         if (this.eyeRight) {
             this.eyeRight.addEventListener('click', (e) => {
                 e.preventDefault();
-                if (!this.rightEnabled) return;
+                if (!this.isWorking || !this.rightEnabled) return;
                 this.rightIsBlack = !this.rightIsBlack;
+                this.voltRight = this.rightIsBlack ? 3.3 : 0.0;
                 this.render();
             });
         }
@@ -925,15 +959,104 @@ class TCRT5000Controller {
         this.render();
     }
 
-    onScreenActivated() {
+    togglePower() {
+        this.setWorkingState(!this.isWorking);
+    }
+
+    setWorkingState(active) {
+        this.isWorking = active;
+
+        if (this.btnTogglePower) {
+            this.btnTogglePower.className = `btn-tcrt-power ${this.isWorking ? 'is-active' : 'is-off'}`;
+        }
+        if (this.powerBtnIcon) {
+            this.powerBtnIcon.textContent = this.isWorking ? '⏹' : '▶';
+        }
+        if (this.powerBtnText) {
+            this.powerBtnText.textContent = this.isWorking ? 'Tắt cảm biến TCRT5000' : 'Bật cảm biến TCRT5000';
+        }
+        if (this.powerDot) {
+            this.powerDot.className = `tcrt-power-status-dot ${this.isWorking ? 'dot-active' : 'dot-off'}`;
+        }
+        if (this.powerStatusText) {
+            this.powerStatusText.textContent = this.isWorking ? 'ĐANG HOẠT ĐỘNG' : 'ĐÃ TẮT (NGHỈ)';
+            this.powerStatusText.className = `tcrt-power-status-val ${this.isWorking ? 'status-active' : 'status-standby'}`;
+        }
+
+        if (this.wsClient) {
+            this.wsClient.send({ cmd: this.isWorking ? 'tcrt_start_stream' : 'tcrt_stop_stream' });
+        }
+
+        if (!this.isWorking) {
+            this.leftIsBlack = false;
+            this.rightIsBlack = false;
+            this.voltLeft = 0.0;
+            this.voltRight = 0.0;
+        }
+
         this.render();
     }
 
+    onScreenActivated() {
+        this.render();
+        if (this.isWorking && this.wsClient) {
+            this.wsClient.send({ cmd: 'tcrt_start_stream' });
+        }
+    }
+
     onScreenDeactivated() {
+        if (this.isWorking) {
+            this.setWorkingState(false);
+        }
+    }
+
+    handleTelemetry(data) {
+        if (!this.isWorking || !data || !data.tcrt5000) return;
+        const tcrt = data.tcrt5000;
+
+        if (tcrt.left && this.leftEnabled) {
+            this.leftIsBlack = (tcrt.left.is_black === true || tcrt.left.raw === 1);
+            if (tcrt.left.voltage !== undefined) {
+                this.voltLeft = tcrt.left.voltage;
+            } else {
+                this.voltLeft = this.leftIsBlack ? 3.3 : 0.0;
+            }
+        }
+
+        if (tcrt.right && this.rightEnabled) {
+            this.rightIsBlack = (tcrt.right.is_black === true || tcrt.right.raw === 1);
+            if (tcrt.right.voltage !== undefined) {
+                this.voltRight = tcrt.right.voltage;
+            } else {
+                this.voltRight = this.rightIsBlack ? 3.3 : 0.0;
+            }
+        }
+
+        this.render();
     }
 
     render() {
-        // Cập nhật chuyển hướng mô hình đầu xe 2D theo mắt cảm biến
+        // TRƯỜNG HỢP 1: CẢM BIẾN ĐANG TẮT (NGHỈ)
+        if (!this.isWorking) {
+            if (this.chassis) this.chassis.style.transform = 'translateX(0px) rotate(0deg)';
+            if (this.eyeLeft) this.eyeLeft.className = 'tcrt-eye-pod is-disabled';
+            if (this.eyeRight) this.eyeRight.className = 'tcrt-eye-pod is-disabled';
+            if (this.boxLeft) this.boxLeft.classList.add('box-disabled');
+            if (this.boxRight) this.boxRight.classList.add('box-disabled');
+            if (this.statusBadgeLeft) this.statusBadgeLeft.className = 'telemetry-badge badge-disabled';
+            if (this.statusDotLeft) this.statusDotLeft.className = 'badge-dot dot-gray';
+            if (this.statusTextLeft) this.statusTextLeft.textContent = 'ĐÃ TẮT';
+            if (this.logicValLeft) this.logicValLeft.textContent = '--';
+            if (this.voltValLeft) this.voltValLeft.textContent = '--';
+            if (this.statusBadgeRight) this.statusBadgeRight.className = 'telemetry-badge badge-disabled';
+            if (this.statusDotRight) this.statusDotRight.className = 'badge-dot dot-gray';
+            if (this.statusTextRight) this.statusTextRight.textContent = 'ĐÃ TẮT';
+            if (this.logicValRight) this.logicValRight.textContent = '--';
+            if (this.voltValRight) this.voltValRight.textContent = '--';
+            return;
+        }
+
+        // TRƯỜNG HỢP 2: CẢM BIẾN ĐANG BẬT (HOẠT ĐỘNG THỜI GIAN THỰC)
         if (this.chassis) {
             if (this.leftEnabled && this.leftIsBlack && (!this.rightEnabled || !this.rightIsBlack)) {
                 this.chassis.style.transform = 'translateX(24px) rotate(5deg)';
@@ -966,13 +1089,13 @@ class TCRT5000Controller {
                 this.statusDotLeft.className = 'badge-dot dot-red';
                 this.statusTextLeft.textContent = 'ĐEN';
                 if (this.logicValLeft) this.logicValLeft.textContent = '1 (HIGH)';
-                if (this.voltValLeft) this.voltValLeft.textContent = '3.3V';
+                if (this.voltValLeft) this.voltValLeft.textContent = (this.voltLeft !== undefined ? Number(this.voltLeft).toFixed(2) : '3.30') + 'V';
             } else {
                 this.statusBadgeLeft.className = 'telemetry-badge badge-white';
                 this.statusDotLeft.className = 'badge-dot dot-green';
                 this.statusTextLeft.textContent = 'TRẮNG';
                 if (this.logicValLeft) this.logicValLeft.textContent = '0 (LOW)';
-                if (this.voltValLeft) this.voltValLeft.textContent = '0.0V';
+                if (this.voltValLeft) this.voltValLeft.textContent = (this.voltLeft !== undefined ? Number(this.voltLeft).toFixed(2) : '0.00') + 'V';
             }
         }
 
@@ -998,13 +1121,13 @@ class TCRT5000Controller {
                 this.statusDotRight.className = 'badge-dot dot-red';
                 this.statusTextRight.textContent = 'ĐEN';
                 if (this.logicValRight) this.logicValRight.textContent = '1 (HIGH)';
-                if (this.voltValRight) this.voltValRight.textContent = '3.3V';
+                if (this.voltValRight) this.voltValRight.textContent = (this.voltRight !== undefined ? Number(this.voltRight).toFixed(2) : '3.30') + 'V';
             } else {
                 this.statusBadgeRight.className = 'telemetry-badge badge-white';
                 this.statusDotRight.className = 'badge-dot dot-green';
                 this.statusTextRight.textContent = 'TRẮNG';
                 if (this.logicValRight) this.logicValRight.textContent = '0 (LOW)';
-                if (this.voltValRight) this.voltValRight.textContent = '0.0V';
+                if (this.voltValRight) this.voltValRight.textContent = (this.voltRight !== undefined ? Number(this.voltRight).toFixed(2) : '0.00') + 'V';
             }
         }
     }
@@ -1021,14 +1144,19 @@ class DashboardApp {
         this.pwController = new PasswordFieldController('#password', '#eye-icon');
         this.wsClient = new WebSocketClient();
         this.ultrasonicController = new UltrasonicChartController(this.wsClient);
-        this.tcrtController = new TCRT5000Controller();
+        this.tcrtController = new TCRT5000Controller(this.wsClient);
         
         this.pendingLogin = null;
         this.loginTimeoutTimer = null;
 
-        // Kết nối bộ nhận dữ liệu Telemetry trực tiếp từ WebSocket tới Controller
-        this.wsClient.telemetryCallback = (sensorData) => {
-            this.ultrasonicController.handleTelemetry(sensorData);
+        // Kết nối bộ nhận dữ liệu Telemetry trực tiếp từ WebSocket tới Controllers
+        this.wsClient.telemetryCallback = (telemetryData) => {
+            if (this.ultrasonicController) {
+                this.ultrasonicController.handleTelemetry(telemetryData.sensor || telemetryData);
+            }
+            if (this.tcrtController) {
+                this.tcrtController.handleTelemetry(telemetryData);
+            }
         };
 
         // Phản hồi xin cấp quyền điều khiển độc quyền từ Server

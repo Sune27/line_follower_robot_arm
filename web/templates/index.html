@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=2.0">
     <link rel="alternate icon" href="../static/favicon.svg?v=2.0">
     <!-- Nhúng file CSS định dạng giao diện -->
-    <link rel="stylesheet" href="../static/css/style.css?v=3.5">
+    <link rel="stylesheet" href="../static/css/style.css?v=3.6">
     <!-- Font chữ Chakra Petch (phong cách Robot/Công nghệ) và Be Vietnam Pro (tối ưu 100% tiếng Việt có dấu) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -662,6 +662,19 @@
                     </div>
                 </div>
 
+                <!-- THANH ĐIỀU KHIỂN BẬT / TẮT TRẠNG THÁI LÀM VIỆC TCRT5000 -->
+                <div class="tcrt-power-bar">
+                    <div class="tcrt-power-status-box">
+                        <span class="tcrt-power-status-dot dot-off" id="tcrt-power-dot"></span>
+                        <span class="tcrt-power-status-lbl">Trạng thái:</span>
+                        <span class="tcrt-power-status-val status-standby" id="tcrt-power-status-text">ĐÃ TẮT (NGHỈ)</span>
+                    </div>
+                    <button type="button" class="btn-tcrt-power is-off" id="btn-toggle-tcrt-power" title="Bật / Tắt trạng thái làm việc của cảm biến TCRT5000">
+                        <span class="btn-power-icon" id="tcrt-power-btn-icon">▶</span>
+                        <span class="btn-power-text" id="tcrt-power-btn-text">Bật cảm biến TCRT5000</span>
+                    </button>
+                </div>
+
                 <!-- 2. KHUNG SÂN CHẠY & ĐẦU XE ROBOT 2D (Theo sơ đồ trực quan) -->
                 <div class="tcrt-stage-wrapper">
                     <div class="tcrt-track-floor" id="tcrt-track-floor">
@@ -863,6 +876,6 @@
     </div>
 
     <!-- Nhúng file Javascript xử lý logic tương tác -->
-    <script src="../static/js/main.js?v=3.8"></script>
+    <script src="../static/js/main.js?v=4.0"></script>
 </body>
 </html>
