@@ -116,7 +116,8 @@ class RobotControllerServer:
         try:
             msg = json.loads(raw_message)
             cmd = msg.get("cmd")
-            print(f"[WebSocket] [RX] {cmd}")
+            if cmd != "set_motor_speed":
+                print(f"[WebSocket] [RX] {cmd}")
 
             # 1. Yêu cầu cấp quyền điều khiển độc quyền (Login Handshake)
             if cmd == "request_login":
@@ -217,6 +218,39 @@ class RobotControllerServer:
 
             elif cmd == "tcrt_stop_stream":
                 self.send_serial("CMD:STOP_TCRT_STREAM")
+
+            elif cmd == "set_motor_speed":
+                speed = int(msg.get("speed", 0))
+                left = int(msg.get("left", speed))
+                right = int(msg.get("right", speed))
+                is_running = bool(msg.get("is_running", speed > 0))
+                if is_running and speed > 0:
+                    self.send_serial(f"CMD:SPEED:{speed}")
+                else:
+                    self.send_serial("CMD:MOTOR_STOP")
+                await self._broadcast(json.dumps({
+                    "event": "motor_telemetry",
+                    "speed": speed,
+                    "speed_left": left,
+                    "speed_right": right,
+                    "is_running": is_running
+                }))
+
+            elif cmd == "toggle_motor_power":
+                state = bool(msg.get("state", False))
+                speed = int(msg.get("speed", 0)) if state else 0
+                print(f"[Server] 🏎️ Bật/Tắt động cơ: state={state}, speed={speed}%")
+                if state and speed > 0:
+                    self.send_serial(f"CMD:SPEED:{speed}")
+                else:
+                    self.send_serial("CMD:MOTOR_STOP")
+                await self._broadcast(json.dumps({
+                    "event": "motor_telemetry",
+                    "speed": speed,
+                    "speed_left": speed,
+                    "speed_right": speed,
+                    "is_running": state
+                }))
         except json.JSONDecodeError:
             pass
 

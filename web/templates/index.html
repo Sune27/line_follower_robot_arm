@@ -9,7 +9,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=2.0">
     <link rel="alternate icon" href="../static/favicon.svg?v=2.0">
     <!-- Nhúng file CSS định dạng giao diện -->
-    <link rel="stylesheet" href="../static/css/style.css?v=4.0">
+    <link rel="stylesheet" href="../static/css/style.css?v=4.4">
     <!-- Font chữ Chakra Petch (phong cách Robot/Công nghệ) và Be Vietnam Pro (tối ưu 100% tiếng Việt có dấu) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -905,8 +905,297 @@
             </div>
         </header>
 
-        <!-- NỘI DUNG MÀN HÌNH (ĐỂ TRỐNG SẴN SÀNG CHO PHÁT TRIỂN) -->
+        <!-- NỘI DUNG MÀN HÌNH: KHU VỰC 1 (GIÁM SÁT 2 BÁNH) & KHU VỰC 2 (CẦN SỐ DỌC ĐIỀU TỐC) -->
         <main class="ultrasonic-main-content" id="tb6612-main-content">
+            <!-- SVG Gradient Definitions chung cho Gauges -->
+            <svg style="width:0;height:0;position:absolute;" aria-hidden="true" focusable="false">
+                <defs>
+                    <linearGradient id="gaugeCyanGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#06b6d4" />
+                        <stop offset="100%" stop-color="#38bdf8" />
+                    </linearGradient>
+                    <linearGradient id="gaugePurpleGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#a855f7" />
+                        <stop offset="100%" stop-color="#ec4899" />
+                    </linearGradient>
+                </defs>
+            </svg>
+
+            <div class="tb6612-cockpit-layout">
+                <!-- ======================================================== -->
+                <!-- KHU VỰC 1: THEO DÕI VÀ GIÁM SÁT TỐC ĐỘ HAI BÁNH XE       -->
+                <!-- ======================================================== -->
+                <section class="tb6612-area-card area-telemetry">
+                    <!-- Banner Tiêu đề Khu vực 1 -->
+                    <div class="area-banner-header">
+                        <div class="area-badge-group">
+                            <span class="area-badge badge-area1">KHU VỰC 1</span>
+                            <h2 class="area-main-title">GIÁM SÁT TỐC ĐỘ HAI BÁNH</h2>
+                        </div>
+                        <div class="diff-motion-pill" id="tb6612-motion-status">
+                            <span class="motion-dot"></span>
+                            <span class="motion-text" id="motion-status-text">XE ĐANG DỪNG</span>
+                        </div>
+                    </div>
+
+                    <!-- Lưới 2 Bánh: Bánh Trái (Motor A) & Bánh Phải (Motor B) -->
+                    <div class="wheels-telemetry-grid">
+                        <!-- 1. BÁNH TRÁI (MOTOR A) -->
+                        <div class="wheel-pod-card" id="wheel-pod-left">
+                            <div class="wheel-pod-header">
+                                <div class="pod-title-box">
+                                    <span class="motor-tag tag-motor-a">MOTOR A</span>
+                                    <h3 class="pod-name">BÁNH TRÁI</h3>
+                                </div>
+                                <div class="wheel-dir-pill" id="left-dir-pill">
+                                    <span class="dir-icon">⟳</span>
+                                    <span class="dir-text" id="left-dir-text">TIẾN (CW)</span>
+                                </div>
+                            </div>
+
+                            <!-- Vòng đo tốc độ Tachometer & Mô phỏng bánh xe quay 2D -->
+                            <div class="wheel-gauge-container">
+                                <svg class="wheel-gauge-svg" viewBox="0 0 200 200">
+                                    <g transform="rotate(135 100 100)">
+                                        <!-- Vòng ray nền mờ (Dài 386.4, Khuyết 128.8 ở đáy) -->
+                                        <circle class="gauge-bg" cx="100" cy="100" r="82" fill="none"
+                                            stroke="rgba(255,255,255,0.07)" stroke-width="12"
+                                            stroke-dasharray="386.4 515.2" stroke-dashoffset="0"
+                                            stroke-linecap="round" />
+                                        <!-- Vòng đo tốc độ động (Cyan Gradient) -->
+                                        <circle class="gauge-fill-arc" id="gauge-fill-left" cx="100" cy="100" r="82"
+                                            fill="none" stroke="url(#gaugeCyanGrad)" stroke-width="12"
+                                            stroke-dasharray="386.4 515.2" stroke-dashoffset="386.4"
+                                            stroke-linecap="round" style="opacity: 0;" />
+                                    </g>
+                                </svg>
+
+                                <!-- Mô phỏng đồ họa bánh xe robot 2D xoay động theo tốc độ -->
+                                <div class="wheel-sim-graphic" id="wheel-graphic-left">
+                                    <div class="sim-tire">
+                                        <div class="sim-rim">
+                                            <div class="rim-cross"></div>
+                                            <div class="rim-hub"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Chỉ số tốc độ kỹ thuật số ở trung tâm vòng cung -->
+                                <div class="wheel-gauge-readout">
+                                    <span class="gauge-number" id="speed-left-val">0</span>
+                                    <span class="gauge-unit">%</span>
+                                </div>
+                            </div>
+
+                            <!-- Bảng thông số đo lường của Bánh Trái -->
+                            <div class="wheel-metrics-box">
+                                <div class="metric-row">
+                                    <span class="metric-title">Chân kết nối:</span>
+                                    <span class="metric-val pin-info">D13(A1) · D12(A2) · D14(PWMA)</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-title">Vòng quay ước tính:</span>
+                                    <span class="metric-val" id="rpm-left-val">0 RPM</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. BÁNH PHẢI (MOTOR B) -->
+                        <div class="wheel-pod-card" id="wheel-pod-right">
+                            <div class="wheel-pod-header">
+                                <div class="pod-title-box">
+                                    <span class="motor-tag tag-motor-b">MOTOR B</span>
+                                    <h3 class="pod-name">BÁNH PHẢI</h3>
+                                </div>
+                                <div class="wheel-dir-pill" id="right-dir-pill">
+                                    <span class="dir-icon">⟳</span>
+                                    <span class="dir-text" id="right-dir-text">TIẾN (CW)</span>
+                                </div>
+                            </div>
+
+                            <!-- Vòng đo tốc độ Tachometer & Mô phỏng bánh xe quay 2D -->
+                            <div class="wheel-gauge-container">
+                                <svg class="wheel-gauge-svg" viewBox="0 0 200 200">
+                                    <g transform="rotate(135 100 100)">
+                                        <!-- Vòng ray nền mờ (Dài 386.4, Khuyết 128.8 ở đáy) -->
+                                        <circle class="gauge-bg" cx="100" cy="100" r="82" fill="none"
+                                            stroke="rgba(255,255,255,0.07)" stroke-width="12"
+                                            stroke-dasharray="386.4 515.2" stroke-dashoffset="0"
+                                            stroke-linecap="round" />
+                                        <!-- Vòng đo tốc độ động (Purple Gradient) -->
+                                        <circle class="gauge-fill-arc" id="gauge-fill-right" cx="100" cy="100" r="82"
+                                            fill="none" stroke="url(#gaugePurpleGrad)" stroke-width="12"
+                                            stroke-dasharray="386.4 515.2" stroke-dashoffset="386.4"
+                                            stroke-linecap="round" style="opacity: 0;" />
+                                    </g>
+                                </svg>
+
+                                <!-- Mô phỏng đồ họa bánh xe robot 2D xoay động theo tốc độ -->
+                                <div class="wheel-sim-graphic" id="wheel-graphic-right">
+                                    <div class="sim-tire">
+                                        <div class="sim-rim">
+                                            <div class="rim-cross"></div>
+                                            <div class="rim-hub"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Chỉ số tốc độ kỹ thuật số ở trung tâm vòng cung -->
+                                <div class="wheel-gauge-readout">
+                                    <span class="gauge-number" id="speed-right-val">0</span>
+                                    <span class="gauge-unit">%</span>
+                                </div>
+                            </div>
+
+                            <!-- Bảng thông số đo lường của Bánh Phải -->
+                            <div class="wheel-metrics-box">
+                                <div class="metric-row">
+                                    <span class="metric-title">Chân kết nối:</span>
+                                    <span class="metric-val pin-info">D27(B1) · D26(B2) · D25(PWMB)</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-title">Vòng quay ước tính:</span>
+                                    <span class="metric-val" id="rpm-right-val">0 RPM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thanh phân bổ lực kéo vi sai giữa 2 bánh -->
+                    <div class="differential-balance-box">
+                        <div class="diff-header-row">
+                            <span class="diff-lbl-side left">◀ Trái: <strong id="ratio-left-txt">50%</strong></span>
+                            <span class="diff-lbl-title">TỶ LỆ PHÂN BỔ VI SAI (DIFFERENTIAL RATIO)</span>
+                            <span class="diff-lbl-side right">Phải: <strong id="ratio-right-txt">50%</strong> ▶</span>
+                        </div>
+                        <div class="diff-progress-track">
+                            <div class="diff-bar-left" id="diff-bar-left" style="width: 50%;"></div>
+                            <div class="diff-center-notch"></div>
+                            <div class="diff-bar-right" id="diff-bar-right" style="width: 50%;"></div>
+                        </div>
+                        <div class="diff-note-text">
+                            <span>ℹ️ Khi xe dò line theo vạch đen TCRT5000, vi sai tự động điều chỉnh tốc độ 2 bánh để bẻ lái mượt mà mà không cần servo hướng.</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ======================================================== -->
+                <!-- KHU VỰC 2: CẦN SỐ DỌC ĐIỀU KHIỂN TỐC ĐỘ XE ROBOT         -->
+                <!-- ======================================================== -->
+                <section class="tb6612-area-card area-gear-shifter">
+                    <!-- Banner Tiêu đề Khu vực 2 -->
+                    <div class="area-banner-header">
+                        <div class="area-badge-group">
+                            <span class="area-badge badge-area2">KHU VỰC 2</span>
+                            <h2 class="area-main-title">CẦN SỐ ĐIỀU KHIỂN TỐC ĐỘ</h2>
+                        </div>
+                    </div>
+
+                    <!-- Khung Hộp Cần Số Trung Tâm (Gear Shifter Console) -->
+                    <div class="shifter-console-housing">
+                        <!-- Màn hình HUD hiển thị Tốc độ ga tổng -->
+                        <div class="throttle-hud-box">
+                            <div class="hud-eyebrow">TỐC ĐỘ GA TỔNG (MAIN THROTTLE)</div>
+                            <div class="hud-main-number-wrap">
+                                <span class="hud-main-number" id="shifter-speed-val">0</span>
+                                <span class="hud-main-unit">%</span>
+                            </div>
+                            <div class="hud-throttle-status" id="shifter-status-label">ĐỘNG CƠ ĐÃ DỪNG</div>
+                        </div>
+
+                        <!-- CỤM CẦN SỐ DỌC (VERTICAL SHIFTER STAGE) -->
+                        <div class="shifter-vertical-stage">
+                            <!-- Cột chỉ báo các vị trí nấc số (P - 1 - 2 - 3) -->
+                            <div class="gear-positions-column">
+                                <button type="button" class="gear-pos-btn" data-gear="3" data-speed="100" id="gear-btn-3">
+                                    <span class="pos-badge pos-turbo">3</span>
+                                    <div class="pos-info">
+                                        <span class="pos-name">TURBO</span>
+                                        <span class="pos-speed">100%</span>
+                                    </div>
+                                </button>
+                                <button type="button" class="gear-pos-btn" data-gear="2" data-speed="65" id="gear-btn-2">
+                                    <span class="pos-badge pos-normal">2</span>
+                                    <div class="pos-info">
+                                        <span class="pos-name">TIÊU CHUẨN</span>
+                                        <span class="pos-speed">65%</span>
+                                    </div>
+                                </button>
+                                <button type="button" class="gear-pos-btn" data-gear="1" data-speed="35" id="gear-btn-1">
+                                    <span class="pos-badge pos-eco">1</span>
+                                    <div class="pos-info">
+                                        <span class="pos-name">CHẬM / ECO</span>
+                                        <span class="pos-speed">35%</span>
+                                    </div>
+                                </button>
+                                <button type="button" class="gear-pos-btn is-active" data-gear="P" data-speed="0" id="gear-btn-p">
+                                    <span class="pos-badge pos-park">P</span>
+                                    <div class="pos-info">
+                                        <span class="pos-name">DỪNG (PARK)</span>
+                                        <span class="pos-speed">0%</span>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <!-- Khe rãnh trượt cần số (Mechanical Shifter Slot) -->
+                            <div class="shifter-slot-assembly">
+                                <!-- Viền kim loại & Rãnh đèn LED phát sáng -->
+                                <div class="slot-metallic-casing">
+                                    <div class="slot-glow-fill" id="shifter-glow-fill" style="height: 0%;"></div>
+                                    <div class="slot-center-rail"></div>
+                                </div>
+
+                                <!-- Thước đo tỉ lệ khắc laser 0 - 100 -->
+                                <div class="shifter-scale-ruler">
+                                    <div class="scale-point sp-100"><span class="scale-line"></span><span class="scale-text">100</span></div>
+                                    <div class="scale-point sp-75"><span class="scale-line"></span><span class="scale-text">75</span></div>
+                                    <div class="scale-point sp-50"><span class="scale-line"></span><span class="scale-text">50</span></div>
+                                    <div class="scale-point sp-25"><span class="scale-line"></span><span class="scale-text">25</span></div>
+                                    <div class="scale-point sp-0"><span class="scale-line"></span><span class="scale-text">0</span></div>
+                                </div>
+
+                                <!-- Input Range Slider Dọc chuẩn HTML5 -->
+                                <input type="range" class="vertical-throttle-slider" id="tb6612-gear-slider"
+                                    min="0" max="100" value="0" step="1" orient="vertical"
+                                    aria-label="Cần số dọc điều khiển tốc độ xe">
+
+                                <!-- Tay nắm cần số (Shift Knob) chuyển động bám theo vị trí trượt -->
+                                <div class="shift-knob-handle" id="shift-knob-handle" style="bottom: 0%;">
+                                    <div class="knob-head">
+                                        <div class="knob-cap">
+                                            <span class="knob-gear-symbol" id="knob-gear-symbol">P</span>
+                                        </div>
+                                        <div class="knob-chrome-ring"></div>
+                                        <div class="knob-grips">
+                                            <span class="grip-line"></span>
+                                            <span class="grip-line"></span>
+                                        </div>
+                                    </div>
+                                    <div class="knob-lever-arm"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CỤM NÚT ĐIỀU KHIỂN & BẬT/TẮT NGUỒN ĐỘNG CƠ -->
+                        <div class="shifter-actions-footer">
+                            <!-- Nút bấm Khởi động / Dừng động cơ lớn kiểu Engine Start-Stop -->
+                            <button type="button" class="btn-engine-toggle engine-stopped" id="btn-toggle-motor-power"
+                                title="Bật hoặc Dừng cấp xung động cơ TB6612FNG">
+                                <div class="engine-icon-halo">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                                        <line x1="12" y1="2" x2="12" y2="12"></line>
+                                    </svg>
+                                </div>
+                                <div class="engine-text-col">
+                                    <span class="engine-main-action" id="engine-btn-label">BẬT ĐỘNG CƠ</span>
+                                    <span class="engine-sub-desc" id="engine-btn-sub">Click để kích hoạt ga</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
         </main>
     </div>
 
@@ -1007,7 +1296,7 @@
     </div>
 
     <!-- Nhúng file Javascript xử lý logic tương tác -->
-    <script src="../static/js/main.js?v=4.2"></script>
+    <script src="../static/js/main.js?v=4.7"></script>
 </body>
 
 </html>
