@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,12 +9,15 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=2.0">
     <link rel="alternate icon" href="../static/favicon.svg?v=2.0">
     <!-- Nhúng file CSS định dạng giao diện -->
-    <link rel="stylesheet" href="../static/css/style.css?v=3.7">
+    <link rel="stylesheet" href="../static/css/style.css?v=4.0">
     <!-- Font chữ Chakra Petch (phong cách Robot/Công nghệ) và Be Vietnam Pro (tối ưu 100% tiếng Việt có dấu) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Chakra+Petch:wght@500;600;700&display=swap"
+        rel="stylesheet">
 </head>
+
 <body>
 
     <!-- BANNER CẢNH BÁO KHẨN CẤP TOÀN HỆ THỐNG KHI MẤT KẾT NỐI WI-FI -->
@@ -22,7 +26,8 @@
             <span class="emergency-flashing-icon">🚨</span>
             <div class="emergency-banner-texts">
                 <div class="emergency-banner-title">[CHẾ ĐỘ KHẨN CẤP] MẤT KẾT NỐI WI-FI VỚI XE!</div>
-                <div class="emergency-banner-desc" id="emergency-banner-desc">Hệ thống đã tự động dừng mọi hoạt động. ESP32 đang tự động quét và kết nối lại sóng Wi-Fi...</div>
+                <div class="emergency-banner-desc" id="emergency-banner-desc">Hệ thống đã tự động dừng mọi hoạt động.
+                    ESP32 đang tự động quét và kết nối lại sóng Wi-Fi...</div>
             </div>
             <span class="emergency-status-badge">FAILSAFE ACTIVE</span>
         </div>
@@ -129,35 +134,40 @@
                 <svg class="cad-arm-svg" viewBox="0 0 460 380" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <linearGradient id="cadBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#2563eb"/>
-                            <stop offset="60%" stop-color="#1d4ed8"/>
-                            <stop offset="100%" stop-color="#1e3a8a"/>
+                            <stop offset="0%" stop-color="#2563eb" />
+                            <stop offset="60%" stop-color="#1d4ed8" />
+                            <stop offset="100%" stop-color="#1e3a8a" />
                         </linearGradient>
                         <linearGradient id="cadRedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#ef4444"/>
-                            <stop offset="100%" stop-color="#b91c1c"/>
+                            <stop offset="0%" stop-color="#ef4444" />
+                            <stop offset="100%" stop-color="#b91c1c" />
                         </linearGradient>
                         <linearGradient id="cadDarkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#334155"/>
-                            <stop offset="50%" stop-color="#1e293b"/>
-                            <stop offset="100%" stop-color="#0f172a"/>
+                            <stop offset="0%" stop-color="#334155" />
+                            <stop offset="50%" stop-color="#1e293b" />
+                            <stop offset="100%" stop-color="#0f172a" />
                         </linearGradient>
                         <filter id="cadGlow" x="-20%" y="-20%" width="140%" height="140%">
-                            <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#06b6d4" flood-opacity="0.6"/>
+                            <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#06b6d4" flood-opacity="0.6" />
                         </filter>
                     </defs>
 
                     <!-- Đế Robot cố định -->
                     <g class="cad-base-assembly">
-                        <path d="M 50 360 L 220 360 L 210 330 L 195 315 L 75 315 L 60 330 Z" fill="url(#cadDarkGrad)" stroke="#0ea5e9" stroke-width="1.5"/>
-                        <polygon points="45,360 75,360 68,325 52,325" fill="url(#cadBlueGrad)" stroke="#38bdf8" stroke-width="1"/>
-                        <polygon points="195,360 225,360 218,325 202,325" fill="url(#cadBlueGrad)" stroke="#38bdf8" stroke-width="1"/>
-                        <polygon points="110,360 160,360 155,325 115,325" fill="url(#cadBlueGrad)" opacity="0.8"/>
-                        <rect x="75" y="310" width="120" height="8" rx="2" fill="url(#cadRedGrad)"/>
-                        <rect x="85" y="280" width="100" height="30" rx="3" fill="url(#cadDarkGrad)" stroke="#475569" stroke-width="1.2"/>
-                        <circle cx="135" cy="295" r="3" fill="#64748b"/>
-                        <rect x="80" y="273" width="110" height="7" rx="2" fill="url(#cadRedGrad)"/>
-                        <path d="M 80 273 L 95 230 L 175 230 L 190 273 Z" fill="url(#cadBlueGrad)" stroke="#38bdf8" stroke-width="1.5"/>
+                        <path d="M 50 360 L 220 360 L 210 330 L 195 315 L 75 315 L 60 330 Z" fill="url(#cadDarkGrad)"
+                            stroke="#0ea5e9" stroke-width="1.5" />
+                        <polygon points="45,360 75,360 68,325 52,325" fill="url(#cadBlueGrad)" stroke="#38bdf8"
+                            stroke-width="1" />
+                        <polygon points="195,360 225,360 218,325 202,325" fill="url(#cadBlueGrad)" stroke="#38bdf8"
+                            stroke-width="1" />
+                        <polygon points="110,360 160,360 155,325 115,325" fill="url(#cadBlueGrad)" opacity="0.8" />
+                        <rect x="75" y="310" width="120" height="8" rx="2" fill="url(#cadRedGrad)" />
+                        <rect x="85" y="280" width="100" height="30" rx="3" fill="url(#cadDarkGrad)" stroke="#475569"
+                            stroke-width="1.2" />
+                        <circle cx="135" cy="295" r="3" fill="#64748b" />
+                        <rect x="80" y="273" width="110" height="7" rx="2" fill="url(#cadRedGrad)" />
+                        <path d="M 80 273 L 95 230 L 175 230 L 190 273 Z" fill="url(#cadBlueGrad)" stroke="#38bdf8"
+                            stroke-width="1.5" />
                     </g>
 
                     <!-- Cụm khớp cánh tay chuyển động nhịp nhàng -->
@@ -165,44 +175,59 @@
                         <!-- Khớp vai & Cánh tay dưới (TEAM 3) -->
                         <g class="cad-link-shoulder">
                             <g class="cad-shoulder-hub">
-                                <circle cx="95" cy="230" r="36" fill="url(#cadRedGrad)"/>
-                                <circle cx="95" cy="230" r="30" fill="url(#cadBlueGrad)" stroke="#1e3a8a" stroke-width="2"/>
-                                <circle cx="95" cy="230" r="20" fill="#0f172a" stroke="#64748b" stroke-width="1.5"/>
-                                <circle cx="95" cy="216" r="2.5" fill="#38bdf8"/>
-                                <circle cx="95" cy="244" r="2.5" fill="#38bdf8"/>
-                                <circle cx="81" cy="230" r="2.5" fill="#38bdf8"/>
-                                <circle cx="109" cy="230" r="2.5" fill="#38bdf8"/>
-                                <circle cx="95" cy="230" r="10" fill="url(#cadBlueGrad)" stroke="#38bdf8" stroke-width="1.5"/>
+                                <circle cx="95" cy="230" r="36" fill="url(#cadRedGrad)" />
+                                <circle cx="95" cy="230" r="30" fill="url(#cadBlueGrad)" stroke="#1e3a8a"
+                                    stroke-width="2" />
+                                <circle cx="95" cy="230" r="20" fill="#0f172a" stroke="#64748b" stroke-width="1.5" />
+                                <circle cx="95" cy="216" r="2.5" fill="#38bdf8" />
+                                <circle cx="95" cy="244" r="2.5" fill="#38bdf8" />
+                                <circle cx="81" cy="230" r="2.5" fill="#38bdf8" />
+                                <circle cx="109" cy="230" r="2.5" fill="#38bdf8" />
+                                <circle cx="95" cy="230" r="10" fill="url(#cadBlueGrad)" stroke="#38bdf8"
+                                    stroke-width="1.5" />
                             </g>
-                            <path d="M 95 264 C 130 264 168 238 195 168 L 210 173 C 185 248 135 278 95 276 Z" fill="url(#cadRedGrad)"/>
-                            <path d="M 95 230 C 130 220 160 190 205 140 L 225 165 C 180 215 140 250 95 260 Z" fill="url(#cadDarkGrad)" stroke="#38bdf8" stroke-width="1"/>
-                            <text x="135" y="218" fill="#ef4444" font-family="'Chakra Petch', sans-serif" font-size="14" font-weight="900" font-style="italic" transform="rotate(-30, 135, 218)" letter-spacing="1">TEAM 3</text>
+                            <path d="M 95 264 C 130 264 168 238 195 168 L 210 173 C 185 248 135 278 95 276 Z"
+                                fill="url(#cadRedGrad)" />
+                            <path d="M 95 230 C 130 220 160 190 205 140 L 225 165 C 180 215 140 250 95 260 Z"
+                                fill="url(#cadDarkGrad)" stroke="#38bdf8" stroke-width="1" />
+                            <text x="135" y="218" fill="#ef4444" font-family="'Chakra Petch', sans-serif" font-size="14"
+                                font-weight="900" font-style="italic" transform="rotate(-30, 135, 218)"
+                                letter-spacing="1">TEAM 3</text>
                         </g>
 
                         <!-- Khớp khuỷu & Cánh tay trên (SPKT) -->
                         <g class="cad-link-elbow">
-                            <path d="M 195 120 L 245 125 L 240 170 L 190 165 Z" fill="url(#cadBlueGrad)" stroke="#38bdf8" stroke-width="1.5"/>
-                            <circle cx="215" cy="122" r="16" fill="url(#cadBlueGrad)" stroke="#1e3a8a" stroke-width="2"/>
-                            <circle cx="215" cy="122" r="8" fill="url(#cadDarkGrad)"/>
+                            <path d="M 195 120 L 245 125 L 240 170 L 190 165 Z" fill="url(#cadBlueGrad)"
+                                stroke="#38bdf8" stroke-width="1.5" />
+                            <circle cx="215" cy="122" r="16" fill="url(#cadBlueGrad)" stroke="#1e3a8a"
+                                stroke-width="2" />
+                            <circle cx="215" cy="122" r="8" fill="url(#cadDarkGrad)" />
                             <!-- Thanh ty trợ lực đỏ -->
-                            <rect x="235" y="110" width="85" height="7" rx="3.5" fill="url(#cadRedGrad)"/>
-                            <circle cx="235" cy="113.5" r="4" fill="#38bdf8"/>
-                            <rect x="245" y="130" width="70" height="28" rx="4" fill="url(#cadDarkGrad)" stroke="#475569" stroke-width="1.5"/>
-                            <rect x="242" y="133" width="6" height="22" fill="url(#cadRedGrad)"/>
-                            <text x="256" y="149" fill="#ef4444" font-family="'Chakra Petch', sans-serif" font-size="13" font-weight="900" font-style="italic" letter-spacing="1.5">SPKT</text>
-                            <rect x="315" y="110" width="14" height="52" rx="3" fill="url(#cadBlueGrad)" stroke="#38bdf8" stroke-width="1"/>
+                            <rect x="235" y="110" width="85" height="7" rx="3.5" fill="url(#cadRedGrad)" />
+                            <circle cx="235" cy="113.5" r="4" fill="#38bdf8" />
+                            <rect x="245" y="130" width="70" height="28" rx="4" fill="url(#cadDarkGrad)"
+                                stroke="#475569" stroke-width="1.5" />
+                            <rect x="242" y="133" width="6" height="22" fill="url(#cadRedGrad)" />
+                            <text x="256" y="149" fill="#ef4444" font-family="'Chakra Petch', sans-serif" font-size="13"
+                                font-weight="900" font-style="italic" letter-spacing="1.5">SPKT</text>
+                            <rect x="315" y="110" width="14" height="52" rx="3" fill="url(#cadBlueGrad)"
+                                stroke="#38bdf8" stroke-width="1" />
 
                             <!-- Khớp cổ tay & Tay gắp đồ -->
                             <g class="cad-link-wrist">
-                                <path d="M 329 135 C 345 120 360 150 380 140 C 395 130 400 145 410 142 L 407 152 C 395 155 385 145 370 155 C 350 165 340 140 329 145 Z" fill="url(#cadDarkGrad)" stroke="#0ea5e9" stroke-width="1.2"/>
-                                <circle cx="337" cy="140" r="9" fill="url(#cadBlueGrad)"/>
-                                <circle cx="395" cy="146" r="10" fill="url(#cadBlueGrad)"/>
+                                <path
+                                    d="M 329 135 C 345 120 360 150 380 140 C 395 130 400 145 410 142 L 407 152 C 395 155 385 145 370 155 C 350 165 340 140 329 145 Z"
+                                    fill="url(#cadDarkGrad)" stroke="#0ea5e9" stroke-width="1.2" />
+                                <circle cx="337" cy="140" r="9" fill="url(#cadBlueGrad)" />
+                                <circle cx="395" cy="146" r="10" fill="url(#cadBlueGrad)" />
                                 <g transform="rotate(35, 410, 155)">
-                                    <ellipse cx="410" cy="150" rx="14" ry="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
-                                    <rect x="403" y="152" width="14" height="25" rx="3" fill="url(#cadDarkGrad)" stroke="#64748b" stroke-width="1"/>
-                                    <rect x="404" y="150" width="12" height="4" fill="url(#cadRedGrad)"/>
-                                    <polygon points="407,177 413,177 410,205" fill="#38bdf8" filter="url(#cadGlow)"/>
-                                    <circle cx="410" cy="205" r="3" fill="#ffffff" filter="url(#cadGlow)"/>
+                                    <ellipse cx="410" cy="150" rx="14" ry="4" fill="#0f172a" stroke="#38bdf8"
+                                        stroke-width="1.5" />
+                                    <rect x="403" y="152" width="14" height="25" rx="3" fill="url(#cadDarkGrad)"
+                                        stroke="#64748b" stroke-width="1" />
+                                    <rect x="404" y="150" width="12" height="4" fill="url(#cadRedGrad)" />
+                                    <polygon points="407,177 413,177 410,205" fill="#38bdf8" filter="url(#cadGlow)" />
+                                    <circle cx="410" cy="205" r="3" fill="#ffffff" filter="url(#cadGlow)" />
                                 </g>
                             </g>
                         </g>
@@ -256,7 +281,8 @@
             <div class="login-header">
                 <div class="mini-logo">⚙️</div>
                 <h2>XÁC THỰC TRUY CẬP</h2>
-                <p class="queue-notice is-available" id="queue-notice"><span class="queue-status-icon">🟢</span> <span class="queue-status-text">Sẵn sàng nhận 1 người điều khiển</span></p>
+                <p class="queue-notice is-available" id="queue-notice"><span class="queue-status-icon">🟢</span> <span
+                        class="queue-status-text">Sẵn sàng nhận 1 người điều khiển</span></p>
             </div>
 
             <!-- Biểu mẫu nhập liệu -->
@@ -273,7 +299,8 @@
                     <div class="password-wrapper">
                         <input type="password" id="password" placeholder="Nhập mật khẩu" required>
                         <!-- Nút hình con mắt để chuyển đổi hiển thị mật khẩu -->
-                        <button type="button" class="btn-toggle-pw" onclick="togglePasswordVisibility()" title="Ẩn/Hiện mật khẩu">
+                        <button type="button" class="btn-toggle-pw" onclick="togglePasswordVisibility()"
+                            title="Ẩn/Hiện mật khẩu">
                             <span id="eye-icon">👁️</span>
                         </button>
                     </div>
@@ -296,11 +323,12 @@
     <!-- MÀN HÌNH 3: BẢNG ĐIỀU KHIỂN (Hiện tại chỉ hiển thị chữ)        -->
     <!-- Tác dụng: Giao diện sau khi đăng nhập thành công               -->
     <!-- ============================================================ -->
-        <div id="dashboard-screen" class="screen">
+    <div id="dashboard-screen" class="screen">
         <!-- Thanh tiêu đề phụ: hiển thị tài khoản hiện tại và nút đăng xuất để kiểm thử -->
         <header class="dashboard-header">
             <span class="user-info">👤 Người đang điều khiển: <b id="current-user">Admin</b></span>
-            <button class="btn-logout" onclick="handleLogout()" title="Nhấn để thoát và nhường lượt cho người khác">Đăng xuất</button>
+            <button class="btn-logout" onclick="handleLogout()" title="Nhấn để thoát và nhường lượt cho người khác">Đăng
+                xuất</button>
         </header>
 
         <!-- Nội dung chính: Khu vực Chức năng trung tâm -->
@@ -313,17 +341,18 @@
 
                 <!-- Lưới hiển thị các thẻ chức năng (Tự động căn đều chính giữa màn hình) -->
                 <div class="function-cards-grid">
-                    
+
                     <!-- THẺ 1: WI-FI -->
                     <div class="function-card" id="card-wifi" title="Quản lý kết nối Wi-Fi" style="cursor: pointer;">
                         <div class="card-glow-overlay"></div>
                         <div class="card-icon-wrapper">
                             <!-- Biểu tượng sóng Wi-Fi dạng SVG laptop hiện đại -->
-                            <svg class="wifi-laptop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M2 8.82a15 15 0 0 1 20 0" class="wifi-wave wave-outer"/>
-                                <path d="M5 12.86a10.8 10.8 0 0 1 14 0" class="wifi-wave wave-mid"/>
-                                <path d="M8.5 16.43a6.4 6.4 0 0 1 7 0" class="wifi-wave wave-inner"/>
-                                <circle cx="12" cy="20" r="1.2" class="wifi-dot" fill="currentColor"/>
+                            <svg class="wifi-laptop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 8.82a15 15 0 0 1 20 0" class="wifi-wave wave-outer" />
+                                <path d="M5 12.86a10.8 10.8 0 0 1 14 0" class="wifi-wave wave-mid" />
+                                <path d="M8.5 16.43a6.4 6.4 0 0 1 7 0" class="wifi-wave wave-inner" />
+                                <circle cx="12" cy="20" r="1.2" class="wifi-dot" fill="currentColor" />
                             </svg>
                         </div>
                         <div class="card-info">
@@ -337,27 +366,34 @@
                     </div>
 
                     <!-- THẺ 2: CẢM BIẾN KHOẢNG CÁCH RCWL-1601 -->
-                    <div class="function-card" id="card-ultrasonic" title="Cảm biến khoảng cách RCWL-1601" style="cursor: pointer;">
+                    <div class="function-card" id="card-ultrasonic" title="Cảm biến khoảng cách RCWL-1601"
+                        style="cursor: pointer;">
                         <div class="card-glow-overlay"></div>
                         <div class="card-icon-wrapper">
                             <!-- Biểu tượng cảm biến siêu âm RCWL-1601 công nghệ cao -->
-                            <svg class="sensor-ultrasonic-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg class="sensor-ultrasonic-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <!-- Thân bo mạch cảm biến PCB -->
-                                <rect x="6" y="16" width="36" height="22" rx="4" class="sensor-board-path" fill="rgba(6, 182, 212, 0.08)" stroke="currentColor" stroke-width="2"/>
+                                <rect x="6" y="16" width="36" height="22" rx="4" class="sensor-board-path"
+                                    fill="rgba(6, 182, 212, 0.08)" stroke="currentColor" stroke-width="2" />
                                 <!-- 4 chân giao tiếp VCC, Trig, Echo, GND -->
-                                <line x1="15" y1="38" x2="15" y2="44" stroke="currentColor" stroke-width="2.2"/>
-                                <line x1="21" y1="38" x2="21" y2="44" stroke="currentColor" stroke-width="2.2"/>
-                                <line x1="27" y1="38" x2="27" y2="44" stroke="currentColor" stroke-width="2.2"/>
-                                <line x1="33" y1="38" x2="33" y2="44" stroke="currentColor" stroke-width="2.2"/>
+                                <line x1="15" y1="38" x2="15" y2="44" stroke="currentColor" stroke-width="2.2" />
+                                <line x1="21" y1="38" x2="21" y2="44" stroke="currentColor" stroke-width="2.2" />
+                                <line x1="27" y1="38" x2="27" y2="44" stroke="currentColor" stroke-width="2.2" />
+                                <line x1="33" y1="38" x2="33" y2="44" stroke="currentColor" stroke-width="2.2" />
                                 <!-- Loa phát sóng siêu âm Transmitter (T) -->
-                                <circle cx="16" cy="27" r="6" class="transducer-ring" stroke="currentColor" stroke-width="2"/>
-                                <circle cx="16" cy="27" r="2.2" class="transducer-core" fill="currentColor"/>
+                                <circle cx="16" cy="27" r="6" class="transducer-ring" stroke="currentColor"
+                                    stroke-width="2" />
+                                <circle cx="16" cy="27" r="2.2" class="transducer-core" fill="currentColor" />
                                 <!-- Loa thu sóng hồi tiếp Receiver (R) -->
-                                <circle cx="32" cy="27" r="6" class="transducer-ring" stroke="currentColor" stroke-width="2"/>
-                                <circle cx="32" cy="27" r="2.2" class="transducer-core" fill="currentColor"/>
+                                <circle cx="32" cy="27" r="6" class="transducer-ring" stroke="currentColor"
+                                    stroke-width="2" />
+                                <circle cx="32" cy="27" r="2.2" class="transducer-core" fill="currentColor" />
                                 <!-- Sóng siêu âm lan tỏa phía trước -->
-                                <path d="M19 10a7 7 0 0 1 10 0" class="sonar-wave-inner" stroke="currentColor" stroke-width="2.2"/>
-                                <path d="M15 6a13 13 0 0 1 18 0" class="sonar-wave-outer" stroke="currentColor" stroke-width="2.2"/>
+                                <path d="M19 10a7 7 0 0 1 10 0" class="sonar-wave-inner" stroke="currentColor"
+                                    stroke-width="2.2" />
+                                <path d="M15 6a13 13 0 0 1 18 0" class="sonar-wave-outer" stroke="currentColor"
+                                    stroke-width="2.2" />
                             </svg>
                         </div>
                         <div class="card-info">
@@ -371,28 +407,34 @@
                     </div>
 
                     <!-- THẺ 3: CẢM BIẾN DÒ LINE TCRT5000 (ĐANG PHÁT TRIỂN) -->
-                    <div class="function-card" id="card-tcrt5000" title="Cảm biến dò line TCRT5000 (Đang phát triển)" style="cursor: pointer;">
+                    <div class="function-card" id="card-tcrt5000" title="Cảm biến dò line TCRT5000 (Đang phát triển)"
+                        style="cursor: pointer;">
                         <div class="card-glow-overlay"></div>
                         <div class="card-icon-wrapper">
                             <!-- Biểu tượng cảm biến dò line TCRT5000 công nghệ cao -->
-                            <svg class="sensor-tcrt-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg class="sensor-tcrt-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <!-- Thân bo mạch cảm biến PCB -->
-                                <rect x="8" y="14" width="32" height="22" rx="4" class="sensor-board-path" fill="rgba(245, 158, 11, 0.08)" stroke="currentColor" stroke-width="2"/>
+                                <rect x="8" y="14" width="32" height="22" rx="4" class="sensor-board-path"
+                                    fill="rgba(245, 158, 11, 0.08)" stroke="currentColor" stroke-width="2" />
                                 <!-- 4 chân cắm VCC, GND, D0, A0 -->
-                                <line x1="15" y1="36" x2="15" y2="44" stroke="currentColor" stroke-width="2.2"/>
-                                <line x1="21" y1="36" x2="21" y2="44" stroke="currentColor" stroke-width="2.2"/>
-                                <line x1="27" y1="36" x2="27" y2="44" stroke="currentColor" stroke-width="2.2"/>
-                                <line x1="33" y1="36" x2="33" y2="44" stroke="currentColor" stroke-width="2.2"/>
+                                <line x1="15" y1="36" x2="15" y2="44" stroke="currentColor" stroke-width="2.2" />
+                                <line x1="21" y1="36" x2="21" y2="44" stroke="currentColor" stroke-width="2.2" />
+                                <line x1="27" y1="36" x2="27" y2="44" stroke="currentColor" stroke-width="2.2" />
+                                <line x1="33" y1="36" x2="33" y2="44" stroke="currentColor" stroke-width="2.2" />
                                 <!-- Mắt phát hồng ngoại IR LED -->
-                                <rect x="14" y="20" width="8" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
-                                <circle cx="18" cy="25" r="2" fill="currentColor"/>
+                                <rect x="14" y="20" width="8" height="10" rx="2" stroke="currentColor"
+                                    stroke-width="2" />
+                                <circle cx="18" cy="25" r="2" fill="currentColor" />
                                 <!-- Mắt thu quang Phototransistor -->
-                                <rect x="26" y="20" width="8" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
-                                <circle cx="30" cy="25" r="2" fill="currentColor"/>
+                                <rect x="26" y="20" width="8" height="10" rx="2" stroke="currentColor"
+                                    stroke-width="2" />
+                                <circle cx="30" cy="25" r="2" fill="currentColor" />
                                 <!-- Tia hồng ngoại quét xuống vạch line -->
-                                <path d="M16 10 L18 14" stroke="#f59e0b" stroke-width="2" stroke-dasharray="2 2"/>
-                                <path d="M32 10 L30 14" stroke="#f59e0b" stroke-width="2" stroke-dasharray="2 2"/>
-                                <line x1="12" y1="8" x2="36" y2="8" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
+                                <path d="M16 10 L18 14" stroke="#f59e0b" stroke-width="2" stroke-dasharray="2 2" />
+                                <path d="M32 10 L30 14" stroke="#f59e0b" stroke-width="2" stroke-dasharray="2 2" />
+                                <line x1="12" y1="8" x2="36" y2="8" stroke="#f59e0b" stroke-width="2.5"
+                                    stroke-linecap="round" />
                             </svg>
                         </div>
                         <div class="card-info">
@@ -402,6 +444,46 @@
                         <div class="card-status-badge status-ready">
                             <span class="status-indicator"></span>
                             <span class="status-text">Sẵn sàng</span>
+                        </div>
+                    </div>
+
+                    <!-- THẺ 4: ĐIỀU KHIỂN ĐỘNG CƠ TB6612FNG (ĐANG PHÁT TRIỂN) -->
+                    <div class="function-card" id="card-tb6612" title="Điều khiển động cơ TB6612FNG (Đang phát triển)"
+                        style="cursor: pointer;">
+                        <div class="card-glow-overlay"></div>
+                        <div class="card-icon-wrapper">
+                            <!-- Biểu tượng động cơ DC / Bánh xe robot chuyển động -->
+                            <svg class="sensor-tb6612-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <!-- Thân bo mạch chip driver -->
+                                <rect x="10" y="10" width="28" height="28" rx="4" class="motor-board-path"
+                                    fill="rgba(168, 85, 247, 0.08)" stroke="currentColor" stroke-width="2" />
+                                <!-- Chip IC TB6612 ở trung tâm -->
+                                <rect x="18" y="18" width="12" height="12" rx="2" fill="rgba(168, 85, 247, 0.2)"
+                                    stroke="currentColor" stroke-width="1.8" />
+                                <!-- Các chân cắm 2 bên -->
+                                <line x1="10" y1="16" x2="6" y2="16" stroke="currentColor" stroke-width="2" />
+                                <line x1="10" y1="22" x2="6" y2="22" stroke="currentColor" stroke-width="2" />
+                                <line x1="10" y1="28" x2="6" y2="28" stroke="currentColor" stroke-width="2" />
+                                <line x1="10" y1="34" x2="6" y2="34" stroke="currentColor" stroke-width="2" />
+                                <line x1="38" y1="16" x2="42" y2="16" stroke="currentColor" stroke-width="2" />
+                                <line x1="38" y1="22" x2="42" y2="22" stroke="currentColor" stroke-width="2" />
+                                <line x1="38" y1="28" x2="42" y2="28" stroke="currentColor" stroke-width="2" />
+                                <line x1="38" y1="34" x2="42" y2="34" stroke="currentColor" stroke-width="2" />
+                                <!-- Mũi tên chuyển động quay quanh trục -->
+                                <path d="M24 6 A18 18 0 0 1 42 24" stroke="#c084fc" stroke-width="2"
+                                    stroke-linecap="round" stroke-dasharray="3 3" />
+                                <path d="M24 42 A18 18 0 0 1 6 24" stroke="#c084fc" stroke-width="2"
+                                    stroke-linecap="round" stroke-dasharray="3 3" />
+                            </svg>
+                        </div>
+                        <div class="card-info">
+                            <h3 class="card-title">Điều khiển động cơ TB6612FNG</h3>
+                            <p class="card-desc">Theo dõi và giám sát chuyển động của xe</p>
+                        </div>
+                        <div class="card-status-badge status-in-progress">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Đang phát triển</span>
                         </div>
                     </div>
 
@@ -419,8 +501,9 @@
         <header class="ultrasonic-header">
             <div class="ultrasonic-header-left">
                 <button type="button" class="btn-screen-back" id="btn-back-ultrasonic" title="Quay lại Bảng điều khiển">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 18 9 12 15 6"/>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
                     </svg>
                     <span>Quay lại</span>
                 </button>
@@ -429,7 +512,7 @@
                     <span class="ultrasonic-sub-tag">HỆ THỐNG ĐO SIÊU ÂM THỜI GIAN THỰC</span>
                 </div>
             </div>
-            
+
             <div class="ultrasonic-header-right">
                 <div class="sensor-hardware-badge">
                     <span class="hardware-pulse-dot" id="ultrasonic-hw-dot"></span>
@@ -459,17 +542,20 @@
 
                         <!-- Cụm nút bấm tương tác -->
                         <div class="ctrl-actions-group">
-                            <button type="button" class="btn-lab btn-lab-measure" id="btn-measure-once" title="Đo khoảng cách đúng 1 lần">
+                            <button type="button" class="btn-lab btn-lab-measure" id="btn-measure-once"
+                                title="Đo khoảng cách đúng 1 lần">
                                 <span class="btn-lab-icon">🎯</span>
                                 <span class="btn-lab-text">Đo 1 lần</span>
                             </button>
 
-                            <button type="button" class="btn-lab btn-lab-stream" id="btn-stream-toggle" title="Bắt đầu hoặc dừng đo liên tục">
+                            <button type="button" class="btn-lab btn-lab-stream" id="btn-stream-toggle"
+                                title="Bắt đầu hoặc dừng đo liên tục">
                                 <span class="btn-lab-icon" id="stream-btn-icon">▶</span>
                                 <span class="btn-lab-text" id="stream-btn-text">Bắt đầu đo liên tục</span>
                             </button>
 
-                            <button type="button" class="btn-lab btn-lab-clear" id="btn-clear-chart" title="Xóa dữ liệu cũ trên đồ thị">
+                            <button type="button" class="btn-lab btn-lab-clear" id="btn-clear-chart"
+                                title="Xóa dữ liệu cũ trên đồ thị">
                                 <span class="btn-lab-icon">🔄</span>
                                 <span class="btn-lab-text">Xóa đồ thị</span>
                             </button>
@@ -538,7 +624,7 @@
                                     <p class="lab-card-sub">Đồ thị trượt thời gian thực 60 FPS (HTML5 Canvas)</p>
                                 </div>
                             </div>
-                            
+
                             <!-- Chú thích đồ thị -->
                             <div class="chart-legend-box">
                                 <div class="legend-item">
@@ -563,9 +649,11 @@
                                 <div class="stats-header-title">
                                     <span class="stats-header-icon">📊</span>
                                     <span class="stats-header-text">PHÂN TÍCH THỐNG KÊ DỮ LIỆU</span>
-                                    <span class="stats-header-badge badge-active" id="stats-calc-status">Đang tính toán</span>
+                                    <span class="stats-header-badge badge-active" id="stats-calc-status">Đang tính
+                                        toán</span>
                                 </div>
-                                <button type="button" class="btn-toggle-stats" id="btn-toggle-stats" title="Bật/Tắt tính toán và hiển thị thông số">
+                                <button type="button" class="btn-toggle-stats" id="btn-toggle-stats"
+                                    title="Bật/Tắt tính toán và hiển thị thông số">
                                     <span class="toggle-icon" id="toggle-stats-icon">👁️</span>
                                     <span class="toggle-text" id="toggle-stats-text">Ẩn thông số</span>
                                 </button>
@@ -621,8 +709,9 @@
         <header class="ultrasonic-header">
             <div class="ultrasonic-header-left">
                 <button type="button" class="btn-screen-back" id="btn-back-tcrt5000" title="Quay lại Bảng điều khiển">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 18 9 12 15 6"/>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
                     </svg>
                     <span>Quay lại</span>
                 </button>
@@ -631,9 +720,10 @@
                     <span class="ultrasonic-sub-tag" style="color: #fbbf24;">HỆ THỐNG DẪN HƯỚNG QUANG HỌC 2D</span>
                 </div>
             </div>
-            
+
             <div class="ultrasonic-header-right">
-                <div class="sensor-hardware-badge" style="border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08);">
+                <div class="sensor-hardware-badge"
+                    style="border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08);">
                     <span class="hardware-pulse-dot" style="background: #f59e0b; box-shadow: 0 0 8px #f59e0b;"></span>
                     <span class="hardware-label" style="color: #fbbf24;">TCRT5000 • CHASSIS VISUALIZER</span>
                 </div>
@@ -667,9 +757,11 @@
                     <div class="tcrt-power-status-box">
                         <span class="tcrt-power-status-dot dot-off" id="tcrt-power-dot"></span>
                         <span class="tcrt-power-status-lbl">Trạng thái:</span>
-                        <span class="tcrt-power-status-val status-standby" id="tcrt-power-status-text">ĐÃ TẮT (NGHỈ)</span>
+                        <span class="tcrt-power-status-val status-standby" id="tcrt-power-status-text">ĐÃ TẮT
+                            (NGHỈ)</span>
                     </div>
-                    <button type="button" class="btn-tcrt-power is-off" id="btn-toggle-tcrt-power" title="Bật / Tắt trạng thái làm việc của cảm biến TCRT5000">
+                    <button type="button" class="btn-tcrt-power is-off" id="btn-toggle-tcrt-power"
+                        title="Bật / Tắt trạng thái làm việc của cảm biến TCRT5000">
                         <span class="btn-power-icon" id="tcrt-power-btn-icon">▶</span>
                         <span class="btn-power-text" id="tcrt-power-btn-text">Bật cảm biến TCRT5000</span>
                     </button>
@@ -693,11 +785,12 @@
                                     <div class="tcrt-hl hl-r"></div>
                                 </div>
                                 <div class="tcrt-chassis-title">ĐẦU XE ROBOT</div>
-                                
+
                                 <!-- 2 Mắt cảm biến trên đầu xe -->
                                 <div class="tcrt-sensors-row">
                                     <!-- Mắt Trái -->
-                                    <div class="tcrt-eye-pod is-white" id="tcrt-eye-left" data-sensor="left" title="Click để chuyển đổi Trắng / Đen thử nghiệm">
+                                    <div class="tcrt-eye-pod is-white" id="tcrt-eye-left" data-sensor="left"
+                                        title="Click để chuyển đổi Trắng / Đen thử nghiệm">
                                         <div class="eye-lens" id="lens-left">
                                             <div class="eye-core"></div>
                                         </div>
@@ -706,7 +799,8 @@
                                     </div>
 
                                     <!-- Mắt Phải -->
-                                    <div class="tcrt-eye-pod is-white" id="tcrt-eye-right" data-sensor="right" title="Click để chuyển đổi Trắng / Đen thử nghiệm">
+                                    <div class="tcrt-eye-pod is-white" id="tcrt-eye-right" data-sensor="right"
+                                        title="Click để chuyển đổi Trắng / Đen thử nghiệm">
                                         <div class="eye-lens" id="lens-right">
                                             <div class="eye-core"></div>
                                         </div>
@@ -725,7 +819,7 @@
 
                 <!-- 3. BẢNG THÔNG SỐ ĐO LƯỜNG VÀ LOGIC TỪNG MẮT (Theo sơ đồ) -->
                 <div class="tcrt-telemetry-grid">
-                    
+
                     <!-- BẢNG MẮT TRÁI (D19) -->
                     <div class="tcrt-telemetry-box" id="telemetry-box-left">
                         <div class="telemetry-box-header">
@@ -783,6 +877,40 @@
     </div>
 
     <!-- ============================================================ -->
+    <!-- MÀN HÌNH 6: THEO DÕI CHUYỂN ĐỘNG & ĐIỀU KHIỂN ĐỘNG CƠ TB6612FNG -->
+    <!-- Chế độ: Đang phát triển (Under Development)                   -->
+    <!-- ============================================================ -->
+    <div id="tb6612-screen" class="screen">
+        <!-- THANH TIÊU ĐỀ TOPBAR CHUYÊN NGHIỆP -->
+        <header class="ultrasonic-header">
+            <div class="ultrasonic-header-left">
+                <button type="button" class="btn-screen-back" id="btn-back-tb6612" title="Quay lại Bảng điều khiển">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                    <span>Quay lại</span>
+                </button>
+                <div class="ultrasonic-title-box">
+                    <h1 class="ultrasonic-main-title">ĐIỀU KHIỂN ĐỘNG CƠ TB6612FNG</h1>
+                    <span class="ultrasonic-sub-tag">Theo dõi và giám sát chuyển động của xe robot</span>
+                </div>
+            </div>
+
+            <div class="ultrasonic-header-right">
+                <div class="card-status-badge status-in-progress">
+                    <span class="status-indicator"></span>
+                    <span class="status-text">Đang phát triển</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- NỘI DUNG MÀN HÌNH (ĐỂ TRỐNG SẴN SÀNG CHO PHÁT TRIỂN) -->
+        <main class="ultrasonic-main-content" id="tb6612-main-content">
+        </main>
+    </div>
+
+    <!-- ============================================================ -->
     <!-- BẢNG THÔNG TIN KẾT NỐI WI-FI (MODAL POP-UP HIỆN ĐẠI)          -->
     <!-- ============================================================ -->
     <div id="wifi-info-modal" class="wifi-modal-backdrop" style="display: none;">
@@ -790,8 +918,9 @@
             <!-- NÚT QUAY LẠI Ở GÓC TRÊN BÊN TRÁI -->
             <div class="wifi-modal-top-bar">
                 <button class="btn-modal-back" id="btn-back-wifi-modal" title="Quay lại Bảng điều khiển">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 18 9 12 15 6"/>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
                     </svg>
                     <span>Quay lại</span>
                 </button>
@@ -800,11 +929,12 @@
             <!-- TIÊU ĐỀ: HÌNH ẢNH WI-FI & TIÊU ĐỀ PHÙ HỢP -->
             <div class="wifi-modal-header">
                 <div class="wifi-modal-icon-badge">
-                    <svg class="wifi-modal-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M2 8.82a15 15 0 0 1 20 0" class="wifi-wave-pulse-1"/>
-                        <path d="M5 12.86a10.8 10.8 0 0 1 14 0" class="wifi-wave-pulse-2"/>
-                        <path d="M8.5 16.43a6.4 6.4 0 0 1 7 0" class="wifi-wave-pulse-3"/>
-                        <circle cx="12" cy="20" r="1.2" fill="currentColor"/>
+                    <svg class="wifi-modal-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 8.82a15 15 0 0 1 20 0" class="wifi-wave-pulse-1" />
+                        <path d="M5 12.86a10.8 10.8 0 0 1 14 0" class="wifi-wave-pulse-2" />
+                        <path d="M8.5 16.43a6.4 6.4 0 0 1 7 0" class="wifi-wave-pulse-3" />
+                        <circle cx="12" cy="20" r="1.2" fill="currentColor" />
                     </svg>
                 </div>
                 <div class="wifi-modal-title-group">
@@ -816,7 +946,7 @@
             <!-- NỘI DUNG CHI TIẾT (REAL-TIME, BẢO MẬT: KHÔNG HIỆN MẬT KHẨU) -->
             <div class="wifi-modal-body">
                 <div class="wifi-info-grid">
-                    
+
                     <!-- 1. TÊN WI-FI ĐANG KẾT NỐI -->
                     <div class="wifi-info-row">
                         <div class="wifi-info-label">
@@ -864,7 +994,8 @@
 
                     <!-- 6. NÚT CẬP NHẬT TRẠNG THÁI WI-FI THỦ CÔNG (ON-DEMAND) -->
                     <div class="wifi-modal-actions">
-                        <button type="button" class="btn-refresh-wifi" id="btn-refresh-wifi" title="Yêu cầu ESP32 đọc và cập nhật trạng thái Wi-Fi mới nhất">
+                        <button type="button" class="btn-refresh-wifi" id="btn-refresh-wifi"
+                            title="Yêu cầu ESP32 đọc và cập nhật trạng thái Wi-Fi mới nhất">
                             <span class="refresh-spinner" id="refresh-wifi-spinner">🔄</span>
                             <span id="btn-refresh-wifi-text">Cập nhật trạng thái Wi-Fi</span>
                         </button>
@@ -876,6 +1007,7 @@
     </div>
 
     <!-- Nhúng file Javascript xử lý logic tương tác -->
-    <script src="../static/js/main.js?v=4.1"></script>
+    <script src="../static/js/main.js?v=4.2"></script>
 </body>
+
 </html>

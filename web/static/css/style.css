@@ -1963,6 +1963,9 @@ body {
     position: sticky;
     top: 0;
     z-index: 100;
+    width: 100%;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .ultrasonic-header-left {
@@ -2710,13 +2713,15 @@ body {
 /* ============================================================
    MAN HINH 5: CAM BIEN DO LINE TCRT5000 (Chassis Visualizer 2D)
    ============================================================ */
-#tcrt5000-screen {
+#tcrt5000-screen,
+#tb6612-screen {
     flex-direction: column;
     min-height: 100vh;
     width: 100vw;
     background: radial-gradient(circle at 50% 12%, #102142 0%, #080c14 100%);
     position: relative;
     overflow-y: auto;
+    box-sizing: border-box;
 }
 
 .tcrt-main-container {
@@ -3255,3 +3260,88 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* ==============================================================================
+   4. GIAO DIỆN TAB ĐANG PHÁT TRIỂN (TB6612FNG MOTOR CONTROLLER PLACEHOLDER)
+   ============================================================================== */
+.sensor-tb6612-icon {
+    width: 32px;
+    height: 32px;
+    color: #c084fc;
+    transition: all 0.3s ease;
+}
+
+.function-card:hover .sensor-tb6612-icon {
+    color: #e879f9;
+    filter: drop-shadow(0 0 12px #c084fc);
+}
+
+.dev-placeholder-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 160px);
+    padding: 40px 20px;
+}
+
+.dev-placeholder-card {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(168, 85, 247, 0.35);
+    border-radius: 24px;
+    padding: 48px 36px;
+    max-width: 620px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 0 25px rgba(168, 85, 247, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.dev-placeholder-icon-box {
+    font-size: 3.5rem;
+    margin-bottom: 20px;
+    display: inline-block;
+}
+
+.dev-icon-spin {
+    display: inline-block;
+    animation: devSpin 8s linear infinite;
+}
+
+@keyframes devSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.dev-placeholder-title {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.35rem;
+    color: #f1f5f9;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+}
+
+.dev-placeholder-desc {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: #94a3b8;
+    margin-bottom: 24px;
+}
+
+.dev-placeholder-tag-box {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.dev-tag {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: rgba(168, 85, 247, 0.12);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+

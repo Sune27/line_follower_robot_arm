@@ -1390,6 +1390,26 @@ class DashboardApp {
                 this.screenManager.show('dashboard-screen');
             });
         }
+
+        // 9. Thẻ Điều khiển động cơ TB6612FNG (Đang phát triển)
+        const tb6612Card = document.getElementById('card-tb6612');
+        const backTb6612Btn = document.getElementById('btn-back-tb6612');
+
+        if (tb6612Card) {
+            tb6612Card.removeAttribute('onclick');
+            tb6612Card.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.screenManager.show('tb6612-screen');
+            });
+        }
+
+        if (backTb6612Btn) {
+            backTb6612Btn.removeAttribute('onclick');
+            backTb6612Btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.screenManager.show('dashboard-screen');
+            });
+        }
     }
 
     /**

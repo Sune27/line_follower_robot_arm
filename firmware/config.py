@@ -9,7 +9,11 @@ WIFI_NETWORKS = [
     {
         "ssid": "Sune",
         "password": "khongcomatkhau"
-    }
+    },
+    {
+        "ssid" : "NGA-5G",
+        "password" : "0961699271"
+    }   
 ]
 
 WIFI_CONNECT_TIMEOUT_SEC = 10
