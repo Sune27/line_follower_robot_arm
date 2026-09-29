@@ -1,0 +1,155 @@
+================================================================================
+           HƯỚNG DẪN ĐẤU NỐI TOÀN BỘ PHẦN CỨNG XE ROBOT DÒ LINE TỰ HÀNH
+      ESP32 (30-PIN) + PIN 18650 x 2 + RCWL-1601 + 2 x TCRT5000 + TB6612FNG
+                    Dự án: Xe Dò Line & Cánh Tay Robot 4 Bậc
+================================================================================
+
+I. DANH SÁCH THIẾT BỊ VÀ LINH KIỆN CẦN CHUẨN BỊ:
+--------------------------------------------------------------------------------
+1. Bo mạch vi điều khiển ESP32 NodeMCU (bản 30 chân) đã cắm chặt lên:
+   -> BẢNG MỞ RỘNG SHIELD ESP32 (có cổng cắm tròn DC, hàng cọc 3 màu S-V-G, hộp nguồn).
+2. Nguồn điện: Khay 2 pin 18650 mắc nối tiếp (7.4V - 8.4V), có đầu giắc tròn DC 5.5x2.1mm.
+3. Cảm biến siêu âm RCWL-1601 (hoặc HC-SR04) gắn ở đầu xe (phát hiện vật cản).
+4. 2 Mắt cảm biến hồng ngoại TCRT5000 gắn chúc đầu xuống mặt sân (dò vạch line đen).
+5. Module mạch cầu H điều khiển động cơ TB6612FNG (mạch màu đỏ).
+6. 2 Động cơ DC giảm tốc TT (vỏ vàng) truyền động cho 2 bánh xe:
+   - Động cơ A: Bánh xe TRÁI.
+   - Động cơ B: Bánh xe PHẢI.
+7. Dây cắm đực - cái (Dupont Wire) nhiều màu để phân biệt tín hiệu.
+
+================================================================================
+II. BẢN ĐỒ VỊ TRÍ CÁC CỌC CẮM TRÊN BẢNG MỞ RỘNG SHIELD ESP32:
+--------------------------------------------------------------------------------
+(Dựa trên đúng hình ảnh thực tế của bo mạch bạn đang sử dụng)
+
+1. CỔNG CẤP NGUỒN PIN [ DC6.5-16V ]:
+   - Vị trí: Giắc cắm tròn màu đen ở góc dưới bên phải bo mạch.
+   - Chức năng: Cắm trực tiếp đầu ra từ khay 2 pin 18650 (7.4V) vào đây.
+
+2. KHUNG HỘP TRẮNG 8 CHÂN NGUỒN (nằm ngay phía trên cổng Type-C):
+   +---------------------------------------------------------------+
+   |   [ 5V ]        [ 5V ]          [ 3V ]          [ 3V ]        | <- Hàng trên
+   |   [ GND ]       [ GND ]         [ GND ]         [ GND ]       | <- Hàng dưới
+   +---------------------------------------------------------------+
+
+3. QUY ƯỚC 3 CỘT CỌC KIM BÊN MÉP BO MẠCH (D13, D12, D14, D27, D5, D18, D19, D21...):
+   +-------------------------------------------------------------------------+
+   | CỘT NGOÀI CÙNG (Sát mép bo mạch) | Chữ [ S ] (Signal) - Tín hiệu GPIO   |
+   | CỘT Ở GIỮA                       | Chữ [ V ] (Voltage) - Nguồn điện     |
+   | CỘT TRONG CÙNG (Sát chip ESP32)  | Chữ [ G ] (Ground)  - Cực âm / Mass  |
+   +-------------------------------------------------------------------------+
+
+4. JUMPER NGUỒN MÀU VÀNG:
+   - Vị trí: Nằm gần khung chân nguồn.
+   - Cài đặt khuyên dùng: Cắm Jumper ở nấc [ 5V ] để toàn bộ hàng [ V ] xuất nguồn 5V.
+
+================================================================================
+III. BẢNG CHECKLIST ĐẤU NỐI CHI TIẾT TỪNG DÂY (TẤT CẢ TRONG 1):
+================================================================================
+
+--------------------------------------------------------------------------------
+1. NGUỒN PIN CHÍNH (KHAY 2 PIN 18650 - 7.4V):
+--------------------------------------------------------------------------------
+   - Cắm đầu giắc tròn DC của khay pin vào cổng [ DC6.5-16V ] trên Shield ESP32.
+   - Bật công tắc trên khay pin -> Đèn LED đỏ trên Shield ESP32 sẽ sáng lên.
+
+--------------------------------------------------------------------------------
+2. CẢM BIẾN SIÊU ÂM RCWL-1601 (PHÁT HIỆN VẬT CẢN PHÍA TRƯỚC):
+--------------------------------------------------------------------------------
+   Chân trên RCWL-1601   | Cắm vào vị trí trên Shield ESP32
+   ----------------------+-----------------------------------------------------
+   [ VCC ]               | Hàng [ V ] (Cột ở giữa) tại vị trí D5 (hoặc D18)
+   [ GND ]               | Hàng [ G ] (Cột trong cùng) tại vị trí D5 (hoặc D18)
+   [ Trig ]              | Hàng [ S ] (Cột NGOÀI CÙNG) tại hàng [ D5 ]  (GPIO 5)
+   [ Echo ]              | Hàng [ S ] (Cột NGOÀI CÙNG) tại hàng [ D18 ] (GPIO 18)
+
+--------------------------------------------------------------------------------
+3. CẢM BIẾN HỒNG NGOẠI DÒ LINE TCRT5000 (2 MẮT: TRÁI & PHẢI):
+--------------------------------------------------------------------------------
+   A. MẮT TRÁI (Left Sensor - Hướng mặt xuống vạch line bên trái):
+      Chân trên TCRT5000 | Cắm vào vị trí trên Shield ESP32
+      -------------------+--------------------------------------------------
+      [ VCC ]            | Cọc [ 3V ] (Trong khung hộp trắng 8 chân)
+      [ GND ]            | Cọc [ GND ] (Trong khung hộp trắng 8 chân)
+      [ DO ] (Digital)   | Hàng [ S ] (Cột NGOÀI CÙNG) tại hàng [ D19 ] (GPIO 19)
+      [ AO ] (Analog)    | BỎ TRỐNG (Không dùng)
+
+   B. MẮT PHẢI (Right Sensor - Hướng mặt xuống vạch line bên phải):
+      Chân trên TCRT5000 | Cắm vào vị trí trên Shield ESP32
+      -------------------+--------------------------------------------------
+      [ VCC ]            | Cọc [ 3V ] thứ 2 (Trong khung hộp trắng 8 chân)
+      [ GND ]            | Cọc [ GND ] thứ 2 (Trong khung hộp trắng 8 chân)
+      [ DO ] (Digital)   | Hàng [ S ] (Cột NGOÀI CÙNG) tại hàng [ D21 ] (GPIO 21)
+      [ AO ] (Analog)    | BỎ TRỐNG (Không dùng)
+
+   (*) Lưu ý: Cấp nguồn 3.3V (chân 3V) cho TCRT5000 giúp tín hiệu logic xuất ra 
+       ở mức chuẩn 3.3V, an toàn tuyệt đối 100% cho chip ESP32.
+
+--------------------------------------------------------------------------------
+4. MODULE ĐIỀU KHIỂN ĐỘNG CƠ TB6612FNG (MẠCH ĐỎ) & 2 BÁNH XE:
+--------------------------------------------------------------------------------
+   A. CÁC CHÂN NGUỒN VÀ ĐIỀU KHIỂN CỦA TB6612FNG:
+      Chân trên TB6612   | Cắm vào vị trí trên Shield ESP32
+      -------------------+--------------------------------------------------
+      [ VM ]   (1 phải)  | Cọc [ 5V ] (Trong khung hộp trắng)
+      [ GND ]  (3 phải)  | Cọc [ GND ] (Trong khung hộp trắng)
+      [ STBY ] (4 trái)  | Cọc [ 5V ] thứ 2 (Trong khung hộp trắng)
+      [ NC / VCC ] (2 phải)| Cọc [ 3V ] (Cấp nguồn logic cho chip TB6612)
+      -------------------+--------------------------------------------------
+      [ AIN1 ] (3 trái)  | Hàng [ S ] (Cột NGOÀI CÙNG) tại hàng [ D13 ] (GPIO 13)
+      [ AIN2 ] (2 trái)  | Hàng [ S ] (Cột NGOÀI CÙNG) tại hàng [ D12 ] (GPIO 12)
+      [ BIN1 ] (5 trái)  | Hàng [ S ] (Cột NGOÀI CÙNG) tại hàng [ D27 ] (GPIO 27)
+      [ BIN2 ] (6 trái)  | Hàng [ S ] (Cột NGOÀI CÙNG) tại hàng [ D26 ] (GPIO 26)
+
+   B. NỐI RA 2 ĐỘNG CƠ DC (BÁNH TRÁI & BÁNH PHẢI):
+      Chân trên TB6612   | Nối ra động cơ
+      -------------------+--------------------------------------------------
+      [ AO1 ]  (4 phải)  | Dây thứ 1 của Động cơ Bánh TRÁI
+      [ AO2 ]  (5 phải)  | Dây thứ 2 của Động cơ Bánh TRÁI
+      [ BO1 ]  (7 phải)  | Dây thứ 1 của Động cơ Bánh PHẢI
+      [ BO2 ]  (6 phải)  | Dây thứ 2 của Động cơ Bánh PHẢI
+
+================================================================================
+IV. TỔNG HỢP PHÂN BỔ TOÀN BỘ CHÂN GPIO TRÊN ESP32:
+================================================================================
+   +---------+--------------------+---------------------------------------+
+   | GPIO    | Tên trên bo mạch   | Chức năng kết nối                     |
+   +---------+--------------------+---------------------------------------+
+   | GPIO 5  | D5  (Cột S)        | RCWL-1601 Trig (Phát sóng siêu âm)    |
+   | GPIO 18 | D18 (Cột S)        | RCWL-1601 Echo (Thu sóng siêu âm)     |
+   | GPIO 19 | D19 (Cột S)        | TCRT5000 Mắt Trái (Nhận diện line)    |
+   | GPIO 21 | D21 (Cột S)        | TCRT5000 Mắt Phải (Nhận diện line)    |
+   | GPIO 13 | D13 (Cột S)        | TB6612 AIN1 (Điều khiển Bánh Trái)    |
+   | GPIO 12 | D12 (Cột S)        | TB6612 AIN2 (Điều khiển Bánh Trái)    |
+   | GPIO 27 | D27 (Cột S)        | TB6612 BIN1 (Điều khiển Bánh Phải)    |
+   | GPIO 26 | D26 (Cột S)        | TB6612 BIN2 (Điều khiển Bánh Phải)    |
+   +---------+--------------------+---------------------------------------+
+   -> Hoàn toàn KHÔNG TRÙNG LẶP bất kỳ chân nào!
+   -> Để trống hoàn toàn GPIO 1 và GPIO 3 để kết nối máy tính nạp code mượt mà!
+
+================================================================================
+V. QUY TRÌNH KIỂM TRA BẬT NGUỒN AN TOÀN (TEST THEO 3 BƯỚC):
+================================================================================
+
+BƯỚC 1: KIỂM TRA NGUỒN ĐIỆN VÀ KHÔNG CHẬP MẠCH
+- Kê xe lên cao (để bánh xe không chạm đất khi thử nghiệm).
+- Cắm giắc pin 18650 vào cổng tròn DC trên Shield.
+- Đèn đỏ trên Shield ESP32 sáng, đèn đỏ trên 2 module TCRT5000 sáng.
+- Chip TB6612 mát, không có hiện tượng nóng hay có mùi khét.
+
+BƯỚC 2: CÂN CHỈNH ĐỘ NHẠY 2 CẢM BIẾN DÒ LINE TCRT5000
+- Đặt xe lên trên nền trắng: Đèn LED báo tín hiệu (xanh hoặc đỏ) trên TCRT5000 sáng.
+- Đẩy xe cho mắt cảm biến đi qua vạch đen: Đèn tín hiệu tắt.
+- Nếu đèn không chuyển trạng thái: Lấy tuốc-nơ-vít xoay nhẹ biến trở màu xanh dương
+  trên thân TCRT5000 cho đến khi mắt phân biệt nhạy bén giữa nền trắng và vạch đen.
+
+BƯỚC 3: KIỂM TRA CHIỀU QUAY ĐỘNG CƠ TRÊN GIAO DIỆN WEB
+- Mở Web điều khiển tại http://localhost:5000
+- Vào tab "ĐIỀU KHIỂN ĐỘNG CƠ TB6612FNG".
+- Gạt cần số dọc lên nấc 1 (35%) -> Cả 2 bánh xe phải quay cùng chiều TIẾN.
+  + Nếu bánh nào quay LÙI: Chỉ cần đổi chéo 2 dây của động cơ đó tại AO1/AO2 (hoặc BO1/BO2).
+- Gạt cần số về nấc P (0%) -> Động cơ dừng quay êm ái.
+
+================================================================================
+CHÚC BẠN LẮP RÁP THÀNH CÔNG VÀ XE CHẠY DÒ LINE MƯỢT MÀ!
+================================================================================
