@@ -94,6 +94,7 @@ def main():
     upload_file(ser, base / "modules" / "wifi_client.py", "modules/wifi_client.py")
     upload_file(ser, base / "modules" / "ultrasonic.py", "modules/ultrasonic.py")
     upload_file(ser, base / "modules" / "line_sensor.py", "modules/line_sensor.py")
+    upload_file(ser, base / "modules" / "motor_driver.py", "modules/motor_driver.py")
     upload_file(ser, base / "boot.py", "boot.py")
     upload_file(ser, base / "main.py", "main.py")
     

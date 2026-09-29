@@ -37,3 +37,13 @@ CONTROL_LOOP_INTERVAL_MS = 20
 PIN_LINE_LEFT = 19           # Mắt Trái nối chân DO vào GPIO 19 (D19)
 PIN_LINE_RIGHT = 21          # Mắt Phải nối chân DO vào GPIO 21 (D21)
 
+# ==============================================================================
+# 5. CẤU HÌNH ĐỘNG CƠ TB6612FNG (BÁNH TRÁI VÀ BÁNH PHẢI)
+# ==============================================================================
+PIN_MOTOR_AIN1 = 13          # Bánh Trái (D13 - Cột S)
+PIN_MOTOR_AIN2 = 12          # Bánh Trái (D12 - Cột S)
+PIN_MOTOR_BIN1 = 27          # Bánh Phải (D27 - Cột S)
+PIN_MOTOR_BIN2 = 26          # Bánh Phải (D26 - Cột S)
+MOTOR_PWM_FREQ = 1000        # Tần số PWM 1000Hz chạy êm, mô-men xoắn khỏe
+
+

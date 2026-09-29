@@ -91,10 +91,10 @@ III. BẢNG CHECKLIST ĐẤU NỐI CHI TIẾT TỪNG DÂY (TẤT CẢ TRONG 1):
    A. CÁC CHÂN NGUỒN VÀ ĐIỀU KHIỂN CỦA TB6612FNG:
       Chân trên TB6612   | Cắm vào vị trí trên Shield ESP32
       -------------------+--------------------------------------------------
-      [ VM ]   (1 phải)  | Cọc [ 5V ] (Trong khung hộp trắng)
-      [ GND ]  (3 phải)  | Cọc [ GND ] (Trong khung hộp trắng)
-      [ STBY ] (4 trái)  | Cọc [ 5V ] thứ 2 (Trong khung hộp trắng)
-      [ NC / VCC ] (2 phải)| Cọc [ 3V ] (Cấp nguồn logic cho chip TB6612)
+      [ VM ]   (1 phải)  | Cọc kim [ 5V ] thứ 1 (Trong khung hộp trắng 8 chân)
+      [ GND ]  (3 phải)  | Cọc kim [ GND ] (Trong khung hộp trắng 8 chân)
+      [ STBY ] (4 trái)  | Cọc kim [ 5V ] thứ 2 (Trong khung hộp trắng 8 chân)
+      [ NC / VCC ] (2 phải)| Hàng [ V ] (Cột ở giữa - 5V) tại hàng [ D14 ]
       -------------------+--------------------------------------------------
       [ AIN1 ] (3 trái)  | Hàng [ S ] (Cột NGOÀI CÙNG) tại hàng [ D13 ] (GPIO 13)
       [ AIN2 ] (2 trái)  | Hàng [ S ] (Cột NGOÀI CÙNG) tại hàng [ D12 ] (GPIO 12)

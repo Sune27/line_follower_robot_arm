@@ -16,6 +16,7 @@ import json
 import time
 import asyncio
 import threading
+import socket
 from pathlib import Path
 
 # Cấu hình UTF-8 an toàn cho console Windows
@@ -67,6 +68,13 @@ class RobotControllerServer:
         self.ser = None
         self.ser_lock = threading.Lock()
 
+        # Cấu hình Wi-Fi TCP Socket Bridge (khi xe chạy pin không cắm dây USB)
+        self.esp32_ip = "10.161.134.159"
+        self.esp32_tcp_port = 8888
+        self.tcp_sock = None
+        self.tcp_lock = threading.Lock()
+        self.active_channel = "DISCONNECTED"
+
         # Cơ chế Khóa Độc Quyền (Exclusive Controller Lock): Chỉ duy nhất 1 người được lái/điều khiển
         self.active_controller_client = None
         self.active_controller_user = None
@@ -84,19 +92,41 @@ class RobotControllerServer:
         return True
 
     def send_serial(self, cmd_str):
-        """Gửi lệnh chuỗi xuống ESP32 qua cổng Serial an toàn đa luồng"""
+        """Gửi lệnh chuỗi xuống ESP32 (Tự động định tuyến qua USB Serial hoặc Wi-Fi TCP Socket)"""
+        if not cmd_str.endswith('\n'):
+            cmd_str += '\n'
+        payload = cmd_str.encode('utf-8')
+        sent = False
+
+        # 1. Thử gửi qua Serial USB nếu đang cắm cáp
         with self.ser_lock:
             if self.ser and self.ser.is_open:
                 try:
-                    if not cmd_str.endswith('\n'):
-                        cmd_str += '\n'
-                    self.ser.write(cmd_str.encode('utf-8'))
+                    self.ser.write(payload)
                     self.ser.flush()
-                    print(f"[Serial TX] -> {cmd_str.strip()}")
+                    sent = True
+                    if not cmd_str.startswith("CMD:SPEED:"):
+                        print(f"[Serial TX] -> {cmd_str.strip()}")
                 except Exception as e:
                     print(f"[Serial Error] Không thể gửi lệnh: {e}")
-            else:
-                print(f"[Serial Warn] Chưa kết nối ESP32, không thể gửi: {cmd_str.strip()}")
+
+        # 2. Nếu không có USB Serial, tự động chuyển tiếp qua Wi-Fi TCP Socket
+        if not sent:
+            with self.tcp_lock:
+                if self.tcp_sock:
+                    try:
+                        self.tcp_sock.sendall(payload)
+                        sent = True
+                        if not cmd_str.startswith("CMD:SPEED:"):
+                            print(f"[Wi-Fi TCP TX] -> {cmd_str.strip()}")
+                    except Exception as e:
+                        print(f"[Wi-Fi TCP Error] Lỗi gửi socket: {e}")
+                        try: self.tcp_sock.close()
+                        except: pass
+                        self.tcp_sock = None
+
+        if not sent and not cmd_str.startswith("CMD:SPEED:"):
+            print(f"[Bridge Warn] Chưa kết nối ESP32 (cả USB lẫn Wi-Fi TCP), không thể gửi: {cmd_str.strip()}")
 
     async def _broadcast(self, message):
         if not self.connected_clients:
@@ -122,8 +152,8 @@ class RobotControllerServer:
             # 1. Yêu cầu cấp quyền điều khiển độc quyền (Login Handshake)
             if cmd == "request_login":
                 user = msg.get('user', 'Người dùng')
-                # Kiểm tra xem có ai đang chiếm quyền điều khiển không
-                if not self.is_controller_alive() or self.active_controller_client == client:
+                # Kiểm tra xem có ai đang chiếm quyền điều khiển không (cho phép cùng user đổi thiết bị/refresh)
+                if not self.is_controller_alive() or self.active_controller_client == client or self.active_controller_user == user:
                     # CẤP QUYỀN THÀNH CÔNG
                     self.active_controller_client = client
                     self.active_controller_user = user
@@ -163,7 +193,7 @@ class RobotControllerServer:
             elif cmd == "login_success":
                 # Tương thích ngược: tự động nâng cấp client thành controller nếu đang rảnh
                 user = msg.get('user', 'Admin')
-                if not self.is_controller_alive():
+                if not self.is_controller_alive() or self.active_controller_user == user:
                     self.active_controller_client = client
                     self.active_controller_user = user
                 reply = json.dumps(self.wifi_state)
@@ -254,8 +284,171 @@ class RobotControllerServer:
         except json.JSONDecodeError:
             pass
 
+    def process_esp32_line(self, line):
+        """Xử lý và giải mã dòng tin nhận được từ ESP32 (dùng chung cho cả USB Serial và Wi-Fi TCP)"""
+        if not line:
+            return
+
+        # Chỉ in các sự kiện hệ thống quan trọng
+        if any(tag in line for tag in ("[FAILSAFE", "[FAILSAFE RECOVERED]", "[ESP32] KHOI DONG", "[CMD_ACK]")):
+            print(f"[ESP32] {line}")
+
+        # 1. Nhận gói tin trạng thái Wi-Fi từ lệnh GET_WIFI_STATUS
+        if "WIFI_STATUS:" in line:
+            try:
+                idx = line.find("WIFI_STATUS:")
+                json_str = line[idx + 12:].strip()
+                wifi_info = json.loads(json_str)
+                self.wifi_state = {
+                    "event": "wifi_status",
+                    "connected": wifi_info.get("connected", False),
+                    "ssid": wifi_info.get("ssid", "—"),
+                    "ip": wifi_info.get("ip", "—"),
+                    "emergency_mode": wifi_info.get("emergency_mode", False),
+                    "security": "WPA2-PSK"
+                }
+                print(f"[WiFi Status Broadcast] Wi-Fi: {self.wifi_state['ssid']} | IP: {self.wifi_state['ip']}")
+                if self.loop and self.connected_clients:
+                    asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
+            except Exception as e:
+                print(f"[Bridge] Lỗi giải mã WIFI_STATUS: {e}")
+
+        # 2. Nhận gói tin CẢNH BÁO KHẨN CẤP khi mất Wi-Fi
+        elif "EMERGENCY:" in line:
+            try:
+                idx = line.find("EMERGENCY:")
+                json_str = line[idx + 10:].strip()
+                em_data = json.loads(json_str)
+                print(f"[🚨 CẢNH BÁO KHẨN CẤP] {em_data.get('msg')}")
+                self.wifi_state["connected"] = False
+                self.wifi_state["emergency_mode"] = True
+                if self.loop and self.connected_clients:
+                    asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(em_data)), self.loop)
+                    asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
+            except Exception as e:
+                print(f"[Bridge] Lỗi giải mã EMERGENCY: {e}")
+
+        # 3. Nhận gói tin KHÔI PHỤC KẾT NỐI KHẨN CẤP THÀNH CÔNG
+        elif "EMERGENCY_RESOLVED:" in line:
+            try:
+                idx = line.find("EMERGENCY_RESOLVED:")
+                json_str = line[idx + 19:].strip()
+                res_data = json.loads(json_str)
+                print(f"[🎉 KHÔI PHỤC KHẨN CẤP] {res_data.get('msg')}")
+                self.wifi_state["connected"] = True
+                self.wifi_state["emergency_mode"] = False
+                wifi_res = res_data.get("wifi", {})
+                if wifi_res.get("ssid"): self.wifi_state["ssid"] = wifi_res.get("ssid")
+                if wifi_res.get("ip"): self.wifi_state["ip"] = wifi_res.get("ip")
+                if self.loop and self.connected_clients:
+                    asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(res_data)), self.loop)
+                    asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
+            except Exception as e:
+                print(f"[Bridge] Lỗi giải mã EMERGENCY_RESOLVED: {e}")
+
+        # 4. Kiểm tra dòng TELEMETRY (khoảng cách + wifi)
+        elif "TELEMETRY:" in line:
+            try:
+                idx = line.find("TELEMETRY:")
+                json_str = line[idx + 10:].strip()
+                telem = json.loads(json_str)
+                wifi = telem.get("wifi")
+                if wifi:
+                    self.wifi_state = {
+                        "event": "wifi_status",
+                        "connected": wifi.get("connected", False),
+                        "ssid": wifi.get("ssid", "—"),
+                        "ip": wifi.get("ip", "—"),
+                        "security": "WPA2-PSK"
+                    }
+                # Đẩy toàn bộ telemetry lên tất cả client Web
+                if self.loop and self.connected_clients:
+                    telem_str = json.dumps(telem)
+                    asyncio.run_coroutine_threadsafe(self._broadcast(telem_str), self.loop)
+            except Exception as e:
+                print(f"[Bridge] Lỗi giải mã JSON telemetry: {e}")
+
+        # 5. Xử lý trực tiếp dữ liệu TCRT5000 (nhận dạng dòng Digital (DO) / TCRT)
+        elif "Digital (DO):" in line or "TCRT:" in line:
+            try:
+                is_black = False
+                raw = 0
+                volt = 0.0
+
+                if "Digital (DO):" in line:
+                    is_black = ("HIGH" in line)
+                    raw = 1 if is_black else 0
+                    import re
+                    m_volt = re.search(r'\(([\d\.]+)V\)', line)
+                    volt = float(m_volt.group(1)) if m_volt else (3.3 if is_black else 0.0)
+                elif "TCRT:" in line:
+                    parts = line.split(":")
+                    if len(parts) >= 3:
+                        raw_l = int(parts[1])
+                        is_black = (raw_l == 1)
+                        raw = raw_l
+                        volt = 3.3 if is_black else 0.0
+
+                tcrt_telem = {
+                    "event": "telemetry",
+                    "tcrt5000": {
+                        "left": {
+                            "pin": 19,
+                            "raw": raw,
+                            "is_black": is_black,
+                            "text": "DEN" if is_black else "TRANG",
+                            "voltage": volt
+                        },
+                        "right": {
+                            "pin": 21,
+                            "raw": 0,
+                            "is_black": False,
+                            "text": "TRANG",
+                            "voltage": 0.0
+                        }
+                    },
+                    "mode": "tcrt_streaming"
+                }
+                if self.loop and self.connected_clients:
+                    asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(tcrt_telem)), self.loop)
+            except Exception:
+                pass
+        elif line.startswith("HEARTBEAT:"):
+            try:
+                hb = json.loads(line[10:])
+                self.wifi_state = {
+                    "event": "wifi_status",
+                    "connected": hb.get("connected", False),
+                    "ssid": hb.get("ssid", "—"),
+                    "ip": hb.get("ip", "—"),
+                    "security": "WPA2-PSK"
+                }
+                if self.loop and self.connected_clients:
+                    msg_str = json.dumps(self.wifi_state)
+                    asyncio.run_coroutine_threadsafe(self._broadcast(msg_str), self.loop)
+            except Exception:
+                pass
+        elif "🎉 KẾT NỐI THÀNH CÔNG TỚI:" in line:
+            ssid_name = line.split(":")[-1].strip().strip("'")
+            self.wifi_state["connected"] = True
+            self.wifi_state["ssid"] = ssid_name
+            if self.loop and self.connected_clients:
+                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
+        elif "Địa chỉ IP của ESP32:" in line:
+            ip_val = line.split(":")[-1].strip()
+            self.wifi_state["ip"] = ip_val
+            self.esp32_ip = ip_val
+            if self.loop and self.connected_clients:
+                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
+        elif "KHÔNG TÌM THẤY BẤT CỨ MẠNG WI-FI NÀO" in line or "Mất kết nối Wi-Fi" in line:
+            self.wifi_state["connected"] = False
+            self.wifi_state["ssid"] = "—"
+            self.wifi_state["ip"] = "—"
+            if self.loop and self.connected_clients:
+                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
+
     def serial_listener_loop(self):
-        """Lắng nghe dòng Serial in từ ESP32 để bắt các sự kiện Wi-Fi và Telemetry cảm biến theo thời gian thực"""
+        """Kênh 1: Lắng nghe USB Serial từ ESP32 khi cắm cáp vào máy tính"""
         try:
             import serial
         except ImportError:
@@ -271,7 +464,8 @@ class RobotControllerServer:
                         ser.rts = False
                         with self.ser_lock:
                             self.ser = ser
-                        print(f"[Serial Monitor] Đã kết nối lắng nghe ESP32 tại {SERIAL_PORT}")
+                        self.active_channel = "SERIAL"
+                        print(f"[Serial Bridge] ✅ Đã kết nối lắng nghe ESP32 qua USB tại {SERIAL_PORT}")
                     except Exception:
                         ser = None
                         with self.ser_lock:
@@ -281,170 +475,9 @@ class RobotControllerServer:
 
                 line = ser.readline().decode('utf-8', errors='ignore').strip()
                 if line:
-                    # Chỉ in các sự kiện hệ thống quan trọng (bỏ các dòng in đo lường liên tục ra terminal)
-                    if "[FAILSAFE" in line or "[FAILSAFE RECOVERED]" in line or "[ESP32] KHOI DONG" in line or "[CMD_ACK]" in line:
-                        print(f"[ESP32] {line}")
-
-                    # 1. Nhận gói tin trạng thái Wi-Fi từ lệnh GET_WIFI_STATUS
-                    if "WIFI_STATUS:" in line:
-                        try:
-                            idx = line.find("WIFI_STATUS:")
-                            json_str = line[idx + 12:].strip()
-                            wifi_info = json.loads(json_str)
-                            self.wifi_state = {
-                                "event": "wifi_status",
-                                "connected": wifi_info.get("connected", False),
-                                "ssid": wifi_info.get("ssid", "—"),
-                                "ip": wifi_info.get("ip", "—"),
-                                "emergency_mode": wifi_info.get("emergency_mode", False),
-                                "security": "WPA2-PSK"
-                            }
-                            print(f"[WiFi Status Broadcast] Wi-Fi: {self.wifi_state['ssid']} | IP: {self.wifi_state['ip']}")
-                            if self.loop and self.connected_clients:
-                                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
-                        except Exception as e:
-                            print(f"[Serial] Lỗi giải mã WIFI_STATUS: {e}")
-
-                    # 2. Nhận gói tin CẢNH BÁO KHẨN CẤP khi mất Wi-Fi
-                    elif "EMERGENCY:" in line:
-                        try:
-                            idx = line.find("EMERGENCY:")
-                            json_str = line[idx + 10:].strip()
-                            em_data = json.loads(json_str)
-                            print(f"[🚨 CẢNH BÁO KHẨN CẤP] {em_data.get('msg')}")
-                            self.wifi_state["connected"] = False
-                            self.wifi_state["emergency_mode"] = True
-                            if self.loop and self.connected_clients:
-                                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(em_data)), self.loop)
-                                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
-                        except Exception as e:
-                            print(f"[Serial] Lỗi giải mã EMERGENCY: {e}")
-
-                    # 3. Nhận gói tin KHÔI PHỤC KẾT NỐI KHẨN CẤP THÀNH CÔNG
-                    elif "EMERGENCY_RESOLVED:" in line:
-                        try:
-                            idx = line.find("EMERGENCY_RESOLVED:")
-                            json_str = line[idx + 19:].strip()
-                            res_data = json.loads(json_str)
-                            print(f"[🎉 KHÔI PHỤC KHẨN CẤP] {res_data.get('msg')}")
-                            self.wifi_state["connected"] = True
-                            self.wifi_state["emergency_mode"] = False
-                            wifi_res = res_data.get("wifi", {})
-                            if wifi_res.get("ssid"): self.wifi_state["ssid"] = wifi_res.get("ssid")
-                            if wifi_res.get("ip"): self.wifi_state["ip"] = wifi_res.get("ip")
-                            if self.loop and self.connected_clients:
-                                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(res_data)), self.loop)
-                                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
-                        except Exception as e:
-                            print(f"[Serial] Lỗi giải mã EMERGENCY_RESOLVED: {e}")
-
-                    # 4. Kiểm tra dòng TELEMETRY (khoảng cách + wifi)
-                    elif "TELEMETRY:" in line:
-                        try:
-                            idx = line.find("TELEMETRY:")
-                            json_str = line[idx + 10:].strip()
-                            telem = json.loads(json_str)
-                            wifi = telem.get("wifi")
-                            if wifi:
-                                self.wifi_state = {
-                                    "event": "wifi_status",
-                                    "connected": wifi.get("connected", False),
-                                    "ssid": wifi.get("ssid", "—"),
-                                    "ip": wifi.get("ip", "—"),
-                                    "security": "WPA2-PSK"
-                                }
-                            # Log kết quả cự ly đo được
-                            dist_val = telem.get("sensor", {}).get("distance_cm")
-                            obst_val = telem.get("sensor", {}).get("obstacle_detected")
-
-                            # Đẩy toàn bộ telemetry (gồm cự ly cảm biến) lên tất cả client Web
-                            if self.loop and self.connected_clients:
-                                telem_str = json.dumps(telem)
-                                asyncio.run_coroutine_threadsafe(self._broadcast(telem_str), self.loop)
-                        except Exception as e:
-                            print(f"[Serial] Lỗi giải mã JSON telemetry: {e}")
-
-                    # 5. Xử lý trực tiếp dữ liệu TCRT5000 từ Serial (nhận dạng dòng Digital (DO) / TCRT)
-                    elif "Digital (DO):" in line or "TCRT:" in line:
-                        try:
-                            # Không in ra màn hình terminal theo yêu cầu của user
-                            is_black = False
-                            raw = 0
-                            volt = 0.0
-
-                            if "Digital (DO):" in line:
-                                is_black = ("HIGH" in line)
-                                raw = 1 if is_black else 0
-                                import re
-                                m_volt = re.search(r'\(([\d\.]+)V\)', line)
-                                volt = float(m_volt.group(1)) if m_volt else (3.3 if is_black else 0.0)
-                            elif "TCRT:" in line:
-                                parts = line.split(":")
-                                if len(parts) >= 3:
-                                    raw_l = int(parts[1])
-                                    is_black = (raw_l == 1)
-                                    raw = raw_l
-                                    volt = 3.3 if is_black else 0.0
-
-                            tcrt_telem = {
-                                "event": "telemetry",
-                                "tcrt5000": {
-                                    "left": {
-                                        "pin": 19,
-                                        "raw": raw,
-                                        "is_black": is_black,
-                                        "text": "DEN" if is_black else "TRANG",
-                                        "voltage": volt
-                                    },
-                                    "right": {
-                                        "pin": 21,
-                                        "raw": 0,
-                                        "is_black": False,
-                                        "text": "TRANG",
-                                        "voltage": 0.0
-                                    }
-                                },
-                                "mode": "tcrt_streaming"
-                            }
-                            if self.loop and self.connected_clients:
-                                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(tcrt_telem)), self.loop)
-                        except Exception:
-                            pass
-                    elif line.startswith("HEARTBEAT:"):
-                        try:
-                            hb = json.loads(line[10:])
-                            self.wifi_state = {
-                                "event": "wifi_status",
-                                "connected": hb.get("connected", False),
-                                "ssid": hb.get("ssid", "—"),
-                                "ip": hb.get("ip", "—"),
-                                "security": "WPA2-PSK"
-                            }
-                            # Đẩy real-time lên tất cả client web đang mở
-                            if self.loop and self.connected_clients:
-                                msg_str = json.dumps(self.wifi_state)
-                                asyncio.run_coroutine_threadsafe(self._broadcast(msg_str), self.loop)
-                        except Exception:
-                            pass
-                    elif "🎉 KẾT NỐI THÀNH CÔNG TỚI:" in line:
-                        ssid_name = line.split(":")[-1].strip().strip("'")
-                        self.wifi_state["connected"] = True
-                        self.wifi_state["ssid"] = ssid_name
-                        if self.loop and self.connected_clients:
-                            asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
-                    elif "Địa chỉ IP của ESP32:" in line:
-                        ip_val = line.split(":")[-1].strip()
-                        self.wifi_state["ip"] = ip_val
-                        if self.loop and self.connected_clients:
-                            asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
-                    elif "KHÔNG TÌM THẤY BẤT CỨ MẠNG WI-FI NÀO" in line or "Mất kết nối Wi-Fi" in line:
-                        self.wifi_state["connected"] = False
-                        self.wifi_state["ssid"] = "—"
-                        self.wifi_state["ip"] = "—"
-                        if self.loop and self.connected_clients:
-                            asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
+                    self.process_esp32_line(line)
                 else:
-                    time.sleep(0.05)
+                    time.sleep(0.02)
             except Exception:
                 with self.ser_lock:
                     if ser:
@@ -453,6 +486,86 @@ class RobotControllerServer:
                         ser = None
                     self.ser = None
                 time.sleep(2)
+
+    def wifi_tcp_bridge_loop(self):
+        """Kênh 2: Lắng nghe Wi-Fi TCP Socket từ ESP32 khi chạy pin không dây"""
+        while self.running:
+            # Nếu đang có cổng USB Serial thì ưu tiên USB, tạm dừng TCP
+            with self.ser_lock:
+                if self.ser and self.ser.is_open:
+                    time.sleep(2)
+                    continue
+
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(2.5)
+            try:
+                sock.connect((self.esp32_ip, self.esp32_tcp_port))
+                sock.settimeout(1.0)
+                with self.tcp_lock:
+                    self.tcp_sock = sock
+                self.active_channel = "WIFI_TCP"
+                print(f"[Wi-Fi TCP Bridge] ✅ ĐÃ KẾT NỐI TỚI ESP32 KHÔNG DÂY TẠI {self.esp32_ip}:{self.esp32_tcp_port}")
+
+                # Yêu cầu cập nhật trạng thái ban đầu
+                self.send_serial("CMD:GET_WIFI_STATUS\n")
+
+                buf = ""
+                while self.running:
+                    # Nếu cắm lại cáp USB, chuyển lại ưu tiên USB
+                    with self.ser_lock:
+                        if self.ser and self.ser.is_open:
+                            break
+
+                    try:
+                        chunk = sock.recv(1024)
+                        if not chunk:
+                            print("[Wi-Fi TCP Bridge] ESP32 đã ngắt kết nối.")
+                            break
+                        buf += chunk.decode('utf-8', errors='replace')
+                        while '\n' in buf:
+                            line, buf = buf.split('\n', 1)
+                            self.process_esp32_line(line.strip())
+                    except socket.timeout:
+                        continue
+                    except Exception as e:
+                        break
+            except (socket.timeout, ConnectionRefusedError, OSError):
+                time.sleep(2)
+            finally:
+                with self.tcp_lock:
+                    if self.tcp_sock:
+                        try: self.tcp_sock.close()
+                        except: pass
+                        self.tcp_sock = None
+                time.sleep(2)
+
+    def udp_beacon_listener(self):
+        """Kênh 3: Tự động phát hiện IP của ESP32 qua UDP Broadcast nếu router cấp IP động"""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind(('0.0.0.0', 8889))
+            sock.settimeout(3.0)
+            while self.running:
+                try:
+                    data, addr = sock.recvfrom(512)
+                    msg = data.decode('utf-8', errors='ignore').strip()
+                    if msg.startswith("ROBOT_BEACON:"):
+                        parts = msg.split(":")
+                        if len(parts) >= 2:
+                            new_ip = parts[1]
+                            if new_ip != self.esp32_ip:
+                                print(f"[Auto-Discovery] 📡 Phát hiện ESP32 tại địa chỉ IP mới: {new_ip}")
+                                self.esp32_ip = new_ip
+                except socket.timeout:
+                    continue
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        finally:
+            try: sock.close()
+            except: pass
 
     async def aiohttp_ws_handler(self, request):
         """Xử lý WebSocket qua AioHTTP tại đường dẫn /ws (hỗ trợ 100% Cloudflare Tunnel / Ngrok)"""
@@ -537,9 +650,10 @@ class RobotControllerServer:
         print("   HỆ THỐNG MÁY CHỦ XE DÒ LINE & CÁNH TAY ROBOT")
         print("="*60)
 
-        # Khởi động luồng giám sát Serial thời gian thực từ ESP32
-        t = threading.Thread(target=self.serial_listener_loop, daemon=True)
-        t.start()
+        # Khởi động các luồng giao tiếp với ESP32 (cả USB Serial và Wi-Fi TCP song song)
+        threading.Thread(target=self.serial_listener_loop, daemon=True).start()
+        threading.Thread(target=self.wifi_tcp_bridge_loop, daemon=True).start()
+        threading.Thread(target=self.udp_beacon_listener, daemon=True).start()
 
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)

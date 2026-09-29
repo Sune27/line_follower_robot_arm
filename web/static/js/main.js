@@ -226,11 +226,12 @@ class WebSocketClient {
     }
 
     init() {
+        const isFile = window.location.protocol === 'file:';
         const isHttps = window.location.protocol === 'https:';
         const wsProtocol = isHttps ? 'wss:' : 'ws:';
-        const wsUrl = (window.location.port === '5000' || isHttps)
-            ? `${wsProtocol}//${window.location.host}/ws`
-            : `${wsProtocol}//${window.location.hostname || 'localhost'}:8765`;
+        const wsUrl = isFile
+            ? 'ws://localhost:8765'
+            : `${wsProtocol}//${window.location.host}/ws`;
 
         try {
             this.ws = new WebSocket(wsUrl);
