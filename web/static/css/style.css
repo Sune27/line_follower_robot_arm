@@ -569,6 +569,48 @@ body {
     filter: drop-shadow(0 0 12px #fbbf24);
 }
 
+/* BIỂU TƯỢNG ĐỘNG CƠ TB6612FNG SVG */
+.sensor-tb6612-icon {
+    width: 36px;
+    height: 36px;
+    color: #a855f7;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.7));
+}
+
+.function-card:hover .sensor-tb6612-icon {
+    color: #c084fc;
+    filter: drop-shadow(0 0 12px #c084fc);
+}
+
+/* BIỂU TƯỢNG CÁNH TAY ROBOT SVG */
+.sensor-arm-icon {
+    width: 36px;
+    height: 36px;
+    color: #10b981;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.7));
+}
+
+.function-card:hover .sensor-arm-icon {
+    color: #34d399;
+    filter: drop-shadow(0 0 12px #34d399);
+}
+
+/* BIỂU TƯỢNG TỔNG QUAN CHUYỂN ĐỘNG XE SVG */
+.sensor-motion-icon {
+    width: 36px;
+    height: 36px;
+    color: #38bdf8;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.7));
+}
+
+.function-card:hover .sensor-motion-icon {
+    color: #06b6d4;
+    filter: drop-shadow(0 0 12px #06b6d4);
+}
+
 /* THÔNG TIN VĂN BẢN TRÊN THẺ */
 .card-info {
     flex: 1;

@@ -447,8 +447,8 @@
                         </div>
                     </div>
 
-                    <!-- THẺ 4: ĐIỀU KHIỂN ĐỘNG CƠ TB6612FNG (ĐANG PHÁT TRIỂN) -->
-                    <div class="function-card" id="card-tb6612" title="Điều khiển động cơ TB6612FNG (Đang phát triển)"
+                    <!-- THẺ 4: ĐIỀU KHIỂN ĐỘNG CƠ TB6612FNG -->
+                    <div class="function-card" id="card-tb6612" title="Điều khiển động cơ TB6612FNG"
                         style="cursor: pointer;">
                         <div class="card-glow-overlay"></div>
                         <div class="card-icon-wrapper">
@@ -479,7 +479,75 @@
                         </div>
                         <div class="card-info">
                             <h3 class="card-title">Điều khiển động cơ TB6612FNG</h3>
-                            <p class="card-desc">Theo dõi và giám sát chuyển động của xe</p>
+                            <p class="card-desc">Cần ga độc lập và giám sát vi sai tốc độ 2 bánh</p>
+                        </div>
+                        <div class="card-status-badge status-ready">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Sẵn sàng</span>
+                        </div>
+                    </div>
+
+                    <!-- THẺ 5: CÁNH TAY ROBOT (ROBOT ARM) -->
+                    <div class="function-card" id="card-robot-arm" title="Giám sát & Điều khiển Cánh tay Robot (Đang phát triển)"
+                        style="cursor: pointer;">
+                        <div class="card-glow-overlay"></div>
+                        <div class="card-icon-wrapper" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.35);">
+                            <!-- Biểu tượng Cánh tay Robot công nghệ cao -->
+                            <svg class="sensor-arm-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <!-- Đế xoay robot -->
+                                <path d="M10 40h28" stroke-width="2.5" />
+                                <rect x="16" y="34" width="16" height="6" rx="2" fill="rgba(16, 185, 129, 0.15)" stroke="currentColor" stroke-width="2" />
+                                <!-- Khớp đế (Base Joint) -->
+                                <circle cx="24" cy="34" r="2.8" fill="#10b981" />
+                                <!-- Cánh tay đoạn 1 (Link 1) -->
+                                <line x1="24" y1="34" x2="19" y2="22" stroke="currentColor" stroke-width="2.5" />
+                                <!-- Khớp khuỷu tay (Elbow Joint) -->
+                                <circle cx="19" cy="22" r="2.8" fill="#10b981" />
+                                <!-- Cánh tay đoạn 2 (Link 2) -->
+                                <line x1="19" y1="22" x2="31" y2="15" stroke="currentColor" stroke-width="2.5" />
+                                <!-- Khớp cổ tay (Wrist Joint) -->
+                                <circle cx="31" cy="15" r="2.2" fill="#34d399" />
+                                <!-- Kẹp gắp Gripper -->
+                                <path d="M31 15l5-4m-5 4l5 4" stroke="currentColor" stroke-width="2.2" />
+                                <circle cx="36" cy="11" r="1.5" fill="currentColor" />
+                                <circle cx="36" cy="19" r="1.5" fill="currentColor" />
+                            </svg>
+                        </div>
+                        <div class="card-info">
+                            <h3 class="card-title">Cánh tay Robot</h3>
+                            <p class="card-desc">Giám sát góc xoay các khớp servo và trạng thái gắp thả</p>
+                        </div>
+                        <div class="card-status-badge status-in-progress">
+                            <span class="status-indicator"></span>
+                            <span class="status-text">Đang phát triển</span>
+                        </div>
+                    </div>
+
+                    <!-- THẺ 6: TỔNG QUAN CHUYỂN ĐỘNG XE (VEHICLE DYNAMICS & ODOMETRY) -->
+                    <div class="function-card" id="card-vehicle-motion" title="Tổng quan thông số chuyển động xe (Đang phát triển)"
+                        style="cursor: pointer;">
+                        <div class="card-glow-overlay"></div>
+                        <div class="card-icon-wrapper" style="background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.35);">
+                            <!-- Biểu tượng Động học & Bảng giám sát hành trình xe -->
+                            <svg class="sensor-motion-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <!-- Thân xe nhìn từ trên (Chassis outline) -->
+                                <rect x="15" y="11" width="18" height="26" rx="5" fill="rgba(56, 189, 248, 0.08)" stroke="currentColor" stroke-width="2" />
+                                <!-- 4 bánh xe -->
+                                <rect x="10" y="13" width="5" height="8" rx="1.5" fill="#38bdf8" />
+                                <rect x="33" y="13" width="5" height="8" rx="1.5" fill="#38bdf8" />
+                                <rect x="10" y="27" width="5" height="8" rx="1.5" fill="#38bdf8" />
+                                <rect x="33" y="27" width="5" height="8" rx="1.5" fill="#38bdf8" />
+                                <!-- Mũi tên vector chuyển động hướng tiến -->
+                                <path d="M24 28v-11m0 0l-3.5 3.5m3.5-3.5l3.5 3.5" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <!-- Radar / Vòng đo góc chuyển hướng -->
+                                <circle cx="24" cy="24" r="17" stroke="rgba(56, 189, 248, 0.28)" stroke-width="1.5" stroke-dasharray="3 3" />
+                            </svg>
+                        </div>
+                        <div class="card-info">
+                            <h3 class="card-title">Tổng quan Chuyển động xe</h3>
+                            <p class="card-desc">Giám sát tích hợp vận tốc vi sai, góc lái, quãng đường và trạng thái xe</p>
                         </div>
                         <div class="card-status-badge status-in-progress">
                             <span class="status-indicator"></span>
