@@ -9,7 +9,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=2.0">
     <link rel="alternate icon" href="../static/favicon.svg?v=2.0">
     <!-- Nhúng file CSS định dạng giao diện -->
-    <link rel="stylesheet" href="../static/css/style.css?v=4.5">
+    <link rel="stylesheet" href="../static/css/style.css?v=4.6">
     <!-- Font chữ Chakra Petch (phong cách Robot/Công nghệ) và Be Vietnam Pro (tối ưu 100% tiếng Việt có dấu) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -884,6 +884,18 @@
                     </div>
                 </div>
 
+                <!-- THANH TÓM TẮT PHẢN ỨNG HÀNH VI DÒ LINE (ĐỒNG BỘ VỚI LOGIC XE) -->
+                <div class="tcrt-behavior-bar" id="tcrt-behavior-bar">
+                    <div class="behavior-title-group">
+                        <span class="behavior-icon">🧭</span>
+                        <span class="behavior-title">HÀNH VI ĐIỀU HƯỚNG BÁM VẠCH:</span>
+                    </div>
+                    <div class="behavior-status-badge badge-straight" id="tcrt-behavior-badge">
+                        <span class="behavior-beacon"></span>
+                        <span id="tcrt-behavior-text">ĐÚNG TIM ĐƯỜNG • ĐI THẲNG ĐỀU</span>
+                    </div>
+                </div>
+
                 <!-- 3. BẢNG THÔNG SỐ ĐO LƯỜNG VÀ LOGIC TỪNG MẮT (Theo sơ đồ) -->
                 <div class="tcrt-telemetry-grid">
 
@@ -1547,8 +1559,6 @@
                                         <div class="mcu-chip">ESP32</div>
                                         <div class="mcu-status-led" id="mission-mcu-led"></div>
                                     </div>
-
-                                    <div class="robot-body-label">LINE FOLLOWER BOT</div>
                                 </div>
 
                                 <!-- 2 Bánh xe chủ động 2 bên -->
@@ -1739,7 +1749,7 @@
     </div>
 
     <!-- Nhúng file Javascript xử lý logic tương tác -->
-    <script src="../static/js/main.js?v=4.8"></script>
+    <script src="../static/js/main.js?v=4.9"></script>
 </body>
 
 </html>
