@@ -253,9 +253,9 @@ class RobotControllerServer:
                 speed = int(msg.get("speed", 0))
                 left = int(msg.get("left", speed))
                 right = int(msg.get("right", speed))
-                is_running = bool(msg.get("is_running", speed > 0))
-                if is_running and speed > 0:
-                    self.send_serial(f"CMD:SPEED:{speed}")
+                is_running = bool(msg.get("is_running", speed > 0 or left > 0 or right > 0))
+                if is_running and (speed > 0 or left > 0 or right > 0):
+                    self.send_serial(f"CMD:SPEED:{speed},{left},{right}")
                 else:
                     self.send_serial("CMD:MOTOR_STOP")
                 await self._broadcast(json.dumps({
@@ -271,7 +271,7 @@ class RobotControllerServer:
                 speed = int(msg.get("speed", 0)) if state else 0
                 print(f"[Server] 🏎️ Bật/Tắt động cơ: state={state}, speed={speed}%")
                 if state and speed > 0:
-                    self.send_serial(f"CMD:SPEED:{speed}")
+                    self.send_serial(f"CMD:SPEED:{speed},{speed},{speed}")
                 else:
                     self.send_serial("CMD:MOTOR_STOP")
                 await self._broadcast(json.dumps({
