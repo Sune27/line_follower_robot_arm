@@ -1877,12 +1877,15 @@ class VehicleMotionController {
         }
 
         this.isRunningAutoLine = true;
-        this.log('action', `Khởi động chế độ Dò Line Tự Động. Mức ga cơ sở: ${this.baseSpeed}%.`);
+        this.log('action', `Khởi động chế độ Dò Line Onboard trên ESP32. Tốc độ cơ sở: ${this.baseSpeed}%.`);
         
-        // Đảm bảo nhận stream cảm biến
+        // Gửi lệnh kích hoạt onboard xuống ESP32 thông qua Python Server
         if (this.wsClient) {
+            this.wsClient.send({
+                cmd: 'start_auto_line',
+                speed: this.baseSpeed
+            });
             this.wsClient.send({ cmd: 'tcrt_start_stream' });
-            this.wsClient.send({ cmd: 'start_stream' });
         }
 
         this.computeAndApplyLineTracking();
@@ -1897,9 +1900,13 @@ class VehicleMotionController {
         this.actionText = 'XE ĐANG NGHỈ (STANDBY)';
         this.lineTrackingStatus = 'Đã dừng dò line';
 
-        this.sendSpeedToServer(0, 0, false);
+        // Gửi lệnh dừng dò line onboard xuống ESP32
+        if (this.wsClient) {
+            this.wsClient.send({ cmd: 'stop_auto_line' });
+        }
+
         if (!isPassive) {
-            this.log('action', 'Đã dừng chế độ dò line tự động. Cả 2 bánh xe về 0%.');
+            this.log('action', 'Đã dừng chế độ dò line tự động. Xe đã dừng lại.');
         }
         this.updateUI();
     }
@@ -1912,9 +1919,10 @@ class VehicleMotionController {
         this.actionText = 'KHẨN CẤP: DỪNG TẤT CẢ (E-STOP)';
         this.lineTrackingStatus = 'Dừng khẩn cấp';
 
-        // Lập tức ngắt motor không debounce
+        // Lập tức ngắt motor và ngắt auto line
         if (this.sendThrottleDebounce) clearTimeout(this.sendThrottleDebounce);
         if (this.wsClient) {
+            this.wsClient.send({ cmd: 'stop_auto_line' });
             this.wsClient.send({
                 cmd: 'set_motor_speed',
                 speed: 0,
@@ -1942,52 +1950,44 @@ class VehicleMotionController {
     computeAndApplyLineTracking() {
         if (!this.isRunningAutoLine) return;
 
-        // 1. Kiểm tra an toàn vật cản
-        if (this.isObstacle) {
-            this.leftSpeed = 0;
-            this.rightSpeed = 0;
-            this.steeringAngle = 0;
-            this.actionText = 'TẠM DỪNG: CÓ VẬT CẢN (<10CM)';
-            this.lineTrackingStatus = 'Tạm dừng né vật cản';
-            this.sendSpeedToServer(0, 0, false);
-            return;
-        }
-
-        // 2. Thuật toán vi sai 2 mắt dò line quang học chuẩn (2 mắt kẹp giữa vạch đen)
+        // Cập nhật trạng thái hiển thị mô phỏng trên Web theo 2 mắt cảm biến
         const L = this.leftIsBlack;
         const R = this.rightIsBlack;
 
         if (!L && !R) {
             // TH 1: CẢ 2 ĐỀU TRẮNG (0, 0) -> Vạch đen nằm chính giữa 2 mắt -> XE ĐI THẲNG
-            this.leftSpeed = this.baseSpeed;
-            this.rightSpeed = this.baseSpeed;
+            this.lastAction = 'STRAIGHT';
             this.steeringAngle = 0;
             this.actionText = 'ĐI THẲNG: ĐÚNG TIM ĐƯỜNG (2 MẮT KẸP LINE)';
             this.lineTrackingStatus = 'Đúng tim đường (Trong vạch)';
         } else if (L && !R) {
             // TH 2: MẮT TRÁI ĐEN (1), MẮT PHẢI TRẮNG (0) -> Xe lệch phải -> BẺ LÁI SANG TRÁI
-            this.leftSpeed = Math.max(0, Math.round(this.baseSpeed * 0.25));
-            this.rightSpeed = Math.min(100, Math.round(this.baseSpeed * 1.15));
+            this.lastAction = 'LEFT';
             this.steeringAngle = -14;
             this.actionText = 'BẺ LÁI TRÁI: MẮT TRÁI CHẠM VẠCH';
             this.lineTrackingStatus = 'Lệch phải (Bẻ sang trái)';
         } else if (!L && R) {
             // TH 3: MẮT PHẢI ĐEN (1), MẮT TRÁI TRẮNG (0) -> Xe lệch trái -> BẺ LÁI SANG PHẢI
-            this.leftSpeed = Math.min(100, Math.round(this.baseSpeed * 1.15));
-            this.rightSpeed = Math.max(0, Math.round(this.baseSpeed * 0.25));
+            this.lastAction = 'RIGHT';
             this.steeringAngle = 14;
             this.actionText = 'BẺ LÁI PHẢI: MẮT PHẢI CHẠM VẠCH';
             this.lineTrackingStatus = 'Lệch trái (Bẻ sang phải)';
         } else {
-            // TH 4: CẢ 2 ĐỀU ĐEN (1, 1) -> Gặp vạch ngang dừng trạm / giao lộ / vạch đích
-            this.leftSpeed = 0;
-            this.rightSpeed = 0;
-            this.steeringAngle = 0;
-            this.actionText = 'VẠCH NGANG: DỪNG TRẠM / VẠCH ĐÍCH';
-            this.lineTrackingStatus = 'Gặp vạch ngang (Dừng trạm)';
+            // TH 4: CẢ 2 ĐỀU ĐEN (1, 1)
+            if (this.lastAction === 'LEFT') {
+                this.steeringAngle = -16;
+                this.actionText = 'CUA GẮT TRÁI: CẮT NGANG LINE (TIẾP TỤC ÔM CUA)';
+                this.lineTrackingStatus = 'Cua gắt: Ép cua trái (Không dừng)';
+            } else if (this.lastAction === 'RIGHT') {
+                this.steeringAngle = 16;
+                this.actionText = 'CUA GẮT PHẢI: CẮT NGANG LINE (TIẾP TỤC ÔM CUA)';
+                this.lineTrackingStatus = 'Cua gắt: Ép cua phải (Không dừng)';
+            } else {
+                this.steeringAngle = 0;
+                this.actionText = 'VẠCH NGANG: DỪNG TRẠM / VẠCH ĐÍCH';
+                this.lineTrackingStatus = 'Gặp vạch ngang (Dừng trạm)';
+            }
         }
-
-        this.sendSpeedToServer(this.leftSpeed, this.rightSpeed, true);
     }
 
     /**
@@ -2023,7 +2023,19 @@ class VehicleMotionController {
 
         let hasChange = false;
 
-        // 1. Phân tích dữ liệu Siêu âm (RCWL-1601)
+        // 1. Phân tích trạng thái Auto Line từ ESP32 / Server
+        if (telemetryData.auto_line !== undefined) {
+            if (this.isRunningAutoLine !== telemetryData.auto_line) {
+                this.isRunningAutoLine = telemetryData.auto_line;
+                hasChange = true;
+            }
+        }
+        if (telemetryData.event === 'auto_line_status') {
+            this.isRunningAutoLine = !!telemetryData.running;
+            hasChange = true;
+        }
+
+        // 2. Phân tích dữ liệu Siêu âm (RCWL-1601)
         const sensor = telemetryData.sensor || (telemetryData.distance_cm !== undefined ? telemetryData : null);
         if (sensor && sensor.distance_cm !== undefined) {
             const dist = typeof sensor.distance_cm === 'number' ? sensor.distance_cm : parseFloat(sensor.distance_cm);
@@ -2035,9 +2047,6 @@ class VehicleMotionController {
             // Cảnh báo vật cản nếu mới phát hiện
             if (this.isObstacle && !prevObstacle) {
                 this.log('warn', `Phát hiện vật cản trước mặt: ${this.sonarDistance.toFixed(1)}cm (<10cm)!`);
-                if (this.isRunningAutoLine) {
-                    this.log('danger', 'Cơ chế an toàn Failsafe kích hoạt: Xe tự động phanh dừng!');
-                }
             } else if (!this.isObstacle && prevObstacle && this.sonarDistance >= 10) {
                 this.log('success', `Đường đi đã thông thoáng (${this.sonarDistance.toFixed(1)}cm).`);
             }
@@ -2045,7 +2054,7 @@ class VehicleMotionController {
             hasChange = true;
         }
 
-        // 2. Phân tích dữ liệu TCRT5000 Dò vạch
+        // 3. Phân tích dữ liệu TCRT5000 Dò vạch
         if (telemetryData.tcrt5000) {
             const tcrt = telemetryData.tcrt5000;
             if (tcrt.left) {
@@ -2057,17 +2066,15 @@ class VehicleMotionController {
             hasChange = true;
         }
 
-        // 3. Phân tích dữ liệu phản hồi Motor (nếu có từ server)
+        // 4. Phân tích dữ liệu phản hồi Motor từ ESP32
         if (telemetryData.motor) {
-            if (!this.isRunningAutoLine) {
-                const m = telemetryData.motor;
-                if (m.speed_left !== undefined) this.leftSpeed = m.speed_left;
-                if (m.speed_right !== undefined) this.rightSpeed = m.speed_right;
-            }
+            const m = telemetryData.motor;
+            if (m.speed_left !== undefined) this.leftSpeed = m.speed_left;
+            if (m.speed_right !== undefined) this.rightSpeed = m.speed_right;
             hasChange = true;
         }
 
-        // Nếu xe đang tự hành bám line, tính toán vi sai tức thì
+        // Nếu xe đang tự hành bám line, tính toán góc lái và nhãn trạng thái hiển thị
         if (this.isRunningAutoLine) {
             this.computeAndApplyLineTracking();
         }

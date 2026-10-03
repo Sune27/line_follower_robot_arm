@@ -118,6 +118,13 @@ def main():
     emergency_mode = False          # Chế độ Khẩn cấp (Failsafe) khi mất Wi-Fi
     stream_mode = False             # Chế độ đo liên tục siêu âm
     tcrt_stream_mode = False        # Chế độ stream cảm biến dò line TCRT5000 (Mặc định nghỉ)
+    auto_line_mode = False          # Chế độ tự hành dò line Onboard trên ESP32
+    auto_line_speed = 45            # Tốc độ cơ sở khi tự hành dò line (20% - 85%)
+    last_auto_line_time = 0
+    auto_line_interval_ms = 15      # Chu kỳ vòng lặp điều khiển bám line onboard: 15ms (~66Hz phản hồi cực nhạy)
+    last_line_action = "STRAIGHT"   # Bộ nhớ hướng lái gần nhất: "STRAIGHT", "LEFT", "RIGHT"
+    both_black_start_time = 0       # Thời điểm bắt đầu phát hiện cả 2 mắt đều đen (để lọc debounce cua gắt)
+    STOP_LINE_HOLD_MS = 250         # Phải đen liên tục > 250ms khi đi thẳng mới tính là vạch đích
     last_measure_time = 0
     measure_interval_ms = 200       # Chu kỳ đo liên tục siêu âm: 200ms
     last_tcrt_time = 0
@@ -143,17 +150,60 @@ def main():
             "obstacle_detected": False
         },
         "tcrt5000": line_sensor.read_status(),
+        "motor": {
+            "speed_left": 0,
+            "speed_right": 0,
+            "is_running": False
+        },
+        "auto_line": False,
         "mode": "standby"
     }
     broadcast_msg("TELEMETRY:" + ujson.dumps(initial_telem))
 
     def process_command(cmd):
-        nonlocal emergency_mode, stream_mode, tcrt_stream_mode
+        nonlocal emergency_mode, stream_mode, tcrt_stream_mode, auto_line_mode, auto_line_speed, last_line_action, both_black_start_time
         cmd = cmd.strip()
         if not cmd:
             return
 
-        if "CMD:MEASURE_ONCE" in cmd:
+        if "CMD:START_AUTO_LINE" in cmd:
+            if emergency_mode:
+                print("[LỆNH BỊ TỪ CHỐI] Không thể bật tự hành dò line khi đang mất Wi-Fi!")
+            else:
+                try:
+                    if ":" in cmd:
+                        parts = cmd.split(":")
+                        if len(parts) >= 3 and parts[2].isdigit():
+                            auto_line_speed = max(20, min(85, int(parts[2])))
+                except Exception:
+                    pass
+                auto_line_mode = True
+                last_line_action = "STRAIGHT"
+                both_black_start_time = 0
+                tcrt_stream_mode = True  # Tự động bật stream cảm biến để Web hiển thị
+                print(f"[ESP32] ▶ BẬT CHẾ ĐỘ DÒ LINE ONBOARD (Tốc độ cơ sở: {auto_line_speed}%)")
+                broadcast_msg(f"[CMD_ACK] START_AUTO_LINE: Tốc độ {auto_line_speed}%")
+
+        elif "CMD:STOP_AUTO_LINE" in cmd:
+            auto_line_mode = False
+            both_black_start_time = 0
+            motor.stop()
+            print("[ESP32] ⏹ DỪNG CHẾ ĐỘ DÒ LINE ONBOARD")
+            broadcast_msg("[CMD_ACK] STOP_AUTO_LINE: Đã dừng xe")
+            # Gửi telemetry cập nhật dừng động cơ
+            stop_telem = {
+                "event": "telemetry",
+                "tcrt5000": line_sensor.read_status(),
+                "motor": {
+                    "speed_left": 0,
+                    "speed_right": 0,
+                    "is_running": False
+                },
+                "auto_line": False
+            }
+            broadcast_msg("TELEMETRY:" + ujson.dumps(stop_telem))
+
+        elif "CMD:MEASURE_ONCE" in cmd:
             if emergency_mode:
                 print("[LỆNH BỊ TỪ CHỐI] Xe đang trong Chế độ Khẩn cấp do mất Wi-Fi!")
             else:
@@ -171,6 +221,7 @@ def main():
                         "obstacle_detected": is_obstacle
                     },
                     "tcrt5000": line_sensor.read_status(),
+                    "auto_line": auto_line_mode,
                     "mode": "once"
                 }
                 broadcast_msg("TELEMETRY:" + ujson.dumps(telem))
@@ -214,6 +265,7 @@ def main():
 
         elif "CMD:SPEED:" in cmd:
             try:
+                # Nếu người dùng can thiệp chỉnh tốc độ bằng tay, thoát chế độ auto dò line nếu có
                 val_str = cmd.split("CMD:SPEED:")[1].strip()
                 if "," in val_str:
                     parts = val_str.split(",")
@@ -228,6 +280,7 @@ def main():
                 print("[Loi CMD:SPEED]", e)
 
         elif "CMD:MOTOR_STOP" in cmd:
+            auto_line_mode = False
             motor.stop()
 
     while True:
@@ -363,7 +416,61 @@ def main():
                         if wifi_mgr.led:
                             wifi_mgr.led.value(0)
 
-            # --- D. CHẾ ĐỘ ĐO SIÊU ÂM LIÊN TỤC ---
+            # --- D. CHẾ ĐỘ TỰ HÀNH DÒ LINE ONBOARD TRÊN ESP32 ---
+            if auto_line_mode and not emergency_mode:
+                if time.ticks_diff(now, last_auto_line_time) >= auto_line_interval_ms:
+                    last_auto_line_time = now
+                    raw_l = line_sensor.read_raw_left()
+                    raw_r = line_sensor.read_raw_right()
+
+                    # Logic vi sai 2 mắt dò line quang học (Mắt giữa kẹp vạch đen):
+                    # raw == 0: Nền trắng, raw == 1: Vạch đen
+                    if raw_l == 0 and raw_r == 0:
+                        # TH1: Cả 2 mắt đều TRẮNG -> Vạch đen nằm giữa 2 mắt -> ĐI THẲNG
+                        last_line_action = "STRAIGHT"
+                        both_black_start_time = 0
+                        motor.set_differential(auto_line_speed, auto_line_speed)
+
+                    elif raw_l == 1 and raw_r == 0:
+                        # TH2: Mắt trái chạm ĐEN, mắt phải TRẮNG -> Xe lệch phải -> BẺ LÁI SANG TRÁI
+                        last_line_action = "LEFT"
+                        both_black_start_time = 0
+                        speed_l = max(0, int(auto_line_speed * 0.25))
+                        speed_r = min(100, int(auto_line_speed * 1.15))
+                        motor.set_differential(speed_l, speed_r)
+
+                    elif raw_l == 0 and raw_r == 1:
+                        # TH3: Mắt phải chạm ĐEN, mắt trái TRẮNG -> Xe lệch trái -> BẺ LÁI SANG PHẢI
+                        last_line_action = "RIGHT"
+                        both_black_start_time = 0
+                        speed_l = min(100, int(auto_line_speed * 1.15))
+                        speed_r = max(0, int(auto_line_speed * 0.25))
+                        motor.set_differential(speed_l, speed_r)
+
+                    elif raw_l == 1 and raw_r == 1:
+                        # TH4: Cả 2 mắt đều ĐEN
+                        # A. Nếu trước đó đang bẻ lái (LEFT hoặc RIGHT) -> Đây là cú cắt ngang vạch do cua gắt!
+                        # Không dừng, tiếp tục ép cua mạnh theo hướng vừa đánh lái để vượt qua khúc cua.
+                        if last_line_action == "LEFT":
+                            speed_l = max(-20, int(auto_line_speed * 0.1))
+                            speed_r = min(100, int(auto_line_speed * 1.25))
+                            motor.set_differential(speed_l, speed_r)
+                        elif last_line_action == "RIGHT":
+                            speed_l = min(100, int(auto_line_speed * 1.25))
+                            speed_r = max(-20, int(auto_line_speed * 0.1))
+                            motor.set_differential(speed_l, speed_r)
+                        else:
+                            # B. Nếu trước đó đang đi thẳng (STRAIGHT) -> Có thể là vạch ngang trạm dừng / vạch đích.
+                            # Dùng bộ lọc thời gian (Debounce): Phải duy trì đen liên tục > STOP_LINE_HOLD_MS mới dừng
+                            if both_black_start_time == 0:
+                                both_black_start_time = now
+                                # Vẫn lăn bánh chậm để kiểm tra xem có phải nhiễu không
+                                motor.set_differential(int(auto_line_speed * 0.5), int(auto_line_speed * 0.5))
+                            elif time.ticks_diff(now, both_black_start_time) >= STOP_LINE_HOLD_MS:
+                                # Đã xác nhận vạch ngang đích thật -> Dừng xe hoàn toàn
+                                motor.stop()
+
+            # --- E. CHẾ ĐỘ ĐO SIÊU ÂM LIÊN TỤC ---
             if stream_mode and not emergency_mode:
                 if time.ticks_diff(now, last_measure_time) >= measure_interval_ms:
                     last_measure_time = now
@@ -377,22 +484,34 @@ def main():
                             "obstacle_detected": is_obstacle
                         },
                         "tcrt5000": line_sensor.read_status(),
+                        "motor": {
+                            "speed_left": motor.current_speed_left,
+                            "speed_right": motor.current_speed_right,
+                            "is_running": motor.current_speed_left > 0 or motor.current_speed_right > 0
+                        },
+                        "auto_line": auto_line_mode,
                         "mode": "streaming"
                     }
                     broadcast_msg("TELEMETRY:" + ujson.dumps(telem))
 
-            # --- E. CHẾ ĐỘ STREAM CẢM BIẾN DÒ LINE TCRT5000 ---
+            # --- F. CHẾ ĐỘ STREAM CẢM BIẾN DÒ LINE TCRT5000 (KÈM TELEMETRY ĐỘNG CƠ) ---
             if tcrt_stream_mode and not emergency_mode:
                 if time.ticks_diff(now, last_tcrt_time) >= tcrt_interval_ms:
                     last_tcrt_time = now
                     telem = {
                         "event": "telemetry",
                         "tcrt5000": line_sensor.read_status(),
+                        "motor": {
+                            "speed_left": motor.current_speed_left,
+                            "speed_right": motor.current_speed_right,
+                            "is_running": motor.current_speed_left > 0 or motor.current_speed_right > 0
+                        },
+                        "auto_line": auto_line_mode,
                         "mode": "tcrt_streaming"
                     }
                     broadcast_msg("TELEMETRY:" + ujson.dumps(telem))
 
-            # --- F. GỬI UDP BEACON ĐỊNH KỲ ĐỂ PYTHON SERVER TỰ ĐỘNG PHÁT HIỆN IP ---
+            # --- G. GỬI UDP BEACON ĐỊNH KỲ ĐỂ PYTHON SERVER TỰ ĐỘNG PHÁT HIỆN IP ---
             if wifi_mgr.is_connected() and time.ticks_diff(now, last_beacon_time) >= beacon_interval_ms:
                 last_beacon_time = now
                 try:
@@ -407,7 +526,7 @@ def main():
         except Exception as e:
             print("[Lỗi vòng lặp]", e)
 
-        time.sleep_ms(25)
+        time.sleep_ms(10)
 
 if __name__ == "__main__":
     main()

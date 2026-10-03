@@ -249,6 +249,26 @@ class RobotControllerServer:
             elif cmd == "tcrt_stop_stream":
                 self.send_serial("CMD:STOP_TCRT_STREAM")
 
+            elif cmd == "start_auto_line":
+                speed = int(msg.get("speed", 45))
+                speed = max(20, min(85, speed))
+                print(f"[Server] 🚀 Nhận lệnh BẮT ĐẦU DÒ LINE TỰ ĐỘNG (Tốc độ {speed}%) -> Gửi CMD:START_AUTO_LINE:{speed} xuống ESP32")
+                self.send_serial(f"CMD:START_AUTO_LINE:{speed}")
+                await self._broadcast(json.dumps({
+                    "event": "auto_line_status",
+                    "running": True,
+                    "speed": speed
+                }))
+
+            elif cmd == "stop_auto_line":
+                print("[Server] 🛑 Nhận lệnh DỪNG DÒ LINE TỰ ĐỘNG -> Gửi CMD:STOP_AUTO_LINE xuống ESP32")
+                self.send_serial("CMD:STOP_AUTO_LINE")
+                await self._broadcast(json.dumps({
+                    "event": "auto_line_status",
+                    "running": False,
+                    "speed": 0
+                }))
+
             elif cmd == "set_motor_speed":
                 speed = int(msg.get("speed", 0))
                 left = int(msg.get("left", speed))
