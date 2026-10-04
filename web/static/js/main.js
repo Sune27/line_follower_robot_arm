@@ -1828,11 +1828,7 @@ class VehicleMotionController {
 
     onScreenDeactivated() {
         this.isScreenActive = false;
-        // Nếu đang tự hành bám vạch, dừng để bảo đảm an toàn khi rời màn hình
-        if (this.isRunningAutoLine) {
-            this.stopAutoLine(true);
-            this.log('warn', 'Rời khỏi màn hình chỉ huy: Tự động dừng xe để đảm bảo an toàn.');
-        }
+        // Không tự động dừng dò line khi chuyển tab để xe tiếp tục tự hành trên sân
     }
 
     log(type, msg) {
