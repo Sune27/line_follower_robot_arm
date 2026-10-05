@@ -249,13 +249,33 @@ class RobotControllerServer:
             elif cmd == "tcrt_stop_stream":
                 self.send_serial("CMD:STOP_TCRT_STREAM")
 
+            elif cmd == "start_auto_line":
+                speed = int(msg.get("speed", 45))
+                speed = max(20, min(85, speed))
+                print(f"[Server] 🚀 Nhận lệnh BẮT ĐẦU DÒ LINE TỰ ĐỘNG (Tốc độ {speed}%) -> Gửi CMD:START_AUTO_LINE:{speed} xuống ESP32")
+                self.send_serial(f"CMD:START_AUTO_LINE:{speed}")
+                await self._broadcast(json.dumps({
+                    "event": "auto_line_status",
+                    "running": True,
+                    "speed": speed
+                }))
+
+            elif cmd == "stop_auto_line":
+                print("[Server] 🛑 Nhận lệnh DỪNG DÒ LINE TỰ ĐỘNG -> Gửi CMD:STOP_AUTO_LINE xuống ESP32")
+                self.send_serial("CMD:STOP_AUTO_LINE")
+                await self._broadcast(json.dumps({
+                    "event": "auto_line_status",
+                    "running": False,
+                    "speed": 0
+                }))
+
             elif cmd == "set_motor_speed":
                 speed = int(msg.get("speed", 0))
                 left = int(msg.get("left", speed))
                 right = int(msg.get("right", speed))
-                is_running = bool(msg.get("is_running", speed > 0))
-                if is_running and speed > 0:
-                    self.send_serial(f"CMD:SPEED:{speed}")
+                is_running = bool(msg.get("is_running", speed > 0 or left > 0 or right > 0))
+                if is_running and (speed > 0 or left > 0 or right > 0):
+                    self.send_serial(f"CMD:SPEED:{speed},{left},{right}")
                 else:
                     self.send_serial("CMD:MOTOR_STOP")
                 await self._broadcast(json.dumps({
@@ -271,7 +291,7 @@ class RobotControllerServer:
                 speed = int(msg.get("speed", 0)) if state else 0
                 print(f"[Server] 🏎️ Bật/Tắt động cơ: state={state}, speed={speed}%")
                 if state and speed > 0:
-                    self.send_serial(f"CMD:SPEED:{speed}")
+                    self.send_serial(f"CMD:SPEED:{speed},{speed},{speed}")
                 else:
                     self.send_serial("CMD:MOTOR_STOP")
                 await self._broadcast(json.dumps({

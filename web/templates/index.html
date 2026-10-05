@@ -9,7 +9,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=2.0">
     <link rel="alternate icon" href="../static/favicon.svg?v=2.0">
     <!-- Nhúng file CSS định dạng giao diện -->
-    <link rel="stylesheet" href="../static/css/style.css?v=4.4">
+    <link rel="stylesheet" href="../static/css/style.css?v=4.6">
     <!-- Font chữ Chakra Petch (phong cách Robot/Công nghệ) và Be Vietnam Pro (tối ưu 100% tiếng Việt có dấu) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -525,7 +525,7 @@
                     </div>
 
                     <!-- THẺ 6: TỔNG QUAN CHUYỂN ĐỘNG XE (VEHICLE DYNAMICS & ODOMETRY) -->
-                    <div class="function-card" id="card-vehicle-motion" title="Tổng quan thông số chuyển động xe (Đang phát triển)"
+                    <div class="function-card" id="card-vehicle-motion" title="Tổng quan thông số chuyển động xe"
                         style="cursor: pointer;">
                         <div class="card-glow-overlay"></div>
                         <div class="card-icon-wrapper" style="background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.35);">
@@ -549,9 +549,9 @@
                             <h3 class="card-title">Tổng quan Chuyển động xe</h3>
                             <p class="card-desc">Giám sát tích hợp vận tốc vi sai, góc lái, quãng đường và trạng thái xe</p>
                         </div>
-                        <div class="card-status-badge status-in-progress">
+                        <div class="card-status-badge status-ready">
                             <span class="status-indicator"></span>
-                            <span class="status-text">Đang phát triển</span>
+                            <span class="status-text">Sẵn sàng</span>
                         </div>
                     </div>
 
@@ -881,6 +881,18 @@
                                 <div class="tcrt-wheel wheel-right"></div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- THANH TÓM TẮT PHẢN ỨNG HÀNH VI DÒ LINE (ĐỒNG BỘ VỚI LOGIC XE) -->
+                <div class="tcrt-behavior-bar" id="tcrt-behavior-bar">
+                    <div class="behavior-title-group">
+                        <span class="behavior-icon">🧭</span>
+                        <span class="behavior-title">HÀNH VI ĐIỀU HƯỚNG BÁM VẠCH:</span>
+                    </div>
+                    <div class="behavior-status-badge badge-straight" id="tcrt-behavior-badge">
+                        <span class="behavior-beacon"></span>
+                        <span id="tcrt-behavior-text">ĐÚNG TIM ĐƯỜNG • ĐI THẲNG ĐỀU</span>
                     </div>
                 </div>
 
@@ -1364,6 +1376,7 @@
     </div>
 
     <!-- ============================================================ -->
+<<<<<<< HEAD
     <!-- MÀN HÌNH 7: BẢNG ĐIỀU KHIỂN CÁNH TAY ROBOT 4-DOF & SERVO      -->
     <!-- Tác dụng: Điều khiển góc quay và tốc độ Servo chi tiết       -->
     <!-- ============================================================ -->
@@ -1372,6 +1385,15 @@
         <header class="ultrasonic-header">
             <div class="ultrasonic-header-left">
                 <button type="button" class="btn-screen-back" id="btn-back-arm" title="Quay lại Bảng điều khiển">
+=======
+    <!-- MÀN HÌNH 7: TỔNG QUAN CHUYỂN ĐỘNG XE & TRUNG TÂM CHỈ HUY DÒ LINE -->
+    <!-- ============================================================ -->
+    <div id="vehicle-motion-screen" class="screen">
+        <!-- THANH TIÊU ĐỀ TOPBAR CHUYÊN NGHIỆP -->
+        <header class="ultrasonic-header">
+            <div class="ultrasonic-header-left">
+                <button type="button" class="btn-screen-back" id="btn-back-vehicle-motion" title="Quay lại Bảng điều khiển">
+>>>>>>> 7c303bdb6b6745d9b08c1092bd1db222df59be36
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="15 18 9 12 15 6" />
@@ -1379,19 +1401,31 @@
                     <span>Quay lại</span>
                 </button>
                 <div class="ultrasonic-title-box">
+<<<<<<< HEAD
                     <h1 class="ultrasonic-main-title">CÁNH TAY ROBOT 4 BẬC (4-DOF ARM)</h1>
                     <span class="ultrasonic-sub-tag">HỆ THỐNG ĐIỀU KHIỂN GÓC QUAY & ĐIỀU TỐC SERVO CHUYÊN SÂU</span>
+=======
+                    <h1 class="ultrasonic-main-title">TỔNG QUAN CHUYỂN ĐỘNG XE</h1>
+                    <span class="ultrasonic-sub-tag">Trung tâm chỉ huy & Giám sát hợp nhất trạng thái tự hành</span>
+>>>>>>> 7c303bdb6b6745d9b08c1092bd1db222df59be36
                 </div>
             </div>
 
             <div class="ultrasonic-header-right">
+<<<<<<< HEAD
                 <div class="sensor-hardware-badge" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35);">
                     <span class="hardware-pulse-dot" style="background: #10b981;"></span>
                     <span class="hardware-label" style="color: #34d399;" id="arm-hw-status">SERVO 4-DOF • SẴN SÀNG</span>
+=======
+                <div class="card-status-badge status-ready">
+                    <span class="status-indicator"></span>
+                    <span class="status-text">Sẵn sàng</span>
+>>>>>>> 7c303bdb6b6745d9b08c1092bd1db222df59be36
                 </div>
             </div>
         </header>
 
+<<<<<<< HEAD
         <!-- NỘI DUNG MÀN HÌNH: 3 CỘT ĐIỀU KHIỂN CHUYÊN NGHIỆP -->
         <main class="ultrasonic-main-content" id="arm-main-content">
             <div class="arm-cockpit-layout">
@@ -1463,10 +1497,58 @@
                             </div>
                             <div class="joint-mini-bar">
                                 <div class="joint-mini-fill" id="bar-fill-gripper" style="width: 50%;"></div>
+=======
+        <!-- NỘI DUNG CHÍNH: 3 CỘT MISSION CONTROL -->
+        <main class="ultrasonic-main-content mission-control-content">
+            <div class="mission-control-grid">
+                
+                <!-- ======================================================== -->
+                <!-- CỘT 1 (BÊN TRÁI): BẢNG TELEMETRY TỔNG HỢP & CẢNH BÁO      -->
+                <!-- ======================================================== -->
+                <div class="mission-col mission-col-telemetry">
+                    <!-- Khối 1: Tốc độ và Vi sai bánh xe -->
+                    <div class="mission-card-panel">
+                        <div class="panel-header-mini">
+                            <span class="panel-badge badge-cyan">ĐỘNG LỰC HỌC</span>
+                            <span class="panel-title">TỐC ĐỘ 2 BÁNH XE</span>
+                        </div>
+
+                        <!-- Đồng hồ số to ở giữa -->
+                        <div class="master-speedometer-box">
+                            <div class="speed-radial-wrap">
+                                <span class="master-speed-number" id="mission-master-speed">0</span>
+                                <span class="master-speed-unit">% GA TỔNG</span>
+                            </div>
+                        </div>
+
+                        <!-- Thanh so sánh 2 bánh Trái - Phải -->
+                        <div class="wheel-speed-bars-box">
+                            <div class="ws-row">
+                                <div class="ws-label-wrap">
+                                    <span class="ws-dot dot-cyan"></span>
+                                    <span class="ws-name">BÁNH TRÁI (A)</span>
+                                </div>
+                                <div class="ws-bar-track">
+                                    <div class="ws-bar-fill fill-cyan" id="mission-ws-bar-left" style="width: 0%;"></div>
+                                </div>
+                                <span class="ws-val num-cyan" id="mission-ws-val-left">0%</span>
+                            </div>
+
+                            <div class="ws-row">
+                                <div class="ws-label-wrap">
+                                    <span class="ws-dot dot-purple"></span>
+                                    <span class="ws-name">BÁNH PHẢI (B)</span>
+                                </div>
+                                <div class="ws-bar-track">
+                                    <div class="ws-bar-fill fill-purple" id="mission-ws-bar-right" style="width: 0%;"></div>
+                                </div>
+                                <span class="ws-val num-purple" id="mission-ws-val-right">0%</span>
+>>>>>>> 7c303bdb6b6745d9b08c1092bd1db222df59be36
                             </div>
                         </div>
                     </div>
 
+<<<<<<< HEAD
                     <!-- CÁC TƯ THẾ MẪU (PRESET POSES) -->
                     <div class="arm-presets-group">
                         <div class="arm-group-label">TƯ THẾ NHANH (PRESETS):</div>
@@ -1645,6 +1727,203 @@
                         </div>
                     </div>
                 </section>
+=======
+                    <!-- Khối 2: Cảm biến khoảng cách siêu âm (RCWL-1601) -->
+                    <div class="mission-card-panel">
+                        <div class="panel-header-mini">
+                            <span class="panel-badge badge-amber">VẬT CẢN PHÍA TRƯỚC</span>
+                            <span class="panel-title">SIÊU ÂM RCWL-1601</span>
+                        </div>
+
+                        <div class="sonar-distance-readout-row">
+                            <div class="sonar-big-metric">
+                                <span class="sonar-dist-val" id="mission-sonar-dist">--.-</span>
+                                <span class="sonar-dist-unit">cm</span>
+                            </div>
+                            <div class="sonar-alert-badge badge-safe" id="mission-sonar-alert-badge">
+                                <span class="alert-dot"></span>
+                                <span id="mission-sonar-alert-text">AN TOÀN</span>
+                            </div>
+                        </div>
+
+                        <!-- Thanh cảnh báo cự ly -->
+                        <div class="sonar-range-progress">
+                            <div class="sonar-range-fill" id="mission-sonar-fill" style="width: 100%;"></div>
+                            <div class="sonar-danger-marker" title="Ngưỡng 10cm"></div>
+                        </div>
+                        <div class="sonar-range-labels">
+                            <span>0cm</span>
+                            <span class="lbl-warn">10cm (Cảnh báo)</span>
+                            <span>40cm</span>
+                        </div>
+                    </div>
+
+                    <!-- Khối 3: Trạng thái 2 mắt TCRT5000 -->
+                    <div class="mission-card-panel">
+                        <div class="panel-header-mini">
+                            <span class="panel-badge badge-blue">QUANG HỌC</span>
+                            <span class="panel-title">MẮT DÒ VẠCH TCRT5000</span>
+                        </div>
+
+                        <div class="tcrt-mini-monitor-grid">
+                            <div class="tcrt-mini-pod pod-left" id="mission-tcrt-pod-left">
+                                <span class="pod-lbl">MẮT TRÁI (D19)</span>
+                                <span class="pod-state-pill pill-white" id="mission-tcrt-pill-left">TRẮNG</span>
+                            </div>
+                            <div class="tcrt-mini-pod pod-right" id="mission-tcrt-pod-right">
+                                <span class="pod-lbl">MẮT PHẢI (D21)</span>
+                                <span class="pod-state-pill pill-white" id="mission-tcrt-pill-right">TRẮNG</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ======================================================== -->
+                <!-- CỘT 2 (Ở GIỮA): SÂN KHẤU 2D TOÀN CẢNH XE (DIGITAL TWIN)   -->
+                <!-- ======================================================== -->
+                <div class="mission-col mission-col-stage">
+                    <div class="digital-twin-stage-card">
+                        <div class="stage-header-overlay" style="justify-content: flex-end;">
+                            <!-- Huy hiệu hành vi chuyển động tức thời -->
+                            <div class="motion-action-badge badge-standby" id="mission-action-badge">
+                                <span class="motion-beacon"></span>
+                                <span id="mission-action-text">XE ĐANG NGHỈ (STANDBY)</span>
+                            </div>
+                        </div>
+
+                        <!-- Khung diễn họa mô hình xe và sân chạy -->
+                        <div class="stage-visualizer-canvas" id="mission-visualizer-stage">
+                            <!-- Lưới tọa độ ngầm -->
+                            <div class="stage-grid-lines"></div>
+
+                            <!-- Vạch line đen dẫn hướng -->
+                            <div class="stage-line-track" id="mission-stage-line">
+                                <div class="stage-line-core"></div>
+                            </div>
+
+                            <!-- Chiếc xe Robot 2D nhìn từ trên -->
+                            <div class="stage-robot-vehicle" id="mission-stage-robot">
+                                <!-- Chùm sóng siêu âm phía trước (Sonar Cone Radar) -->
+                                <div class="sonar-beam-cone cone-safe" id="mission-sonar-cone">
+                                    <div class="sonar-arc-wave arc-1"></div>
+                                    <div class="sonar-arc-wave arc-2"></div>
+                                    <div class="sonar-arc-wave arc-3"></div>
+                                    <div class="sonar-cone-tag" id="mission-cone-tag">RADAR QUÉT TRƯỚC</div>
+                                </div>
+
+                                <!-- Cảm biến siêu âm gắn trên mũi xe -->
+                                <div class="robot-nose-sensor">
+                                    <div class="sensor-transducer t-left"></div>
+                                    <div class="sensor-transducer t-right"></div>
+                                </div>
+
+                                <!-- 2 Mắt dò line TCRT5000 phía mũi xe -->
+                                <div class="robot-tcrt-eyes">
+                                    <div class="eye-dot eye-left" id="mission-robot-eye-left" title="Mắt Trái D19"></div>
+                                    <div class="eye-dot eye-right" id="mission-robot-eye-right" title="Mắt Phải D21"></div>
+                                </div>
+
+                                <!-- Thân xe chính -->
+                                <div class="robot-body-shell">
+                                    <!-- Đèn pha LED trước -->
+                                    <div class="headlight-beam beam-l"></div>
+                                    <div class="headlight-beam beam-r"></div>
+
+                                    <!-- Bo mạch ESP32 và chip ở trung tâm xe -->
+                                    <div class="robot-core-mcu">
+                                        <div class="mcu-chip">ESP32</div>
+                                        <div class="mcu-status-led" id="mission-mcu-led"></div>
+                                    </div>
+                                </div>
+
+                                <!-- 2 Bánh xe chủ động 2 bên -->
+                                <div class="robot-side-wheel wheel-left" id="mission-robot-wheel-left">
+                                    <div class="wheel-tire-groove"></div>
+                                    <div class="wheel-arrow-dir arrow-left" id="mission-wheel-arrow-left">↑</div>
+                                </div>
+                                <div class="robot-side-wheel wheel-right" id="mission-robot-wheel-right">
+                                    <div class="wheel-tire-groove"></div>
+                                    <div class="wheel-arrow-dir arrow-right" id="mission-wheel-arrow-right">↑</div>
+                                </div>
+
+                                <!-- Bánh xe dẫn hướng tự do (Caster Wheel) phía sau -->
+                                <div class="robot-caster-wheel"></div>
+                            </div>
+                        </div>
+
+                        <!-- Footer sân khấu: Tóm tắt trạng thái vi sai bám vạch -->
+                        <div class="stage-footer-status">
+                            <div class="stage-footer-metric">
+                                <span class="sf-lbl">Góc đánh lái:</span>
+                                <span class="sf-val" id="mission-steering-angle">0.0° (Thẳng)</span>
+                            </div>
+                            <div class="stage-footer-metric">
+                                <span class="sf-lbl">Trạng thái vạch:</span>
+                                <span class="sf-val" id="mission-line-tracking-status">Trong vạch</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ======================================================== -->
+                <!-- CỘT 3 (BÊN PHẢI): TRẠM CHỈ HUY BÁM VẠCH LINE             -->
+                <!-- ======================================================== -->
+                <div class="mission-col mission-col-control">
+                    <!-- Khối 1: Nút kích hoạt dò line tự động & E-Stop -->
+                    <div class="mission-card-panel control-main-panel">
+                        <div class="panel-header-mini">
+                            <span class="panel-badge badge-green">ĐIỀU KHIỂN CHÍNH</span>
+                            <span class="panel-title">TỰ HÀNH DÒ LINE</span>
+                        </div>
+
+                        <!-- Nút BẬT / TẮT DÒ LINE TỰ ĐỘNG -->
+                        <button type="button" class="btn-mission-toggle-track track-stopped" id="btn-toggle-auto-line">
+                            <div class="track-btn-icon-box">
+                                <span class="track-btn-icon" id="auto-line-btn-icon">▶</span>
+                            </div>
+                            <div class="track-btn-text-col">
+                                <span class="track-main-txt" id="auto-line-btn-label">BẮT ĐẦU DÒ LINE TỰ ĐỘNG</span>
+                                <span class="track-sub-txt" id="auto-line-btn-sub">Click để xe tự động bám vạch quang học</span>
+                            </div>
+                        </button>
+
+                        <!-- Nút DỪNG KHẨN CẤP (EMERGENCY STOP - E-STOP) -->
+                        <button type="button" class="btn-emergency-stop" id="btn-emergency-stop" title="Ngắt khẩn cấp động cơ và dừng xe ngay lập tức">
+                            <div class="estop-icon">🛑</div>
+                            <div class="estop-text-col">
+                                <span class="estop-title">DỪNG KHẨN CẤP (E-STOP)</span>
+                                <span class="estop-sub">Ngắt toàn bộ động cơ ngay lập tức</span>
+                            </div>
+                        </button>
+
+                        <!-- Cài đặt Tốc độ cơ sở khi bám line -->
+                        <div class="base-speed-config-box">
+                            <div class="bsc-header">
+                                <span class="bsc-label">TỐC ĐỘ DÒ LINE CƠ SỞ:</span>
+                                <span class="bsc-value" id="base-speed-display">45%</span>
+                            </div>
+                            <input type="range" class="base-speed-slider" id="base-speed-slider" min="20" max="85" value="45" step="5">
+                            <div class="bsc-ticks">
+                                <span>20% (Chậm)</span>
+                                <span>45% (Tối ưu)</span>
+                                <span>85% (Nhanh)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Khối 2: Bảng Nhật ký sự kiện hành trình (Mission Event Log) -->
+                    <div class="mission-card-panel log-panel">
+                        <div class="panel-header-mini">
+                            <span class="panel-badge badge-slate">NHẬT KÝ SỰ KIỆN</span>
+                            <button type="button" class="btn-clear-log" id="btn-clear-mission-log" title="Xóa nhật ký">Xóa</button>
+                        </div>
+                        <div class="mission-log-box" id="mission-log-box">
+                            <div class="log-entry log-system"><span class="log-time">[HỆ THỐNG]</span> Sẵn sàng kết nối trạm điều khiển.</div>
+                        </div>
+                    </div>
+                </div>
+
+>>>>>>> 7c303bdb6b6745d9b08c1092bd1db222df59be36
             </div>
         </main>
     </div>
@@ -1746,8 +2025,12 @@
     </div>
 
     <!-- Nhúng file Javascript xử lý logic tương tác -->
+<<<<<<< HEAD
     <script src="../static/js/arm_ui.js?v=1.0"></script>
     <script src="../static/js/main.js?v=4.8"></script>
+=======
+    <script src="../static/js/main.js?v=4.9"></script>
+>>>>>>> 7c303bdb6b6745d9b08c1092bd1db222df59be36
 </body>
 
 </html>
