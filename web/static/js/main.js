@@ -276,7 +276,7 @@ class WebSocketClient {
                             this.updateWifiRealtimeUI(data.wifi);
                         }
 
-                    } else if (data.event === 'telemetry') {
+                    } else if (data.event === 'telemetry' || data.event === 'auto_line_status') {
                         if (data.wifi) {
                             this.updateWifiRealtimeUI(data.wifi);
                         }
@@ -291,6 +291,9 @@ class WebSocketClient {
                             }
                             if (window.app && window.app.tb6612Controller) {
                                 window.app.tb6612Controller.handleTelemetry(data);
+                            }
+                            if (window.app && window.app.missionController) {
+                                window.app.missionController.handleTelemetry(data);
                             }
                         }
                     } else if (data.sensor || data.tcrt5000 || data.motor || data.distance_cm !== undefined) {
@@ -1689,6 +1692,12 @@ class VehicleMotionController {
         // Debounce gửi lệnh động cơ
         this.sendThrottleDebounce = null;
 
+        // Bộ đệm thời gian chống xung đột & nảy nút (Debounce & Telemetry Grace Period)
+        this.lastUserToggleTime = 0;        // Mốc thời gian bấm nút gần nhất (ms)
+        this.toggleCooldownMs = 500;        // Khóa chống click liên tiếp (500ms)
+        this.telemetryGracePeriodMs = 700;  // Chặn telemetry cũ đè ngược trạng thái (700ms)
+        this.isToggleCooldown = false;      // Cờ khóa tạm thời nút bấm
+
         // Cache DOM elements
         this.elements = {};
     }
@@ -1859,6 +1868,33 @@ class VehicleMotionController {
     }
 
     toggleAutoLine() {
+        const now = Date.now();
+        // Chống nảy nút / double-click quá nhanh
+        if (this.isToggleCooldown || (now - this.lastUserToggleTime < this.toggleCooldownMs)) {
+            console.warn('[VehicleMotion] ⏳ Thao tác quá nhanh, đang trong bộ đệm thời gian.');
+            return;
+        }
+
+        this.lastUserToggleTime = now;
+        this.isToggleCooldown = true;
+
+        // Xóa sạch vùng chọn text nếu người dùng vô tình kéo chuột
+        if (window.getSelection) {
+            window.getSelection().removeAllRanges();
+        }
+
+        // Phản hồi trực quan: làm mờ nhẹ nút trong lúc đang gửi lệnh
+        if (this.elements.btnToggleAutoLine) {
+            this.elements.btnToggleAutoLine.style.opacity = '0.75';
+        }
+
+        setTimeout(() => {
+            this.isToggleCooldown = false;
+            if (this.elements.btnToggleAutoLine) {
+                this.elements.btnToggleAutoLine.style.opacity = '';
+            }
+        }, this.toggleCooldownMs);
+
         if (this.isRunningAutoLine) {
             this.stopAutoLine(false);
         } else {
@@ -1872,6 +1908,7 @@ class VehicleMotionController {
             return;
         }
 
+        this.lastUserToggleTime = Date.now();
         this.isRunningAutoLine = true;
         this.log('action', `Khởi động chế độ Dò Line Onboard trên ESP32. Tốc độ cơ sở: ${this.baseSpeed}%.`);
         
@@ -1889,6 +1926,7 @@ class VehicleMotionController {
     }
 
     stopAutoLine(isPassive = false) {
+        this.lastUserToggleTime = Date.now();
         this.isRunningAutoLine = false;
         this.leftSpeed = 0;
         this.rightSpeed = 0;
@@ -2020,15 +2058,24 @@ class VehicleMotionController {
         let hasChange = false;
 
         // 1. Phân tích trạng thái Auto Line từ ESP32 / Server
-        if (telemetryData.auto_line !== undefined) {
-            if (this.isRunningAutoLine !== telemetryData.auto_line) {
-                this.isRunningAutoLine = telemetryData.auto_line;
+        // BẢO VỆ BỘ ĐỆM (Telemetry Grace Period): Nếu người dùng vừa thao tác bấm nút trong vòng 700ms,
+        // bỏ qua các gói telemetry cũ còn sót trên đường truyền để chống xung đột ghi đè (Race Condition).
+        const now = Date.now();
+        const isInGracePeriod = (now - this.lastUserToggleTime < this.telemetryGracePeriodMs);
+
+        if (telemetryData.event === 'auto_line_status') {
+            const serverRunning = !!telemetryData.running;
+            if (this.isRunningAutoLine !== serverRunning) {
+                this.isRunningAutoLine = serverRunning;
                 hasChange = true;
             }
-        }
-        if (telemetryData.event === 'auto_line_status') {
-            this.isRunningAutoLine = !!telemetryData.running;
-            hasChange = true;
+        } else if (telemetryData.auto_line !== undefined) {
+            if (!isInGracePeriod) {
+                if (this.isRunningAutoLine !== telemetryData.auto_line) {
+                    this.isRunningAutoLine = telemetryData.auto_line;
+                    hasChange = true;
+                }
+            }
         }
 
         // 2. Phân tích dữ liệu Siêu âm (RCWL-1601)
@@ -2739,3 +2786,40 @@ function handleClearChart() {
         window.app.ultrasonicController.clearData();
     }
 }
+
+// ==============================================================================
+// 7. KHÓA BÔI ĐEN & CHỐNG SAO CHÉP TOÀN CỤC (GLOBAL NO-SELECT & NO-COPY)
+// ==============================================================================
+// Chặn triệt để sự kiện bắt đầu chọn vùng văn bản (selectstart) trên toàn trang (trừ input/textarea)
+document.addEventListener('selectstart', (e) => {
+    const tag = e.target && e.target.tagName;
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+        e.preventDefault();
+        return false;
+    }
+});
+
+// Chặn sự kiện sao chép (copy) trên toàn trang (trừ input/textarea)
+document.addEventListener('copy', (e) => {
+    const tag = e.target && e.target.tagName;
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+        e.preventDefault();
+        return false;
+    }
+});
+
+// Chặn sự kiện kéo thả văn bản/hình ảnh/icon (dragstart)
+document.addEventListener('dragstart', (e) => {
+    const tag = e.target && e.target.tagName;
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+        e.preventDefault();
+        return false;
+    }
+});
+
+// Luôn dọn sạch mọi vùng bôi đen nếu người dùng nhả chuột
+document.addEventListener('mouseup', () => {
+    if (window.getSelection && (!document.activeElement || (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA'))) {
+        window.getSelection().removeAllRanges();
+    }
+});

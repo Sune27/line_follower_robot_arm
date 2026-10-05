@@ -17,6 +17,33 @@ body {
 }
 
 /* ============================================================
+   1.1 CHỐNG BÔI ĐEN & COPY TOÀN DIỆN (Global No-Select & No-Copy)
+   Tác dụng: Khóa triệt để việc bôi đen văn bản, icon, kéo thả trên TOÀN BỘ trang web
+   ============================================================ */
+html,
+body,
+*,
+*::before,
+*::after {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    -webkit-user-drag: none !important;
+    user-drag: none !important;
+    -webkit-touch-callout: none !important;
+}
+
+/* Ngoại lệ duy nhất: Cho phép bôi đen & nhập liệu trong ô input / textarea */
+input,
+textarea {
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
+}
+
+/* ============================================================
    2. QUẢN LÝ CHUYỂN ĐỔI CÁC MÀN HÌNH (Screen Manager)
    Tác dụng: Ẩn các màn hình chưa dùng và tạo hiệu ứng mờ dần (Fade) khi kích hoạt
    ============================================================ */
@@ -5301,6 +5328,9 @@ body {
     cursor: pointer;
     transition: all 0.25s ease;
     border: 1.5px solid transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
 }
 
 .btn-mission-toggle-track.track-stopped {
@@ -5335,6 +5365,9 @@ body {
     justify-content: center;
     font-size: 1.2rem;
     flex-shrink: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
 }
 .track-stopped .track-btn-icon-box { color: #34d399; }
 .track-running .track-btn-icon-box { color: #fbbf24; }
@@ -5343,6 +5376,8 @@ body {
     display: flex;
     flex-direction: column;
     text-align: left;
+    user-select: none;
+    -webkit-user-select: none;
 }
 .track-main-txt {
     font-family: 'Chakra Petch', sans-serif;
@@ -5350,11 +5385,15 @@ body {
     font-weight: 800;
     color: #fff;
     letter-spacing: 0.5px;
+    user-select: none;
+    -webkit-user-select: none;
 }
 .track-sub-txt {
     font-size: 0.72rem;
     color: rgba(255, 255, 255, 0.7);
     margin-top: 2px;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 /* Nút E-STOP */
@@ -5369,6 +5408,9 @@ body {
     cursor: pointer;
     box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
     transition: all 0.25s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
 }
 .btn-emergency-stop:hover {
     background: linear-gradient(135deg, rgba(239, 68, 68, 0.45) 0%, rgba(185, 28, 28, 0.65) 100%);
@@ -5382,11 +5424,16 @@ body {
 .estop-icon {
     font-size: 1.5rem;
     flex-shrink: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
 }
 .estop-text-col {
     display: flex;
     flex-direction: column;
     text-align: left;
+    user-select: none;
+    -webkit-user-select: none;
 }
 .estop-title {
     font-family: 'Chakra Petch', sans-serif;
@@ -5394,10 +5441,14 @@ body {
     font-weight: 900;
     color: #fca5a5;
     letter-spacing: 0.6px;
+    user-select: none;
+    -webkit-user-select: none;
 }
 .estop-sub {
     font-size: 0.7rem;
     color: #f87171;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 /* Slider tốc độ cơ sở */
