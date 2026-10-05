@@ -20,6 +20,7 @@ from modules.wifi_client import WiFiStationManager
 from modules.ultrasonic import UltrasonicSensor
 from modules.line_sensor import LineFollowerSensor
 from modules.motor_driver import MotorDriver
+from modules.robot_arm import RobotArm
 
 def setup_serial_poll():
     """Khởi tạo cơ chế kiểm tra cổng Serial non-blocking bằng uselect.poll()"""
@@ -65,6 +66,14 @@ def main():
         pin_bin2=config.PIN_MOTOR_BIN2,
         freq=config.MOTOR_PWM_FREQ
     )
+
+    # 4.6 Khởi tạo Cánh tay Robot 4 Bậc (4-DOF Arm & Servo)
+    try:
+        arm = RobotArm()
+        print("[Canh tay] Khoi tao thanh cong 4 Servo Canh tay Robot")
+    except Exception as e:
+        arm = None
+        print("[Canh tay] Khong the khoi tao Servo:", e)
 
     # 5. Khởi tạo trình lắng nghe I/O Non-blocking (Serial + Wi-Fi Sockets)
     serial_poll = setup_serial_poll()
@@ -229,6 +238,32 @@ def main():
 
         elif "CMD:MOTOR_STOP" in cmd:
             motor.stop()
+
+        elif "CMD:SERVO:" in cmd:
+            try:
+                parts = cmd.split("CMD:SERVO:")[1].strip().split(":")
+                joint = parts[0].strip()
+                angle = int(parts[1])
+                speed = int(parts[2]) if len(parts) > 2 else 20
+                print(f"[ESP32] Servo {joint} -> {angle} deg (delay {speed}ms)")
+                if arm:
+                    arm.move_joint(joint, angle, speed)
+            except Exception as e:
+                print("[Loi CMD:SERVO]", e)
+
+        elif "CMD:ARM_STOP" in cmd:
+            print("[ESP32] Dung khan cap Canh tay")
+            if arm:
+                arm.stop()
+
+        elif "CMD:ARM_PRESET:" in cmd:
+            try:
+                preset = cmd.split("CMD:ARM_PRESET:")[1].strip()
+                print(f"[ESP32] Tu the canh tay: {preset}")
+                if arm:
+                    arm.apply_preset(preset)
+            except Exception as e:
+                print("[Loi CMD:ARM_PRESET]", e)
 
     while True:
         try:

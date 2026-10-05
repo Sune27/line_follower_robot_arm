@@ -1619,6 +1619,7 @@ class DashboardApp {
         this.ultrasonicController = new UltrasonicChartController(this.wsClient);
         this.tcrtController = new TCRT5000Controller(this.wsClient);
         this.tb6612Controller = new TB6612Controller(this.wsClient);
+        this.armController = window.ArmController ? new window.ArmController(this.wsClient) : null;
         
         this.pendingLogin = null;
         this.loginTimeoutTimer = null;
@@ -1633,6 +1634,9 @@ class DashboardApp {
             }
             if (this.tb6612Controller) {
                 this.tb6612Controller.handleTelemetry(telemetryData);
+            }
+            if (this.armController && (telemetryData.arm || telemetryData.joint || telemetryData.event === 'arm_telemetry')) {
+                this.armController.handleTelemetry(telemetryData.arm || telemetryData);
             }
         };
 
@@ -1658,6 +1662,9 @@ class DashboardApp {
         this.bindEvents();
         this.tcrtController.init();
         this.tb6612Controller.init();
+        if (this.armController) {
+            this.armController.init();
+        }
     }
 
     /**
@@ -1841,6 +1848,32 @@ class DashboardApp {
             backTb6612Btn.removeAttribute('onclick');
             backTb6612Btn.addEventListener('click', (e) => {
                 e.preventDefault();
+                this.screenManager.show('dashboard-screen');
+            });
+        }
+
+        // 10. Thẻ Cánh tay Robot (Robot Arm 4-DOF & Servo Controller)
+        const armCard = document.getElementById('card-robot-arm');
+        const backArmBtn = document.getElementById('btn-back-arm');
+
+        if (armCard) {
+            armCard.removeAttribute('onclick');
+            armCard.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.screenManager.show('arm-screen');
+                if (this.armController) {
+                    this.armController.onScreenActivated();
+                }
+            });
+        }
+
+        if (backArmBtn) {
+            backArmBtn.removeAttribute('onclick');
+            backArmBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (this.armController) {
+                    this.armController.onScreenDeactivated();
+                }
                 this.screenManager.show('dashboard-screen');
             });
         }

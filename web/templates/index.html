@@ -488,7 +488,7 @@
                     </div>
 
                     <!-- THẺ 5: CÁNH TAY ROBOT (ROBOT ARM) -->
-                    <div class="function-card" id="card-robot-arm" title="Giám sát & Điều khiển Cánh tay Robot (Đang phát triển)"
+                    <div class="function-card" id="card-robot-arm" title="Giám sát & Điều khiển Cánh tay Robot 4-DOF"
                         style="cursor: pointer;">
                         <div class="card-glow-overlay"></div>
                         <div class="card-icon-wrapper" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.35);">
@@ -516,11 +516,11 @@
                         </div>
                         <div class="card-info">
                             <h3 class="card-title">Cánh tay Robot</h3>
-                            <p class="card-desc">Giám sát góc xoay các khớp servo và trạng thái gắp thả</p>
+                            <p class="card-desc">Điều khiển góc quay và tốc độ các khớp servo 4 bậc</p>
                         </div>
-                        <div class="card-status-badge status-in-progress">
+                        <div class="card-status-badge status-ready">
                             <span class="status-indicator"></span>
-                            <span class="status-text">Đang phát triển</span>
+                            <span class="status-text">Sẵn sàng</span>
                         </div>
                     </div>
 
@@ -1364,6 +1364,292 @@
     </div>
 
     <!-- ============================================================ -->
+    <!-- MÀN HÌNH 7: BẢNG ĐIỀU KHIỂN CÁNH TAY ROBOT 4-DOF & SERVO      -->
+    <!-- Tác dụng: Điều khiển góc quay và tốc độ Servo chi tiết       -->
+    <!-- ============================================================ -->
+    <div id="arm-screen" class="screen">
+        <!-- THANH TIÊU ĐỀ TOPBAR CHUYÊN NGHIỆP -->
+        <header class="ultrasonic-header">
+            <div class="ultrasonic-header-left">
+                <button type="button" class="btn-screen-back" id="btn-back-arm" title="Quay lại Bảng điều khiển">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                    <span>Quay lại</span>
+                </button>
+                <div class="ultrasonic-title-box">
+                    <h1 class="ultrasonic-main-title">CÁNH TAY ROBOT 4 BẬC (4-DOF ARM)</h1>
+                    <span class="ultrasonic-sub-tag">HỆ THỐNG ĐIỀU KHIỂN GÓC QUAY & ĐIỀU TỐC SERVO CHUYÊN SÂU</span>
+                </div>
+            </div>
+
+            <div class="ultrasonic-header-right">
+                <div class="sensor-hardware-badge" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35);">
+                    <span class="hardware-pulse-dot" style="background: #10b981;"></span>
+                    <span class="hardware-label" style="color: #34d399;" id="arm-hw-status">SERVO 4-DOF • SẴN SÀNG</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- NỘI DUNG MÀN HÌNH: 3 CỘT ĐIỀU KHIỂN CHUYÊN NGHIỆP -->
+        <main class="ultrasonic-main-content" id="arm-main-content">
+            <div class="arm-cockpit-layout">
+                <!-- ======================================================== -->
+                <!-- CỘT 1 (BÊN TRÁI): BỘ CHỌN KHỚP & TƯ THẾ MẪU               -->
+                <!-- ======================================================== -->
+                <section class="arm-card arm-joints-panel">
+                    <div class="area-banner-header">
+                        <span class="arm-panel-icon">🦾</span>
+                        <h2 class="area-main-title">CÁC KHỚP SERVO (JOINTS)</h2>
+                    </div>
+
+                    <!-- 4 THẺ KHỚP ĐỂ CHỌN KHỚP ĐANG ĐIỀU KHIỂN -->
+                    <div class="joint-cards-list">
+                        <!-- Khớp 1: Khớp Đế (Base) -->
+                        <div class="joint-card is-selected" data-joint="base" id="joint-card-base">
+                            <div class="joint-card-header">
+                                <div class="joint-badge">J1</div>
+                                <div class="joint-meta">
+                                    <div class="joint-title">Khớp Đế (Base)</div>
+                                    <div class="joint-sub">Xoay thân trái / phải</div>
+                                </div>
+                                <div class="joint-angle-badge" id="badge-angle-base">90°</div>
+                            </div>
+                            <div class="joint-mini-bar">
+                                <div class="joint-mini-fill" id="bar-fill-base" style="width: 50%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Khớp 2: Khớp Vai (Shoulder) -->
+                        <div class="joint-card" data-joint="shoulder" id="joint-card-shoulder">
+                            <div class="joint-card-header">
+                                <div class="joint-badge">J2</div>
+                                <div class="joint-meta">
+                                    <div class="joint-title">Khớp Vai (Shoulder)</div>
+                                    <div class="joint-sub">Nâng hạ cánh tay chính</div>
+                                </div>
+                                <div class="joint-angle-badge" id="badge-angle-shoulder">90°</div>
+                            </div>
+                            <div class="joint-mini-bar">
+                                <div class="joint-mini-fill" id="bar-fill-shoulder" style="width: 50%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Khớp 3: Khớp Khuỷu (Elbow) -->
+                        <div class="joint-card" data-joint="elbow" id="joint-card-elbow">
+                            <div class="joint-card-header">
+                                <div class="joint-badge">J3</div>
+                                <div class="joint-meta">
+                                    <div class="joint-title">Khớp Khuỷu (Elbow)</div>
+                                    <div class="joint-sub">Gập duỗi cẳng tay</div>
+                                </div>
+                                <div class="joint-angle-badge" id="badge-angle-elbow">90°</div>
+                            </div>
+                            <div class="joint-mini-bar">
+                                <div class="joint-mini-fill" id="bar-fill-elbow" style="width: 50%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Khớp 4: Tay Kẹp (Gripper) -->
+                        <div class="joint-card" data-joint="gripper" id="joint-card-gripper">
+                            <div class="joint-card-header">
+                                <div class="joint-badge">J4</div>
+                                <div class="joint-meta">
+                                    <div class="joint-title">Tay Kẹp (Gripper)</div>
+                                    <div class="joint-sub">Mở rộng / Kẹp chặt vật</div>
+                                </div>
+                                <div class="joint-angle-badge" id="badge-angle-gripper">90°</div>
+                            </div>
+                            <div class="joint-mini-bar">
+                                <div class="joint-mini-fill" id="bar-fill-gripper" style="width: 50%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CÁC TƯ THẾ MẪU (PRESET POSES) -->
+                    <div class="arm-presets-group">
+                        <div class="arm-group-label">TƯ THẾ NHANH (PRESETS):</div>
+                        <div class="arm-preset-buttons">
+                            <button type="button" class="btn-arm-preset" data-preset="home" id="btn-pose-home" title="Về vị trí chuẩn 90 độ cho tất cả khớp">
+                                <span class="preset-icon">🏠</span> Về Home (90°)
+                            </button>
+                            <button type="button" class="btn-arm-preset" data-preset="pick" id="btn-pose-pick" title="Hạ tay xuống và chuẩn bị gắp vật">
+                                <span class="preset-icon">📦</span> Gắp vật (Pick)
+                            </button>
+                            <button type="button" class="btn-arm-preset" data-preset="place" id="btn-pose-place" title="Nâng tay lên và đưa về vị trí thả">
+                                <span class="preset-icon">🎯</span> Đặt vật (Place)
+                            </button>
+                            <button type="button" class="btn-arm-preset" data-preset="rest" id="btn-pose-rest" title="Gấp gọn cánh tay nghỉ ngơi">
+                                <span class="preset-icon">💤</span> Nghỉ (Rest)
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ======================================================== -->
+                <!-- CỘT 2 (GIỮA): ĐIỀU KHIỂN GÓC QUAY SERVO                    -->
+                <!-- ======================================================== -->
+                <section class="arm-card arm-angle-panel">
+                    <div class="area-banner-header">
+                        <span class="arm-panel-icon">📐</span>
+                        <h2 class="area-main-title">ĐIỀU KHIỂN GÓC QUAY SERVO</h2>
+                    </div>
+
+                    <div class="arm-active-joint-indicator">
+                        <span>ĐANG ĐIỀU KHIỂN:</span>
+                        <strong class="highlight-cyan" id="active-joint-name">Khớp Đế (Base - J1)</strong>
+                    </div>
+
+                    <!-- ĐỒNG HỒ ĐO GÓC & SỐ NEON GÓC HIỆN TẠI -->
+                    <div class="angle-hud-container">
+                        <div class="angle-gauge-wrapper">
+                            <svg class="angle-gauge-svg" viewBox="0 0 200 120">
+                                <path d="M 20 105 A 80 80 0 0 1 180 105" fill="none" stroke="rgba(255, 255, 255, 0.1)" stroke-width="12" stroke-linecap="round" />
+                                <path id="angle-gauge-arc" d="M 20 105 A 80 80 0 0 1 100 25" fill="none" stroke="url(#armCyanGrad)" stroke-width="12" stroke-linecap="round" />
+                                <line id="angle-gauge-needle" x1="100" y1="105" x2="100" y2="35" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" />
+                                <circle cx="100" cy="105" r="8" fill="#06b6d4" />
+                            </svg>
+                            <svg style="width:0;height:0;position:absolute;">
+                                <defs>
+                                    <linearGradient id="armCyanGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                                        <stop offset="0%" stop-color="#06b6d4" />
+                                        <stop offset="100%" stop-color="#38bdf8" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <div class="angle-neon-box">
+                            <div class="angle-neon-val" id="hud-angle-display">90</div>
+                            <span class="angle-neon-unit">ĐỘ (°)</span>
+                        </div>
+                    </div>
+
+                    <!-- THANH TRƯỢT GÓC (0 - 180 ĐỘ) -->
+                    <div class="arm-control-row">
+                        <div class="slider-labels-wrap">
+                            <span class="label-min">0°</span>
+                            <span class="label-mid">90°</span>
+                            <span class="label-max">180°</span>
+                        </div>
+                        <input type="range" class="arm-range-slider" id="arm-angle-slider" min="0" max="180" value="90" step="1">
+                    </div>
+
+                    <!-- Ô NHẬP GÓC TRỰC TIẾP & TINH CHỈNH -->
+                    <div class="angle-fine-tune-row">
+                        <button type="button" class="btn-fine-step" data-step="-5" id="btn-step-minus5">-5°</button>
+                        <button type="button" class="btn-fine-step" data-step="-1" id="btn-step-minus1">-1°</button>
+                        <div class="angle-direct-input-box">
+                            <input type="number" id="arm-angle-input" class="arm-direct-input" min="0" max="180" value="90">
+                            <button type="button" class="btn-apply-angle" id="btn-apply-angle">GỬI GÓC</button>
+                        </div>
+                        <button type="button" class="btn-fine-step" data-step="1" id="btn-step-plus1">+1°</button>
+                        <button type="button" class="btn-fine-step" data-step="5" id="btn-step-plus5">+5°</button>
+                    </div>
+
+                    <!-- NÚT GÓC NHANH (QUICK ANGLES) -->
+                    <div class="quick-angles-grid">
+                        <button type="button" class="btn-quick-angle" data-angle="0">0° (Min)</button>
+                        <button type="button" class="btn-quick-angle" data-angle="45">45°</button>
+                        <button type="button" class="btn-quick-angle is-active" data-angle="90">90° (Chuẩn)</button>
+                        <button type="button" class="btn-quick-angle" data-angle="135">135°</button>
+                        <button type="button" class="btn-quick-angle" data-angle="180">180° (Max)</button>
+                    </div>
+
+                    <!-- NÚT TEST QUÉT TỰ ĐỘNG (SWEEP TEST) -->
+                    <div class="sweep-action-row">
+                        <button type="button" class="btn-sweep-test" id="btn-arm-sweep">
+                            <span class="sweep-icon" id="sweep-icon">🔄</span>
+                            <span id="sweep-text">BẮT ĐẦU QUÉT THỬ KHÔNG TẢI (0° ↔ 180°)</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- ======================================================== -->
+                <!-- CỘT 3 (BÊN PHẢI): KIỂM SOÁT TỐC ĐỘ SERVO & AN TOÀN       -->
+                <!-- ======================================================== -->
+                <section class="arm-card arm-speed-panel">
+                    <div class="area-banner-header">
+                        <span class="arm-panel-icon">⚡</span>
+                        <h2 class="area-main-title">KIỂM SOÁT TỐC ĐỘ & AN TOÀN</h2>
+                    </div>
+
+                    <!-- HUD TỐC ĐỘ / ĐỘ TRỄ BƯỚC -->
+                    <div class="speed-hud-box">
+                        <div class="speed-hud-label">TỐC ĐỘ HIỆN TẠI (ĐỘ TRỄ BƯỚC):</div>
+                        <div class="speed-hud-metric">
+                            <span class="speed-hud-val" id="hud-speed-display">20</span>
+                            <span class="speed-hud-unit">ms / bước</span>
+                        </div>
+                        <div class="speed-status-desc" id="speed-status-desc">TIÊU CHUẨN (MƯỢT MÀ)</div>
+                    </div>
+
+                    <!-- THANH TRƯỢT TỐC ĐỘ -->
+                    <div class="arm-control-row">
+                        <div class="slider-labels-wrap">
+                            <span class="label-min">⚡ 5ms (Rất nhanh)</span>
+                            <span class="label-mid">20ms (Chuẩn)</span>
+                            <span class="label-max">🐢 100ms (Cực chậm)</span>
+                        </div>
+                        <input type="range" class="arm-speed-slider" id="arm-speed-slider" min="5" max="100" value="20" step="5">
+                    </div>
+
+                    <!-- 4 NẤC TỐC ĐỘ CHUYÊN DỤNG -->
+                    <div class="speed-presets-grid">
+                        <button type="button" class="btn-speed-preset" data-speed="5" id="btn-speed-turbo">
+                            <span class="speed-p-icon">⚡</span>
+                            <div class="speed-p-info">
+                                <span class="speed-p-name">TURBO</span>
+                                <span class="speed-p-val">5 ms/bước</span>
+                            </div>
+                        </button>
+                        <button type="button" class="btn-speed-preset is-active" data-speed="20" id="btn-speed-normal">
+                            <span class="speed-p-icon">🚀</span>
+                            <div class="speed-p-info">
+                                <span class="speed-p-name">TIÊU CHUẨN</span>
+                                <span class="speed-p-val">20 ms/bước</span>
+                            </div>
+                        </button>
+                        <button type="button" class="btn-speed-preset" data-speed="50" id="btn-speed-smooth">
+                            <span class="speed-p-icon">🐢</span>
+                            <div class="speed-p-info">
+                                <span class="speed-p-name">ÊM ÁI</span>
+                                <span class="speed-p-val">50 ms/bước</span>
+                            </div>
+                        </button>
+                        <button type="button" class="btn-speed-preset" data-speed="100" id="btn-speed-safe">
+                            <span class="speed-p-icon">🛡️</span>
+                            <div class="speed-p-info">
+                                <span class="speed-p-name">BẢO VỆ</span>
+                                <span class="speed-p-val">100 ms/bước</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- NÚT DỪNG KHẨN CẤP / KHÓA KHỚP -->
+                    <div class="arm-safety-actions">
+                        <button type="button" class="btn-arm-emergency" id="btn-arm-emergency" title="Dừng mọi chuyển động của servo ngay lập tức">
+                            <span class="emergency-icon">🛑</span> DỪNG KHẨN CẤP / KHÓA KHỚP
+                        </button>
+                    </div>
+
+                    <!-- NHẬT KÝ LỆNH THỜI GIAN THỰC (TERMINAL HUD) -->
+                    <div class="arm-terminal-card">
+                        <div class="terminal-header">
+                            <span class="terminal-title">📟 NHẬT KÝ LỆNH SERVO</span>
+                            <button type="button" class="btn-terminal-clear" id="btn-clear-arm-log">Xóa</button>
+                        </div>
+                        <div class="terminal-console-body" id="arm-console-body">
+                            <div class="log-line">[HỆ THỐNG] Đã sẵn sàng điều khiển 4 Servo cánh tay robot.</div>
+                            <div class="log-line text-cyan">[TRẠNG THÁI] Tốc độ tiêu chuẩn 20ms/bước.</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- ============================================================ -->
     <!-- BẢNG THÔNG TIN KẾT NỐI WI-FI (MODAL POP-UP HIỆN ĐẠI)          -->
     <!-- ============================================================ -->
     <div id="wifi-info-modal" class="wifi-modal-backdrop" style="display: none;">
@@ -1460,7 +1746,8 @@
     </div>
 
     <!-- Nhúng file Javascript xử lý logic tương tác -->
-    <script src="../static/js/main.js?v=4.7"></script>
+    <script src="../static/js/arm_ui.js?v=1.0"></script>
+    <script src="../static/js/main.js?v=4.8"></script>
 </body>
 
 </html>

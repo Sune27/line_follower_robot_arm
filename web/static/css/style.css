@@ -4578,4 +4578,720 @@ body {
     opacity: 0.75;
 }
 
+/* ==============================================================================
+   MÀN HÌNH 7: BẢNG ĐIỀU KHIỂN CÁNH TAY ROBOT 4 BẬC (4-DOF ARM)
+   Tác dụng: Thiết kế giao diện chuyên sâu điều khiển góc quay & tốc độ Servo
+   ============================================================================== */
+#arm-screen {
+    flex-direction: column;
+    min-height: 100vh;
+    background: radial-gradient(circle at 50% 12%, #0a192f 0%, #030712 100%);
+    position: relative;
+    overflow-y: auto;
+}
+
+.arm-cockpit-layout {
+    display: grid;
+    grid-template-columns: 1fr 1.35fr 1.15fr;
+    gap: 22px;
+    padding: 24px 36px 40px 36px;
+    max-width: 1600px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (max-width: 1200px) {
+    .arm-cockpit-layout {
+        grid-template-columns: 1fr 1fr;
+    }
+    .arm-speed-panel {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .arm-cockpit-layout {
+        grid-template-columns: 1fr;
+        padding: 16px;
+    }
+    .arm-speed-panel {
+        grid-column: span 1;
+    }
+}
+
+/* THẺ CONTAINER CHUNG CHO TỪNG KHỐI */
+.arm-card {
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    border-radius: 18px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    position: relative;
+    overflow: hidden;
+}
+
+.arm-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #06b6d4, #10b981, #3b82f6);
+    opacity: 0.8;
+}
+
+.arm-panel-icon {
+    font-size: 1.3rem;
+    margin-right: 8px;
+}
+
+/* ==============================================================================
+   CỘT 1: BỘ CHỌN KHỚP (JOINTS) & TƯ THẾ NHANH
+   ============================================================================== */
+.joint-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.joint-card {
+    background: rgba(30, 41, 59, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.joint-card:hover {
+    background: rgba(30, 41, 59, 0.85);
+    border-color: rgba(56, 189, 248, 0.45);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(6, 182, 212, 0.15);
+}
+
+.joint-card.is-selected {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.18), rgba(16, 185, 129, 0.15));
+    border-color: #06b6d4;
+    box-shadow: 0 0 18px rgba(6, 182, 212, 0.28);
+}
+
+.joint-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.joint-badge {
+    background: #0f172a;
+    border: 1px solid #06b6d4;
+    color: #38bdf8;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+    min-width: 26px;
+    text-align: center;
+}
+
+.joint-card.is-selected .joint-badge {
+    background: #06b6d4;
+    color: #04101c;
+    box-shadow: 0 0 10px #06b6d4;
+}
+
+.joint-meta {
+    flex: 1;
+}
+
+.joint-title {
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 700;
+    font-size: 0.96rem;
+    color: #f1f5f9;
+}
+
+.joint-sub {
+    font-size: 0.74rem;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.joint-angle-badge {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #38bdf8;
+    background: rgba(6, 182, 212, 0.12);
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    padding: 4px 10px;
+    border-radius: 8px;
+    min-width: 48px;
+    text-align: right;
+}
+
+.joint-mini-bar {
+    margin-top: 10px;
+    height: 5px;
+    background: rgba(15, 23, 42, 0.8);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.joint-mini-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #06b6d4, #10b981);
+    transition: width 0.2s ease;
+}
+
+/* TƯ THẾ NHANH */
+.arm-presets-group {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.arm-group-label {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 1px;
+}
+
+.arm-preset-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.btn-arm-preset {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 10px;
+    color: #e2e8f0;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-arm-preset:hover {
+    background: rgba(6, 182, 212, 0.18);
+    border-color: #38bdf8;
+    color: #38bdf8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(6, 182, 212, 0.2);
+}
+
+.preset-icon {
+    font-size: 1.05rem;
+}
+
+/* ==============================================================================
+   CỘT 2: ĐIỀU KHIỂN GÓC QUAY SERVO
+   ============================================================================== */
+.arm-active-joint-indicator {
+    background: rgba(6, 182, 212, 0.08);
+    border: 1px dashed rgba(6, 182, 212, 0.35);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.angle-hud-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 12px 10px;
+    background: rgba(11, 19, 41, 0.75);
+    border-radius: 14px;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.angle-gauge-wrapper {
+    width: 140px;
+    height: 85px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.angle-gauge-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.angle-neon-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.angle-neon-val {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 3.4rem;
+    font-weight: 800;
+    color: #38bdf8;
+    line-height: 1;
+    text-shadow: 0 0 20px rgba(56, 189, 248, 0.65), 0 0 35px rgba(6, 182, 212, 0.35);
+}
+
+.angle-neon-unit {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #94a3b8;
+    margin-top: 6px;
+}
+
+/* THANH TRƯỢT RANGE SLIDER */
+.arm-control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.slider-labels-wrap {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.arm-range-slider,
+.arm-speed-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 12px;
+    background: rgba(30, 41, 59, 0.9);
+    border-radius: 8px;
+    outline: none;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    cursor: pointer;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.arm-range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #38bdf8 30%, #0284c7 100%);
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 14px #38bdf8;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.arm-range-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+
+.arm-speed-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #10b981 30%, #059669 100%);
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 14px #10b981;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.arm-speed-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+
+/* TINH CHỈNH GÓC & NHẬP TRỰC TIẾP */
+.angle-fine-tune-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.btn-fine-step {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    color: #e2e8f0;
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-fine-step:hover {
+    background: rgba(6, 182, 212, 0.2);
+    border-color: #38bdf8;
+    color: #38bdf8;
+}
+
+.angle-direct-input-box {
+    display: flex;
+    align-items: center;
+    background: #0f172a;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    border-radius: 8px;
+    overflow: hidden;
+    flex: 1;
+    max-width: 140px;
+}
+
+.arm-direct-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #38bdf8;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 6px;
+    outline: none;
+}
+
+.btn-apply-angle {
+    background: #0284c7;
+    border: none;
+    color: #fff;
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.btn-apply-angle:hover {
+    background: #0369a1;
+}
+
+/* NÚT GÓC NHANH (QUICK ANGLES) */
+.quick-angles-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+}
+
+.btn-quick-angle {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    color: #cbd5e1;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 8px 4px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.btn-quick-angle:hover {
+    background: rgba(6, 182, 212, 0.15);
+    border-color: #38bdf8;
+    color: #38bdf8;
+}
+
+.btn-quick-angle.is-active {
+    background: #0284c7;
+    border-color: #38bdf8;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+/* QUÉT THỬ TỰ ĐỘNG (SWEEP TEST) */
+.sweep-action-row {
+    margin-top: 4px;
+}
+
+.btn-sweep-test {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(59, 130, 246, 0.15));
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-sweep-test:hover {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.28), rgba(59, 130, 246, 0.28));
+    border-color: #38bdf8;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+    transform: translateY(-2px);
+}
+
+.btn-sweep-test.is-running {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2));
+    border-color: #ef4444;
+    color: #f87171;
+}
+
+.btn-sweep-test.is-running .sweep-icon {
+    animation: spinSweep 1.5s linear infinite;
+}
+
+@keyframes spinSweep {
+    100% { transform: rotate(360deg); }
+}
+
+/* ==============================================================================
+   CỘT 3: KIỂM SOÁT TỐC ĐỘ SERVO & AN TOÀN
+   ============================================================================== */
+.speed-hud-box {
+    background: rgba(11, 19, 41, 0.75);
+    border-radius: 14px;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.speed-hud-label {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: #94a3b8;
+}
+
+.speed-hud-metric {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 6px 0;
+}
+
+.speed-hud-val {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 3.2rem;
+    font-weight: 800;
+    color: #10b981;
+    line-height: 1;
+    text-shadow: 0 0 20px rgba(16, 185, 129, 0.65);
+}
+
+.speed-hud-unit {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #34d399;
+}
+
+.speed-status-desc {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.12);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* 4 NẤC TỐC ĐỘ */
+.speed-presets-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.btn-speed-preset {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.btn-speed-preset:hover {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: #10b981;
+    transform: translateY(-2px);
+}
+
+.btn-speed-preset.is-active {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.2));
+    border-color: #10b981;
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
+}
+
+.speed-p-icon {
+    font-size: 1.25rem;
+}
+
+.speed-p-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.speed-p-name {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #f1f5f9;
+}
+
+.speed-p-val {
+    font-size: 0.72rem;
+    color: #94a3b8;
+}
+
+/* NÚT DỪNG KHẨN CẤP */
+.arm-safety-actions {
+    margin-top: 4px;
+}
+
+.btn-arm-emergency {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    border: 1px solid #ef4444;
+    color: #ffffff;
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 800;
+    font-size: 0.92rem;
+    letter-spacing: 0.8px;
+    padding: 13px;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(220, 38, 38, 0.45);
+    transition: all 0.25s ease;
+}
+
+.btn-arm-emergency:hover {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    box-shadow: 0 0 24px rgba(239, 68, 68, 0.7);
+    transform: translateY(-2px);
+}
+
+.btn-arm-emergency:active {
+    transform: translateY(1px);
+}
+
+.emergency-icon {
+    font-size: 1.15rem;
+}
+
+/* TERMINAL NHẬT KÝ LỆNH */
+.arm-terminal-card {
+    background: #020617;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.terminal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 6px;
+}
+
+.terminal-title {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 1px;
+}
+
+.btn-terminal-clear {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.72rem;
+    font-family: 'Chakra Petch', sans-serif;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.btn-terminal-clear:hover {
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.terminal-console-body {
+    max-height: 105px;
+    min-height: 80px;
+    overflow-y: auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #94a3b8;
+}
+
+.log-line {
+    line-height: 1.35;
+}
+
+.log-line.text-cyan {
+    color: #38bdf8;
+}
+
+.log-line.text-green {
+    color: #34d399;
+}
+
+.log-line.text-red {
+    color: #f87171;
+}
+
+
 

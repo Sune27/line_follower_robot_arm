@@ -281,6 +281,37 @@ class RobotControllerServer:
                     "speed_right": speed,
                     "is_running": state
                 }))
+
+            # Điều khiển Cánh tay Robot 4 Bậc (4-DOF Arm & Servo)
+            elif cmd == "set_arm_servo":
+                joint = str(msg.get("joint", "base")).lower()
+                angle = int(msg.get("angle", 90))
+                speed = int(msg.get("speed", 20))
+                print(f"[Server] 🦾 [ARM SERVO] Joint={joint}, Angle={angle}°, SpeedDelay={speed}ms")
+                self.send_serial(f"CMD:SERVO:{joint}:{angle}:{speed}")
+                await self._broadcast(json.dumps({
+                    "event": "arm_telemetry",
+                    "joint": joint,
+                    "angle": angle,
+                    "speed": speed
+                }))
+
+            elif cmd == "arm_emergency_stop":
+                print("[Server] 🛑 [ARM EMERGENCY] Dừng khẩn cấp cánh tay robot")
+                self.send_serial("CMD:ARM_STOP")
+                await self._broadcast(json.dumps({
+                    "event": "arm_telemetry",
+                    "status": "STOPPED"
+                }))
+
+            elif cmd == "arm_preset":
+                preset = str(msg.get("preset", "home"))
+                print(f"[Server] 🦾 [ARM PRESET] Áp dụng tư thế: {preset}")
+                self.send_serial(f"CMD:ARM_PRESET:{preset}")
+                await self._broadcast(json.dumps({
+                    "event": "arm_telemetry",
+                    "preset": preset
+                }))
         except json.JSONDecodeError:
             pass
 
