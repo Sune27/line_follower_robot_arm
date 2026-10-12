@@ -402,12 +402,31 @@ class RobotControllerServer:
                     m_volt = re.search(r'\(([\d\.]+)V\)', line)
                     volt = float(m_volt.group(1)) if m_volt else (3.3 if is_black else 0.0)
                 elif "TCRT:" in line:
-                    parts = line.split(":")
-                    if len(parts) >= 3:
-                        raw_l = int(parts[1])
-                        is_black = (raw_l == 1)
-                        raw = raw_l
-                        volt = 3.3 if is_black else 0.0
+                    import re
+                    tcrt_part = line.split("TCRT:")[1].strip()
+                    nums = [int(x) for x in re.findall(r'[01]', tcrt_part)]
+                    if len(nums) == 5:
+                        arr = nums
+                        tcrt_telem = {
+                            "event": "telemetry",
+                            "tcrt5000": {
+                                "array": arr,
+                                "s1": arr[0], "s2": arr[1], "s3": arr[2], "s4": arr[3], "s5": arr[4],
+                                "left": {"pin": 19, "raw": arr[1], "is_black": (arr[1] == 1), "text": "DEN" if arr[1] == 1 else "TRANG", "voltage": 3.3 if arr[1] == 1 else 0.0},
+                                "right": {"pin": 5, "raw": arr[3], "is_black": (arr[3] == 1), "text": "DEN" if arr[3] == 1 else "TRANG", "voltage": 3.3 if arr[3] == 1 else 0.0}
+                            },
+                            "mode": "tcrt_streaming"
+                        }
+                        if self.loop and self.connected_clients:
+                            asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(tcrt_telem)), self.loop)
+                        return
+                    else:
+                        parts = line.split(":")
+                        if len(parts) >= 3:
+                            raw_l = int(parts[1])
+                            is_black = (raw_l == 1)
+                            raw = raw_l
+                            volt = 3.3 if is_black else 0.0
 
                 tcrt_telem = {
                     "event": "telemetry",

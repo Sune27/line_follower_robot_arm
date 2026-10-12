@@ -11,7 +11,12 @@ echo [*] Vui long dam bao ban da cam cap USB ESP32 vao may tinh!
 echo [*] Dang tien hanh dong bo va nap code vao ESP32...
 echo.
 
-python firmware\nap_code_esp32.py
+where py >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+    py firmware\nap_code_esp32.py
+) else (
+    python firmware\nap_code_esp32.py
+)
 
 echo.
 echo ============================================================

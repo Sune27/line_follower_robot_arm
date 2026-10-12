@@ -11,7 +11,12 @@ echo [*] Khong bam nut dau X de tat vi se lam mat ket noi Web.
 echo ============================================================
 echo.
 
-python -u python_app\app.py
+where py >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+    py -u python_app\app.py
+) else (
+    python -u python_app\app.py
+)
 
 echo.
 echo [!] Server da dung lai! Nhan phim bat ky de dong...

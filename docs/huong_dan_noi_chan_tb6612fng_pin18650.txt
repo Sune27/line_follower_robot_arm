@@ -1,0 +1,82 @@
+================================================================================
+  HƯỚNG DẪN ĐẤU NỐI CHUẨN XÁC: TB6612FNG & SHIELD MỞ RỘNG ESP32 (DÙNG PIN 18650)
+  PHIÊN BẢN CẬP NHẬT THEO ĐÚNG HÌNH ẢNH THỰC TẾ BO MẠCH VÀ CHIP
+================================================================================
+
+I. ĐẶC ĐIỂM CÁC CỔNG TRÊN BO MẠCH THỰC TẾ CỦA BẠN:
+--------------------------------------------------------------------------------
+1. TRÊN SHIELD MỞ RỘNG ESP32 (ẢNH CHỤP THỰC TẾ):
+   - Cổng nhận nguồn pin: Cổng giắc tròn DC màu đen ở góc dưới bên phải,
+     có in chữ trắng: [ DC6.5-16V ].
+   - Khung hộp trắng 8 chân nguồn (ngay phía trên cổng Type-C):
+     + Hàng trên: 2 cọc kim [ 5V ] và 2 cọc kim [ 3V ].
+     + Hàng dưới: 4 cọc kim [ GND ].
+   - Hàng rào 3 cột chân bên mép trái (D13, D12, D14, D27...):
+     + Hàng NGOÀI CÙNG (sát mép ngoài bo mạch): Chân [ S ] (Signal - Tín hiệu GPIO).
+     + Hàng Ở GIỮA: Chân [ V ] (Nguồn 5V).
+     + Hàng TRONG CÙNG (sát thân chip ESP32): Chân [ G ] (Ground - Mass / 0V).
+
+2. TRÊN MODULE TB6612FNG (MẠCH ĐỎ - ẢNH CHỤP MẶT SAU):
+   - Cột bên phải (từ trên xuống):
+     [1] VM   : Nguồn cấp cho động cơ
+     [2] NC   : Chân nuôi logic (ở mạch chuẩn là VCC)
+     [3] GND  : Cực âm / Mass
+     [4] AO1  : Ra dây động cơ 1
+     [5] AO2  : Ra dây động cơ 2
+     [6] BO2  : Ra dây động cơ 3 (nếu dùng 2 motor)
+     [7] BO1  : Ra dây động cơ 4 (nếu dùng 2 motor)
+     [8] GND  : Cực âm / Mass phụ
+   - Cột bên trái (từ trên xuống):
+     [1] NC   : Tốc độ PWMA (đã tích hợp ngầm bên trong)
+     [2] AIN2 : Chiều quay động cơ A
+     [3] AIN1 : Chiều quay động cơ A
+     [4] STBY : Chân mở khóa / Standby (Bắt buộc phải cấp điện 3V/5V)
+     [5] BIN1 : Chiều quay động cơ B
+     [6] BIN2 : Chiều quay động cơ B
+     [7] NC   : Tốc độ PWMB
+     [8] GND  : Cực âm / Mass
+
+================================================================================
+II. BẢNG SƠ ĐỒ ĐẤU DÂY CHÍNH XÁC (CHECKLIST TỪNG CHÂN):
+================================================================================
+
+1. NGUỒN PIN 18650 X 2 (7.4V):
+   - Cắm đầu giắc tròn DC vào cổng [ DC6.5-16V ] trên Shield mở rộng ESP32.
+
+2. CÁC DÂY TỪ TB6612FNG SANG SHIELD MỞ RỘNG ESP32:
+   -----------------------------------------------------------------------------
+   Chân trên TB6612       | Cắm CHÍNH XÁC vào vị trí này trên Shield ESP32
+   -----------------------+-----------------------------------------------------
+   [ VM ]   (Chân 1 phải) | Cọc kim [ 5V ] thứ 1 (Trong khung hộp trắng góc dưới)
+   [ GND ]  (Chân 3 phải) | Cọc kim [ GND ] thứ 1 (Trong khung hộp trắng góc dưới)
+   [ STBY ] (Chân 4 trái) | Cọc kim [ 5V ] thứ 2 (Trong khung hộp trắng góc dưới)
+   [ AIN1 ] (Chân 3 trái) | Cọc kim [ NGOÀI CÙNG - Cột S ] của hàng [ D13 ]
+   [ AIN2 ] (Chân 2 trái) | Cọc kim [ NGOÀI CÙNG - Cột S ] của hàng [ D12 ]
+   -----------------------+-----------------------------------------------------
+   [ AO1 ]  (Chân 4 phải) | Nối vào Dây thứ 1 của Động cơ DC
+   [ AO2 ]  (Chân 5 phải) | Nối vào Dây thứ 2 của Động cơ DC
+   -----------------------+-----------------------------------------------------
+   (*) LƯU Ý PHÒNG NGỪA:
+   Nếu cắm đúng như trên mà động cơ chưa quay (do một số xưởng in nhãn NC thay vì VCC),
+   bạn chỉ cần cắm thêm 1 dây từ chân [ NC số 2 bên phải TB6612 ] vào cọc kim [ 3V ]
+   (trong khung hộp trắng có chữ 3V) để cấp nguồn nuôi chip.
+
+================================================================================
+III. CHƯƠNG TRÌNH ĐIỀU TỐC TRÊN ESP32 (ĐÃ NẠP SẴN TRONG MAIN.PY):
+================================================================================
+- Mã nguồn điều khiển tốc độ bằng băm xung PWM (tần số 200Hz - mô men xoắn đề pa khỏe)
+  ĐÃ ĐƯỢC NẠP VÀ LƯU VĨNH VIỄN TRONG FILE main.py CỦA ESP32.
+- Bạn chỉ cần cắm giắc pin vào cổng DC là ESP32 tự động chạy chu trình:
+  1. Đèn xanh ESP32 nháy 3 lần báo hiệu sẵn sàng.
+  2. Động cơ tự động TĂNG TỐC DẦN từ 35% -> 50% -> 65% -> 80% -> 100% (Quay tiến).
+  3. Động cơ tự động GIẢM TỐC DẦN về 0% và DỪNG 1.5 giây.
+  4. Động cơ tự động ĐẢO CHIỀU QUAY LÙI tăng tốc từ 40% -> 70% -> 100%.
+  5. Dừng 1.5 giây và lặp lại tuần hoàn liên tục.
+
+================================================================================
+IV. NẾU CẦN NẠP LẠI CODE HOẶC CHẠY KIỂM THỬ TRÊN MÁY TÍNH:
+================================================================================
+- Bạn cắm cáp USB vào máy tính (cổng COM3).
+- Nhấp đúp chuột vào file: [ kiem_tra_toc_do_dong_co.bat ] tại thư mục gốc.
+- Màn hình terminal sẽ in chi tiết tốc độ % và trạng thái động cơ theo thời gian thực.
+================================================================================

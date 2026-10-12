@@ -41,10 +41,13 @@ def main():
         echo_pin=config.PIN_ULTRASONIC_ECHO
     )
 
-    # 3. Khởi tạo Cảm biến dò line TCRT5000 (GPIO19, GPIO21)
+    # 3. Khởi tạo Cảm biến dò line TCRT5000 5 mắt (D21, D19, D18, D5, D17)
     line_sensor = LineFollowerSensor(
-        left_pin=config.PIN_LINE_LEFT,
-        right_pin=config.PIN_LINE_RIGHT
+        s1_pin=config.PIN_LINE_S1,
+        s2_pin=config.PIN_LINE_S2,
+        s3_pin=config.PIN_LINE_S3,
+        s4_pin=config.PIN_LINE_S4,
+        s5_pin=config.PIN_LINE_S5
     )
 
     # 4. Khởi tạo Động cơ TB6612FNG (GPIO13, 12, 27, 26)

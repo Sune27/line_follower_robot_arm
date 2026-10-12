@@ -239,6 +239,9 @@ class WebSocketClient {
             this.ws.onopen = () => {
                 this.connected = true;
                 console.log('[WebSocket] ✅ Đã kết nối tới Server máy chủ');
+                if (window.app && window.app.tcrtController && window.app.tcrtController.isWorking) {
+                    this.send({ cmd: 'tcrt_start_stream' });
+                }
             };
 
             this.ws.onmessage = (event) => {
@@ -962,9 +965,14 @@ class TCRT5000Controller {
     }
 
     onScreenActivated() {
-        this.render();
-        if (this.isWorking && this.wsClient) {
-            this.wsClient.send({ cmd: 'tcrt_start_stream' });
+        // Tự động kích hoạt stream khi vào màn hình để hiển thị ngay dữ liệu đo thực tế từ phần cứng
+        if (!this.isWorking) {
+            this.setWorkingState(true);
+        } else {
+            this.render();
+            if (this.wsClient) {
+                this.wsClient.send({ cmd: 'tcrt_start_stream' });
+            }
         }
     }
 

@@ -94,6 +94,11 @@ class CommandDispatcher:
         elif "CMD:START_TCRT_STREAM" in cmd:
             self.stream_tcrt = True
             self.comm.broadcast("[CMD_ACK] START_TCRT_STREAM: Bat stream TCRT5000")
+            self.comm.broadcast("TELEMETRY:" + ujson.dumps({
+                "event": "telemetry",
+                "tcrt5000": self.line_sensor.read_status(),
+                "mode": "tcrt_streaming"
+            }))
 
         elif "CMD:STOP_TCRT_STREAM" in cmd:
             self.stream_tcrt = False
