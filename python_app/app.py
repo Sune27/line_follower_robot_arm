@@ -396,7 +396,7 @@ class RobotControllerServer:
                 volt = 0.0
 
                 if "Digital (DO):" in line:
-                    is_black = ("HIGH" in line)
+                    is_black = ("LOW" in line)
                     raw = 1 if is_black else 0
                     import re
                     m_volt = re.search(r'\(([\d\.]+)V\)', line)
@@ -688,6 +688,28 @@ class RobotControllerServer:
         print("\n" + "="*60)
         print("   HỆ THỐNG MÁY CHỦ XE DÒ LINE & CÁNH TAY ROBOT")
         print("="*60)
+
+        # Tự động dọn dẹp các cổng mạng nếu có tiến trình cũ chiếm giữ
+        def free_port(port):
+            import subprocess
+            import sys
+            try:
+                if sys.platform == "win32":
+                    output = subprocess.check_output(f"netstat -aon | findstr :{port}", shell=True, stderr=subprocess.DEVNULL).decode()
+                    current_pid = os.getpid()
+                    for line in output.strip().split("\n"):
+                        if "LISTENING" in line:
+                            parts = line.strip().split()
+                            pid = int(parts[-1])
+                            if pid != current_pid and pid > 0:
+                                print(f"[Port Manager] ⚠️ Tiến trình cũ (PID: {pid}) đang chiếm cổng {port}. Đang tự động giải phóng...")
+                                subprocess.run(f"taskkill /F /PID {pid}", shell=True, capture_output=True)
+                                time.sleep(0.8)
+            except Exception:
+                pass
+
+        free_port(HTTP_PORT)
+        free_port(WS_PORT)
 
         # Khởi động các luồng giao tiếp với ESP32 (cả USB Serial và Wi-Fi TCP song song)
         threading.Thread(target=self.serial_listener_loop, daemon=True).start()

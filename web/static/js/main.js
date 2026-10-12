@@ -928,6 +928,13 @@ class TCRT5000Controller {
                 e.preventDefault();
                 this.sensors = [0, 0, 0, 0, 0];
                 this.volts = [0.0, 0.0, 0.0, 0.0, 0.0];
+                if (this.onStateChange) {
+                    this.onStateChange({
+                        sensors: [...this.sensors],
+                        left: false,
+                        right: false
+                    });
+                }
                 this.render();
             });
         }
@@ -1149,10 +1156,24 @@ class TCRT5000Controller {
         }
     }
 
-    syncExternalState(leftIsBlack, rightIsBlack) {
-        this.sensors = [0, leftIsBlack ? 1 : 0, 0, rightIsBlack ? 1 : 0, 0];
-        this.volts[1] = leftIsBlack ? 3.3 : 0.0;
-        this.volts[3] = rightIsBlack ? 3.3 : 0.0;
+    syncExternalState(leftOrSensors, rightIsBlack) {
+        if (Array.isArray(leftOrSensors)) {
+            for (let i = 0; i < 5; i++) {
+                this.sensors[i] = leftOrSensors[i] ? 1 : 0;
+                this.volts[i] = this.sensors[i] === 1 ? 3.3 : 0.0;
+            }
+        } else if (typeof leftOrSensors === 'object' && leftOrSensors !== null) {
+            if (Array.isArray(leftOrSensors.sensors)) {
+                for (let i = 0; i < 5; i++) {
+                    this.sensors[i] = leftOrSensors.sensors[i] ? 1 : 0;
+                    this.volts[i] = this.sensors[i] === 1 ? 3.3 : 0.0;
+                }
+            }
+        } else {
+            this.sensors = [0, leftOrSensors ? 1 : 0, 0, rightIsBlack ? 1 : 0, 0];
+            this.volts[1] = leftOrSensors ? 3.3 : 0.0;
+            this.volts[3] = rightIsBlack ? 3.3 : 0.0;
+        }
         this.render();
     }
 }
@@ -1603,6 +1624,7 @@ class VehicleMotionController {
         this.isObstacle = false;         // Vật cản nguy hiểm (< 10cm)
         this.leftIsBlack = false;        // Mắt trái TCRT (D19)
         this.rightIsBlack = false;       // Mắt phải TCRT (D21)
+        this.sensors = [0, 0, 0, 0, 0];  // Mảng 5 mắt TCRT5000: [S1, S2, S3, S4, S5]
 
         // Callback đồng bộ 2 chiều sang tab TCRT5000
         this.onStateChange = null;
@@ -1639,16 +1661,20 @@ class VehicleMotionController {
             sonarAlertText: document.getElementById('mission-sonar-alert-text'),
             sonarFill: document.getElementById('mission-sonar-fill'),
 
-            tcrtPillLeft: document.getElementById('mission-tcrt-pill-left'),
-            tcrtPillRight: document.getElementById('mission-tcrt-pill-right'),
+            // 5 dấu chấm đánh số 1-5 TCRT5000 (True: Xanh, False: Đỏ)
+            tcrtDots: [
+                document.getElementById('mission-tcrt-dot-1'),
+                document.getElementById('mission-tcrt-dot-2'),
+                document.getElementById('mission-tcrt-dot-3'),
+                document.getElementById('mission-tcrt-dot-4'),
+                document.getElementById('mission-tcrt-dot-5')
+            ],
 
             actionBadge: document.getElementById('mission-action-badge'),
             actionText: document.getElementById('mission-action-text'),
             stageRobot: document.getElementById('mission-stage-robot'),
             sonarCone: document.getElementById('mission-sonar-cone'),
             coneTag: document.getElementById('mission-cone-tag'),
-            robotEyeLeft: document.getElementById('mission-robot-eye-left'),
-            robotEyeRight: document.getElementById('mission-robot-eye-right'),
             steeringAngleVal: document.getElementById('mission-steering-angle'),
             lineTrackingStatusVal: document.getElementById('mission-line-tracking-status'),
 
@@ -1703,41 +1729,31 @@ class VehicleMotionController {
             });
         }
 
-        // Hỗ trợ click thử nghiệm chuyển đổi Đen/Trắng trực tiếp trên sân khấu Mission Control
-        const toggleLeftTest = () => {
-            this.leftIsBlack = !this.leftIsBlack;
-            if (this.onStateChange) this.onStateChange({ left: this.leftIsBlack, right: this.rightIsBlack });
+        // Hỗ trợ click thử nghiệm chuyển đổi Đen/Trắng trực tiếp trên cả 5 mắt TCRT5000 (Pill và Eye dot)
+        const toggleSensorTest = (index) => {
+            this.sensors[index] = this.sensors[index] === 1 ? 0 : 1;
+            // Đồng bộ leftIsBlack / rightIsBlack (S2 và S4) cho logic 2 mắt cũ
+            this.leftIsBlack = this.sensors[1] === 1;
+            this.rightIsBlack = this.sensors[3] === 1;
+
+            if (this.onStateChange) {
+                this.onStateChange({
+                    sensors: [...this.sensors],
+                    left: this.leftIsBlack,
+                    right: this.rightIsBlack
+                });
+            }
             if (this.isRunningAutoLine) this.computeAndApplyLineTracking();
             this.updateUI();
         };
 
-        const toggleRightTest = () => {
-            this.rightIsBlack = !this.rightIsBlack;
-            if (this.onStateChange) this.onStateChange({ left: this.leftIsBlack, right: this.rightIsBlack });
-            if (this.isRunningAutoLine) this.computeAndApplyLineTracking();
-            this.updateUI();
-        };
-
-        if (this.elements.tcrtPillLeft) {
-            this.elements.tcrtPillLeft.style.cursor = 'pointer';
-            this.elements.tcrtPillLeft.title = 'Click để thử nghiệm chuyển đổi Đen/Trắng';
-            this.elements.tcrtPillLeft.addEventListener('click', toggleLeftTest);
-        }
-        if (this.elements.robotEyeLeft) {
-            this.elements.robotEyeLeft.style.cursor = 'pointer';
-            this.elements.robotEyeLeft.title = 'Click để thử nghiệm chuyển đổi Đen/Trắng';
-            this.elements.robotEyeLeft.addEventListener('click', toggleLeftTest);
-        }
-
-        if (this.elements.tcrtPillRight) {
-            this.elements.tcrtPillRight.style.cursor = 'pointer';
-            this.elements.tcrtPillRight.title = 'Click để thử nghiệm chuyển đổi Đen/Trắng';
-            this.elements.tcrtPillRight.addEventListener('click', toggleRightTest);
-        }
-        if (this.elements.robotEyeRight) {
-            this.elements.robotEyeRight.style.cursor = 'pointer';
-            this.elements.robotEyeRight.title = 'Click để thử nghiệm chuyển đổi Đen/Trắng';
-            this.elements.robotEyeRight.addEventListener('click', toggleRightTest);
+        if (this.elements.tcrtDots && Array.isArray(this.elements.tcrtDots)) {
+            this.elements.tcrtDots.forEach((dot, idx) => {
+                if (dot) {
+                    dot.style.cursor = 'pointer';
+                    dot.addEventListener('click', () => toggleSensorTest(idx));
+                }
+            });
         }
     }
 
@@ -1945,9 +1961,27 @@ class VehicleMotionController {
     /**
      * Nhận đồng bộ trạng thái cảm biến từ Tab TCRT5000
      */
-    syncTCRTState(leftIsBlack, rightIsBlack) {
-        this.leftIsBlack = leftIsBlack;
-        this.rightIsBlack = rightIsBlack;
+    syncTCRTState(leftOrSensors, rightIsBlack) {
+        if (Array.isArray(leftOrSensors)) {
+            for (let i = 0; i < 5; i++) {
+                this.sensors[i] = leftOrSensors[i] ? 1 : 0;
+            }
+            this.leftIsBlack = this.sensors[1] === 1;
+            this.rightIsBlack = this.sensors[3] === 1;
+        } else if (typeof leftOrSensors === 'object' && leftOrSensors !== null) {
+            if (Array.isArray(leftOrSensors.sensors)) {
+                for (let i = 0; i < 5; i++) {
+                    this.sensors[i] = leftOrSensors.sensors[i] ? 1 : 0;
+                }
+            }
+            this.leftIsBlack = leftOrSensors.left !== undefined ? !!leftOrSensors.left : (this.sensors[1] === 1);
+            this.rightIsBlack = leftOrSensors.right !== undefined ? !!leftOrSensors.right : (this.sensors[3] === 1);
+        } else {
+            this.leftIsBlack = !!leftOrSensors;
+            this.rightIsBlack = !!rightIsBlack;
+            this.sensors[1] = this.leftIsBlack ? 1 : 0;
+            this.sensors[3] = this.rightIsBlack ? 1 : 0;
+        }
         if (this.isRunningAutoLine) {
             this.computeAndApplyLineTracking();
         }
@@ -2015,14 +2049,34 @@ class VehicleMotionController {
             hasChange = true;
         }
 
-        // 3. Phân tích dữ liệu TCRT5000 Dò vạch
+        // 3. Phân tích dữ liệu TCRT5000 Dò vạch (Hỗ trợ cả mảng 5 mắt array và 2 mắt cũ)
         if (telemetryData.tcrt5000) {
             const tcrt = telemetryData.tcrt5000;
-            if (tcrt.left) {
-                this.leftIsBlack = (tcrt.left.is_black === true || tcrt.left.raw === 1);
-            }
-            if (tcrt.right) {
-                this.rightIsBlack = (tcrt.right.is_black === true || tcrt.right.raw === 1);
+            if (Array.isArray(tcrt.array) && tcrt.array.length >= 5) {
+                for (let i = 0; i < 5; i++) {
+                    this.sensors[i] = tcrt.array[i] ? 1 : 0;
+                }
+                this.leftIsBlack = this.sensors[1] === 1;
+                this.rightIsBlack = this.sensors[3] === 1;
+            } else if (tcrt.s1 !== undefined) {
+                this.sensors = [
+                    tcrt.s1 ? 1 : 0,
+                    tcrt.s2 ? 1 : 0,
+                    tcrt.s3 ? 1 : 0,
+                    tcrt.s4 ? 1 : 0,
+                    tcrt.s5 ? 1 : 0
+                ];
+                this.leftIsBlack = this.sensors[1] === 1;
+                this.rightIsBlack = this.sensors[3] === 1;
+            } else {
+                if (tcrt.left) {
+                    this.leftIsBlack = (tcrt.left.is_black === true || tcrt.left.raw === 1);
+                    this.sensors[1] = this.leftIsBlack ? 1 : 0;
+                }
+                if (tcrt.right) {
+                    this.rightIsBlack = (tcrt.right.is_black === true || tcrt.right.raw === 1);
+                    this.sensors[3] = this.rightIsBlack ? 1 : 0;
+                }
             }
             hasChange = true;
         }
@@ -2086,21 +2140,26 @@ class VehicleMotionController {
             els.sonarFill.style.width = `${fillPct}%`;
         }
 
-        // 3. Trạng thái 2 mắt TCRT5000 (Pill + Eye dot trên xe)
-        if (els.tcrtPillLeft) {
-            els.tcrtPillLeft.className = `pod-state-pill ${this.leftIsBlack ? 'pill-black' : 'pill-white'}`;
-            els.tcrtPillLeft.textContent = this.leftIsBlack ? 'ĐEN' : 'TRẮNG';
-        }
-        if (els.tcrtPillRight) {
-            els.tcrtPillRight.className = `pod-state-pill ${this.rightIsBlack ? 'pill-black' : 'pill-white'}`;
-            els.tcrtPillRight.textContent = this.rightIsBlack ? 'ĐEN' : 'TRẮNG';
-        }
-
-        if (els.robotEyeLeft) {
-            els.robotEyeLeft.className = `eye-dot eye-left ${this.leftIsBlack ? 'active-black' : ''}`;
-        }
-        if (els.robotEyeRight) {
-            els.robotEyeRight.className = `eye-dot eye-right ${this.rightIsBlack ? 'active-black' : ''}`;
+        // 3. Trạng thái mảng 5 mắt TCRT5000 (Đánh số 1-5: True = Xanh lá, False = Đỏ)
+        const s = this.sensors;
+        if (els.tcrtDots && Array.isArray(els.tcrtDots)) {
+            for (let i = 0; i < 5; i++) {
+                const dot = els.tcrtDots[i];
+                if (dot) {
+                    const isTrue = (s[i] === 1);
+                    dot.className = `tcrt-num-dot ${isTrue ? 'dot-true' : 'dot-false'}`;
+                    dot.title = `Mắt ${i + 1} (S${i + 1}) • ${isTrue ? 'TRUE (Xanh lá • Đang chạm vạch đen)' : 'FALSE (Đỏ • Nền trắng)'}`;
+                    if (isTrue) {
+                        dot.style.background = '#10b981';
+                        dot.style.border = '2px solid #34d399';
+                        dot.style.boxShadow = '0 0 14px rgba(16, 185, 129, 0.75)';
+                    } else {
+                        dot.style.background = '#ef4444';
+                        dot.style.border = '2px solid #f87171';
+                        dot.style.boxShadow = '0 0 10px rgba(239, 68, 68, 0.45)';
+                    }
+                }
+            }
         }
 
         // 4. Sân khấu Digital Twin 2D
@@ -2200,13 +2259,21 @@ class DashboardApp {
         // Đồng bộ 2 chiều trạng thái thử nghiệm cảm biến giữa Tab TCRT5000 và Tab Điều khiển chung
         this.tcrtController.onStateChange = (state) => {
             if (this.missionController) {
-                this.missionController.syncTCRTState(state.left, state.right);
+                if (state && state.sensors) {
+                    this.missionController.syncTCRTState(state.sensors);
+                } else if (state) {
+                    this.missionController.syncTCRTState(state.left, state.right);
+                }
             }
         };
 
         this.missionController.onStateChange = (state) => {
             if (this.tcrtController) {
-                this.tcrtController.syncExternalState(state.left, state.right);
+                if (state && state.sensors) {
+                    this.tcrtController.syncExternalState(state.sensors);
+                } else if (state) {
+                    this.tcrtController.syncExternalState(state.left, state.right);
+                }
             }
         };
 

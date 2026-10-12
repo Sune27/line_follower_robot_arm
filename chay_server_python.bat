@@ -11,6 +11,9 @@ echo [*] Khong bam nut dau X de tat vi se lam mat ket noi Web.
 echo ============================================================
 echo.
 
+for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr :5000 ^| findstr LISTENING') do taskkill /f /pid %%a >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr :8765 ^| findstr LISTENING') do taskkill /f /pid %%a >nul 2>&1
+
 where py >nul 2>&1
 if %ERRORLEVEL% equ 0 (
     py -u python_app\app.py

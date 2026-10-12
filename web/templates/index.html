@@ -9,7 +9,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=2.0">
     <link rel="alternate icon" href="../static/favicon.svg?v=2.0">
     <!-- Nhúng file CSS định dạng giao diện -->
-    <link rel="stylesheet" href="../static/css/style.css?v=4.6">
+    <link rel="stylesheet" href="../static/css/style.css?v=5.2">
     <!-- Font chữ Chakra Petch (phong cách Robot/Công nghệ) và Be Vietnam Pro (tối ưu 100% tiếng Việt có dấu) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -947,34 +947,6 @@
                     </div>
                 </div>
 
-                <!-- 4. BẢNG TELEMETRY CHI TIẾT 5 KÊNH -->
-                <div class="tcrt5-telemetry-grid">
-                    <div class="tcrt5-tele-card" id="tele-card-1">
-                        <div class="tele-top">S1 • D21</div>
-                        <div class="tele-mid" id="tele-status-1">TRẮNG</div>
-                        <div class="tele-bot" id="tele-detail-1">0 • 0.0V</div>
-                    </div>
-                    <div class="tcrt5-tele-card" id="tele-card-2">
-                        <div class="tele-top">S2 • D19</div>
-                        <div class="tele-mid" id="tele-status-2">TRẮNG</div>
-                        <div class="tele-bot" id="tele-detail-2">0 • 0.0V</div>
-                    </div>
-                    <div class="tcrt5-tele-card center-card" id="tele-card-3">
-                        <div class="tele-top">S3 • D18 (TÂM)</div>
-                        <div class="tele-mid" id="tele-status-3">TRẮNG</div>
-                        <div class="tele-bot" id="tele-detail-3">0 • 0.0V</div>
-                    </div>
-                    <div class="tcrt5-tele-card" id="tele-card-4">
-                        <div class="tele-top">S4 • D5</div>
-                        <div class="tele-mid" id="tele-status-4">TRẮNG</div>
-                        <div class="tele-bot" id="tele-detail-4">0 • 0.0V</div>
-                    </div>
-                    <div class="tcrt5-tele-card" id="tele-card-5">
-                        <div class="tele-top">S5 • D17</div>
-                        <div class="tele-mid" id="tele-status-5">TRẮNG</div>
-                        <div class="tele-bot" id="tele-detail-5">0 • 0.0V</div>
-                    </div>
-                </div>
 
             </div>
         </main>
@@ -1507,22 +1479,20 @@
                         </div>
                     </div>
 
-                    <!-- Khối 3: Trạng thái 2 mắt TCRT5000 -->
-                    <div class="mission-card-panel">
+                    <!-- Khối 3: Trạng thái mảng 5 mắt TCRT5000 -->
+                    <div class="mission-card-panel" id="mission-tcrt-panel">
                         <div class="panel-header-mini">
                             <span class="panel-badge badge-blue">QUANG HỌC</span>
-                            <span class="panel-title">MẮT DÒ VẠCH TCRT5000</span>
+                            <span class="panel-title">TCRT5000</span>
                         </div>
 
-                        <div class="tcrt-mini-monitor-grid">
-                            <div class="tcrt-mini-pod pod-left" id="mission-tcrt-pod-left">
-                                <span class="pod-lbl">MẮT TRÁI (D19)</span>
-                                <span class="pod-state-pill pill-white" id="mission-tcrt-pill-left">TRẮNG</span>
-                            </div>
-                            <div class="tcrt-mini-pod pod-right" id="mission-tcrt-pod-right">
-                                <span class="pod-lbl">MẮT PHẢI (D21)</span>
-                                <span class="pod-state-pill pill-white" id="mission-tcrt-pill-right">TRẮNG</span>
-                            </div>
+                        <!-- 5 hình tròn theo hàng ngang thể hiện từng mắt (True: Xanh, False: Đỏ) -->
+                        <div class="tcrt-5dots-row" style="display: flex !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; gap: 8px !important; width: 100% !important; padding: 10px 4px 4px 4px !important; box-sizing: border-box !important;">
+                            <div class="tcrt-num-dot dot-false" id="mission-tcrt-dot-1" data-index="0" title="Mắt 1 (S1 • D21): False" style="width: 38px !important; height: 38px !important; min-width: 38px !important; min-height: 38px !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-family: 'Chakra Petch', sans-serif !important; font-size: 1rem !important; font-weight: 800 !important; cursor: pointer !important; user-select: none !important; transition: all 0.2s ease !important; background: #ef4444; border: 2px solid #f87171; color: #ffffff; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);">1</div>
+                            <div class="tcrt-num-dot dot-false" id="mission-tcrt-dot-2" data-index="1" title="Mắt 2 (S2 • D19): False" style="width: 38px !important; height: 38px !important; min-width: 38px !important; min-height: 38px !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-family: 'Chakra Petch', sans-serif !important; font-size: 1rem !important; font-weight: 800 !important; cursor: pointer !important; user-select: none !important; transition: all 0.2s ease !important; background: #ef4444; border: 2px solid #f87171; color: #ffffff; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);">2</div>
+                            <div class="tcrt-num-dot dot-false" id="mission-tcrt-dot-3" data-index="2" title="Mắt 3 (S3 • D18): False" style="width: 38px !important; height: 38px !important; min-width: 38px !important; min-height: 38px !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-family: 'Chakra Petch', sans-serif !important; font-size: 1rem !important; font-weight: 800 !important; cursor: pointer !important; user-select: none !important; transition: all 0.2s ease !important; background: #ef4444; border: 2px solid #f87171; color: #ffffff; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);">3</div>
+                            <div class="tcrt-num-dot dot-false" id="mission-tcrt-dot-4" data-index="3" title="Mắt 4 (S4 • D5): False" style="width: 38px !important; height: 38px !important; min-width: 38px !important; min-height: 38px !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-family: 'Chakra Petch', sans-serif !important; font-size: 1rem !important; font-weight: 800 !important; cursor: pointer !important; user-select: none !important; transition: all 0.2s ease !important; background: #ef4444; border: 2px solid #f87171; color: #ffffff; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);">4</div>
+                            <div class="tcrt-num-dot dot-false" id="mission-tcrt-dot-5" data-index="4" title="Mắt 5 (S5 • D17): False" style="width: 38px !important; height: 38px !important; min-width: 38px !important; min-height: 38px !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-family: 'Chakra Petch', sans-serif !important; font-size: 1rem !important; font-weight: 800 !important; cursor: pointer !important; user-select: none !important; transition: all 0.2s ease !important; background: #ef4444; border: 2px solid #f87171; color: #ffffff; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);">5</div>
                         </div>
                     </div>
                 </div>
@@ -1550,7 +1520,7 @@
                                 <div class="stage-line-core"></div>
                             </div>
 
-                            <!-- Chiếc xe Robot 2D nhìn từ trên -->
+                            <!-- Chiếc xe Robot 2D nhìn từ trên (Clean Minimalist) -->
                             <div class="stage-robot-vehicle" id="mission-stage-robot">
                                 <!-- Chùm sóng siêu âm phía trước (Sonar Cone Radar) -->
                                 <div class="sonar-beam-cone cone-safe" id="mission-sonar-cone">
@@ -1560,28 +1530,11 @@
                                     <div class="sonar-cone-tag" id="mission-cone-tag">RADAR QUÉT TRƯỚC</div>
                                 </div>
 
-                                <!-- Cảm biến siêu âm gắn trên mũi xe -->
-                                <div class="robot-nose-sensor">
-                                    <div class="sensor-transducer t-left"></div>
-                                    <div class="sensor-transducer t-right"></div>
-                                </div>
-
-                                <!-- 2 Mắt dò line TCRT5000 phía mũi xe -->
-                                <div class="robot-tcrt-eyes">
-                                    <div class="eye-dot eye-left" id="mission-robot-eye-left" title="Mắt Trái D19"></div>
-                                    <div class="eye-dot eye-right" id="mission-robot-eye-right" title="Mắt Phải D21"></div>
-                                </div>
-
                                 <!-- Thân xe chính -->
                                 <div class="robot-body-shell">
-                                    <!-- Đèn pha LED trước -->
-                                    <div class="headlight-beam beam-l"></div>
-                                    <div class="headlight-beam beam-r"></div>
-
-                                    <!-- Bo mạch ESP32 và chip ở trung tâm xe -->
+                                    <!-- Bo mạch ESP32 ở trung tâm xe -->
                                     <div class="robot-core-mcu">
                                         <div class="mcu-chip">ESP32</div>
-                                        <div class="mcu-status-led" id="mission-mcu-led"></div>
                                     </div>
                                 </div>
 
@@ -1594,9 +1547,6 @@
                                     <div class="wheel-tire-groove"></div>
                                     <div class="wheel-arrow-dir arrow-right" id="mission-wheel-arrow-right">↑</div>
                                 </div>
-
-                                <!-- Bánh xe dẫn hướng tự do (Caster Wheel) phía sau -->
-                                <div class="robot-caster-wheel"></div>
                             </div>
                         </div>
 
@@ -1773,7 +1723,7 @@
     </div>
 
     <!-- Nhúng file Javascript xử lý logic tương tác -->
-    <script src="../static/js/main.js?v=4.9"></script>
+    <script src="../static/js/main.js?v=5.2"></script>
 </body>
 
 </html>

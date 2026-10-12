@@ -8,8 +8,10 @@ echo   HE THONG KHOI DONG SERVER GLOBAL (DIEU KHIEN ROBOT ONLINE)
 echo ============================================================
 echo.
 
-:: 1. Don dep tien trinh ngrok cu neu co bi ket
+:: 1. Don dep tien trinh ngrok va python cu neu bi ket cong 5000/8765
 taskkill /f /im ngrok.exe >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr :5000 ^| findstr LISTENING') do taskkill /f /pid %%a >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr :8765 ^| findstr LISTENING') do taskkill /f /pid %%a >nul 2>&1
 
 :: 2. Khoi dong Server Python o mot cua so rieng
 echo [1/2] Dang khoi dong Server Python (Port 5000)...

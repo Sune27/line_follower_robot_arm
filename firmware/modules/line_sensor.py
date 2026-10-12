@@ -7,7 +7,7 @@ from machine import Pin
 
 class LineFollowerSensor:
     """
-    Lớp điều khiển đọc tín hiệu từ cụm cảm biến dò line quang học TCRT5000 5 mắt (5-Channel Array).
+    Lớp điều khiển đọc tín hiệu từ cụm cảm biến dò line quang học TCRT5000 5 mắt (5-Channel Array HW-871).
     
     Phân bổ chân GPIO (mạng bên phải bảng mở rộng 30-pin):
     - Mắt 1 (S1): Ngoài cùng bên Trái  -> GPIO 21
@@ -16,25 +16,29 @@ class LineFollowerSensor:
     - Mắt 4 (S4): Giữa bên Phải        -> GPIO 5
     - Mắt 5 (S5): Ngoài cùng bên Phải  -> GPIO 17
     
-    Nguyên lý hoạt động (Ngõ ra DO - Digital Output):
-    - Gặp NỀN TRẮNG (Phản xạ hồng ngoại mạnh):
-        -> Đèn LED trên module SÁNG.
-        -> Mức logic đọc về = 0 (LOW), điện áp xấp xỉ 0.0V.
-    - Gặp VẠCH ĐEN (Hấp thụ ánh sáng, không phản xạ):
+    Đặc tính phần cứng module HW-871 (Active-Low):
+    - Gặp VẠCH ĐEN (Hấp thụ tia hồng ngoại):
         -> Đèn LED trên module TẮT.
-        -> Mức logic đọc về = 1 (HIGH), điện áp xấp xỉ 3.3V.
+        -> Chân DO xuất mức 0 (LOW, 0V).
+        -> Module chuẩn hóa logic phần mềm: 1 (ĐEN / TRUE).
+    - Gặp NỀN TRẮNG (Phản xạ tia hồng ngoại):
+        -> Đèn LED trên module SÁNG.
+        -> Chân DO xuất mức 1 (HIGH, 3.3V/5V).
+        -> Module chuẩn hóa logic phần mềm: 0 (TRẮNG / FALSE).
     """
 
-    def __init__(self, s1_pin=21, s2_pin=19, s3_pin=18, s4_pin=5, s5_pin=17, left_pin=None, right_pin=None, **kwargs):
+    def __init__(self, s1_pin=21, s2_pin=19, s3_pin=18, s4_pin=5, s5_pin=17, left_pin=None, right_pin=None, active_low=True, **kwargs):
         """
         Khởi tạo cụm cảm biến TCRT5000 5 mắt với các chân GPIO được chỉ định.
-        Hỗ trợ tương thích ngược với hệ thống 2 mắt cũ.
+        :param active_low: True khi phần cứng xuất mức 0 ở vạch đen (chuẩn bo HW-871)
         """
         # Hỗ trợ tương thích ngược nếu truyền qua left_pin / right_pin cũ
         if left_pin is not None:
             s2_pin = left_pin
         if right_pin is not None:
             s4_pin = right_pin
+
+        self.active_low = active_low
 
         self.pin_s1_num = s1_pin
         self.pin_s2_num = s2_pin
@@ -62,33 +66,64 @@ class LineFollowerSensor:
 
         self.last_valid_error = 0
 
-    def read_raw(self, index):
-        """Đọc mức logic thô từ mắt thứ index (0: S1, 1: S2, 2: S3, 3: S4, 4: S5)."""
+    def read_gpio_raw(self, index):
+        """Đọc mức logic điện áp vật lý trên chân GPIO (0 hoặc 1)."""
         if 0 <= index < len(self.sensors):
             sensor = self.sensors[index]
-            return sensor.value() if sensor is not None else 0
+            return sensor.value() if sensor is not None else 1
+        return 1
+
+    def read_raw(self, index):
+        """
+        Đọc trạng thái chuẩn hóa của mắt cảm biến thứ index:
+        :return: 1 nếu là VẠCH ĐEN, 0 nếu là NỀN TRẮNG
+        """
+        if 0 <= index < len(self.sensors):
+            sensor = self.sensors[index]
+            if sensor is None:
+                return 0
+            val = sensor.value()
+            # Bo HW-871: Đèn tắt trên vạch đen xuất GPIO=0 -> Quy đổi thành 1 (ĐEN)
+            return (1 if val == 0 else 0) if self.active_low else (1 if val == 1 else 0)
         return 0
 
     def read_all_raw(self):
         """
-        Đọc đồng thời toàn bộ 5 mắt cảm biến.
-        :return: Danh sách 5 số nguyên [s1, s2, s3, s4, s5] (0: Trắng, 1: Đen)
+        Đọc đồng thời toàn bộ 5 mắt cảm biến đã chuẩn hóa:
+        :return: Danh sách 5 số nguyên [s1, s2, s3, s4, s5]
+                 1 = VẠCH ĐEN (Đèn trên module tắt)
+                 0 = NỀN TRẮNG (Đèn trên module sáng)
         """
-        return [
-            self.sensor_s1.value() if self.sensor_s1 is not None else 0,
-            self.sensor_s2.value() if self.sensor_s2 is not None else 0,
-            self.sensor_s3.value() if self.sensor_s3 is not None else 0,
-            self.sensor_s4.value() if self.sensor_s4 is not None else 0,
-            self.sensor_s5.value() if self.sensor_s5 is not None else 0,
-        ]
+        if self.active_low:
+            return [
+                1 if (self.sensor_s1.value() == 0) else 0 if self.sensor_s1 else 0,
+                1 if (self.sensor_s2.value() == 0) else 0 if self.sensor_s2 else 0,
+                1 if (self.sensor_s3.value() == 0) else 0 if self.sensor_s3 else 0,
+                1 if (self.sensor_s4.value() == 0) else 0 if self.sensor_s4 else 0,
+                1 if (self.sensor_s5.value() == 0) else 0 if self.sensor_s5 else 0,
+            ]
+        else:
+            return [
+                self.sensor_s1.value() if self.sensor_s1 else 0,
+                self.sensor_s2.value() if self.sensor_s2 else 0,
+                self.sensor_s3.value() if self.sensor_s3 else 0,
+                self.sensor_s4.value() if self.sensor_s4 else 0,
+                self.sensor_s5.value() if self.sensor_s5 else 0,
+            ]
 
     def read_raw_left(self):
-        """Đọc mức logic mắt trái (tương thích ngược - Mắt S2)."""
-        return self.sensor_s2.value() if self.sensor_s2 is not None else 0
+        """Đọc mức logic mắt trái chuẩn hóa (1: ĐEN, 0: TRẮNG - tương thích ngược Mắt S2)."""
+        if self.sensor_s2 is None:
+            return 0
+        val = self.sensor_s2.value()
+        return (1 if val == 0 else 0) if self.active_low else val
 
     def read_raw_right(self):
-        """Đọc mức logic mắt phải (tương thích ngược - Mắt S4)."""
-        return self.sensor_s4.value() if self.sensor_s4 is not None else 0
+        """Đọc mức logic mắt phải chuẩn hóa (1: ĐEN, 0: TRẮNG - tương thích ngược Mắt S4)."""
+        if self.sensor_s4 is None:
+            return 0
+        val = self.sensor_s4.value()
+        return (1 if val == 0 else 0) if self.active_low else val
 
     def is_left_on_black(self):
         """Kiểm tra mắt trái có đang chạm vạch đen."""
