@@ -79,51 +79,49 @@ Mảng 5 mắt được bố trí thành một thanh ngang đặt chúc đầu x
     3.3V chuẩn, bảo vệ an toàn tuyệt đối 100% cho các cổng vào GPIO của ESP32.
 
 2. CÁC CHÂN TÍN HIỆU SỐ DIGITAL OUTPUT (OUT1 -> OUT5):
-Cắm trực tiếp vào CỘT NGOÀI CÙNG [ S ] của các chân GPIO tương ứng:
-+-------------------+----------+----------------------------------------------+
-| Chân trên cảm biến| Vị trí S | Chức năng trong thuật toán bám line PID      |
-+-------------------+----------+----------------------------------------------+
-| [ OUT1 ] / [ D1 ] | [ D34 ]  | Mắt 1 (Trái ngoài cùng) - Xử lý cua vuông 90°|
-| [ OUT2 ] / [ D2 ] | [ D35 ]  | Mắt 2 (Trái trong)      - Bẻ lái trái vừa    |
-| [ OUT3 ] / [ D3 ] | [ D32 ]  | Mắt 3 (Chính giữa)      - Bám tâm line/Thẳng |
-| [ OUT4 ] / [ D4 ] | [ D19 ]  | Mắt 4 (Phải trong)      - Bẻ lái phải vừa    |
-| [ OUT5 ] / [ D5 ] | [ D21 ]  | Mắt 5 (Phải ngoài cùng) - Xử lý cua vuông 90°|
-+-------------------+----------+----------------------------------------------+
-
-(*) PHƯƠNG ÁN DỰ PHÒNG CHÂN NỐI (Nếu Shield của bạn không có cọc D34/D35):
-    - Mắt 1 (OUT1): Hàng [ S ] tại [ D32 ]
-    - Mắt 2 (OUT2): Hàng [ S ] tại [ D33 ]
-    - Mắt 3 (OUT3): Hàng [ S ] tại [ D25 ]
-    - Mắt 4 (OUT4): Hàng [ S ] tại [ D19 ]
-    - Mắt 5 (OUT5): Hàng [ S ] tại [ D21 ]
-    (Cả hai phương án trên đều tuyệt đối không trùng chân với Động cơ hay Cánh tay).
+👉 TẤT CẢ 5 CHÂN ĐƯỢC GOM VỀ 1 HÀNG DUY NHẤT Ở MẠNG BÊN PHẢI (CÙNG PHÍA D21 & D19).
+Trên bo của bạn, hàng chân in trực tiếp là: D23, D22, TX0, RX0, D21, D19, D18, D5, D17, D16, D4, D2, D15.
+Cắm 5 dây bẹ vào đúng 5 cọc [ S ] (cột ngoài cùng) LIỀN KỀ NHAU TỪ D21 ĐẾN D17:
++-------------------+----------+---------+----------------------------------------------+
+| Chân trên cảm biến| Cọc Bo   | GPIO    | Chức năng trong thuật toán bám line PID      |
++-------------------+----------+---------+----------------------------------------------+
+| [ OUT1 ] / [ D1 ] | [ D21 ]  | GPIO 21 | Mắt 1 (Trái ngoài cùng) - Xử lý cua vuông 90°|
+| [ OUT2 ] / [ D2 ] | [ D19 ]  | GPIO 19 | Mắt 2 (Trái trong)      - Bẻ lái trái vừa    |
+| [ OUT3 ] / [ D3 ] | [ D18 ]  | GPIO 18 | Mắt 3 (Chính giữa)      - Bám tâm line/Thẳng |
+| [ OUT4 ] / [ D4 ] | [ D5 ]   | GPIO 5  | Mắt 4 (Phải trong)      - Bẻ lái phải vừa    |
+| [ OUT5 ] / [ D5 ] | [ D17 ]  | GPIO 17 | Mắt 5 (Phải ngoài cùng) - Xử lý cua vuông 90°|
++-------------------+----------+---------+----------------------------------------------+
+(*) Lưu ý: Cảm biến siêu âm RCWL tạm thời BỎ QUA không cắm theo yêu cầu, tập trung
+    hoàn thiện hệ thống Dò Line TCRT5000 và Động cơ TB6612FNG.
 
 ================================================================================
-IV. BẢNG TỔNG HỢP PHÂN BỔ TOÀN BỘ CHÂN GPIO TRÊN ESP32:
+IV. BẢNG TỔNG HỢP PHÂN BỔ CHÂN TRÊN BO MỞ RỘNG (CHỈ TCRT5000 & TB6612):
 ================================================================================
 
 +----------+---------------+--------------------------------------------------+
-| GPIO     | Cột trên Bo   | Chức năng phần cứng                              |
+| GPIO     | Cọc trên Bo   | Chức năng phần cứng                              |
 +----------+---------------+--------------------------------------------------+
+| --- MẠNG BÊN TRÁI (ĐỘNG CƠ TB6612FNG) ---                                    |
 | GPIO 13  | D13 (Cột S)   | TB6612 AIN1 (Động cơ Bánh Trái)                  |
 | GPIO 12  | D12 (Cột S)   | TB6612 AIN2 (Động cơ Bánh Trái)                  |
 | GPIO 27  | D27 (Cột S)   | TB6612 BIN1 (Động cơ Bánh Phải)                  |
 | GPIO 26  | D26 (Cột S)   | TB6612 BIN2 (Động cơ Bánh Phải)                  |
-| GPIO 34  | D34 (Cột S)   | TCRT5000 Mắt 1 - Far Left (Ngoài cùng bên Trái)  |
-| GPIO 35  | D35 (Cột S)   | TCRT5000 Mắt 2 - Mid Left (Bên Trái)             |
-| GPIO 32  | D32 (Cột S)   | TCRT5000 Mắt 3 - Center (Chính giữa vạch)        |
-| GPIO 19  | D19 (Cột S)   | TCRT5000 Mắt 4 - Mid Right (Bên Phải)            |
-| GPIO 21  | D21 (Cột S)   | TCRT5000 Mắt 5 - Far Right (Ngoài cùng bên Phải) |
+| -        | 5V, GND, 3V   | Cấp nguồn VM, VCC, GND, STBY cho module TB6612   |
 +----------+---------------+--------------------------------------------------+
-| GPIO 5   | D5  (Cột S)   | Cảm biến siêu âm RCWL-1601 Trig (Phát xung)      |
-| GPIO 18  | D18 (Cột S)   | Cảm biến siêu âm RCWL-1601 Echo (Thu xung)       |
+| --- MẠNG BÊN PHẢI (5 CHÂN LIỀN KỀ CHO DÒ LINE TCRT5000) ---                  |
+| GPIO 21  | D21 (Cột S)   | TCRT5000 Mắt 1 - Far Left (Ngoài cùng bên Trái)  |
+| GPIO 19  | D19 (Cột S)   | TCRT5000 Mắt 2 - Mid Left (Bên Trái)             |
+| GPIO 18  | D18 (Cột S)   | TCRT5000 Mắt 3 - Center (Chính giữa vạch)        |
+| GPIO 5   | D5  (Cột S)   | TCRT5000 Mắt 4 - Mid Right (Bên Phải)            |
+| GPIO 17  | D17 (Cột S)   | TCRT5000 Mắt 5 - Far Right (Ngoài cùng bên Phải) |
 +----------+---------------+--------------------------------------------------+
-| GPIO 14  | D14 (Cột S)   | Dự phòng: Servo Base (Đế cánh tay robot)         |
-| GPIO 22  | D22 (Cột S)   | Dự phòng: Servo Shoulder (Vai cánh tay robot)    |
-| GPIO 23  | D23 (Cột S)   | Dự phòng: Servo Elbow (Khuỷu cánh tay robot)     |
-| GPIO 15  | D15 (Cột S)   | Dự phòng: Servo Gripper (Kẹp cánh tay robot)     |
-+----------+---------------+--------------------------------------------------+
-| GPIO 2   | D2  (LED)     | Đèn LED báo trạng thái Wi-Fi & Failsafe          |
+| --- CÁC CHÂN CÒN LẠI (TRỐNG HOẶC DỰ PHÒNG) ---                              |
+| GPIO 16  | D16 (Cột S)   | Trống (Dự phòng)                                 |
+| GPIO 4   | D4  (Cột S)   | Trống (Dự phòng)                                 |
+| GPIO 2   | D2  (LED)     | Đèn LED báo trạng thái Wi-Fi trên bo             |
+| GPIO 15  | D15 (Cột S)   | Trống (Dự phòng)                                 |
+| GPIO 22  | D22 (Cột S)   | Trống (Dự phòng)                                 |
+| GPIO 23  | D23 (Cột S)   | Trống (Dự phòng)                                 |
 | GPIO 1,3 | TX0, RX0      | KÊNH NẠP CODE QUA CÁP USB (GIỮ NGUYÊN KHÔNG CẮM) |
 +----------+---------------+--------------------------------------------------+
 

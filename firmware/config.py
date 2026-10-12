@@ -20,10 +20,10 @@ WIFI_CONNECT_TIMEOUT_SEC = 10
 WIFI_RETRY_DELAY_SEC = 5
 
 # ==============================================================================
-# 2. CẤU HÌNH CẢM BIẾN SIÊU ÂM RCWL-1601 / HC-SR04
+# 2. CẤU HÌNH CẢM BIẾN SIÊU ÂM RCWL-1601 / HC-SR04 (MẠNG BÊN PHẢI)
 # ==============================================================================
-PIN_ULTRASONIC_TRIG = 5      # Chân phát xung siêu âm (D5)
-PIN_ULTRASONIC_ECHO = 18     # Chân thu xung hồi tiếp (D18)
+PIN_ULTRASONIC_TRIG = 16     # Chân phát xung siêu âm (RX2 / GPIO 16 - Cột S bên Phải)
+PIN_ULTRASONIC_ECHO = 4      # Chân thu xung hồi tiếp (D4 / GPIO 4 - Cột S bên Phải)
 OBSTACLE_DISTANCE_THRESHOLD_CM = 10.0  # Ngưỡng phát hiện vật cản (cm)
 
 # ==============================================================================
@@ -32,10 +32,17 @@ OBSTACLE_DISTANCE_THRESHOLD_CM = 10.0  # Ngưỡng phát hiện vật cản (cm)
 CONTROL_LOOP_INTERVAL_MS = 20
 
 # ==============================================================================
-# 4. CẤU HÌNH CẢM BIẾN DÒ LINE QUANG HỌC TCRT5000
+# 4. CẤU HÌNH MẢNG CẢM BIẾN DÒ LINE TCRT5000 5 MẮT (MẠNG BÊN PHẢI LIỀN KỀ)
 # ==============================================================================
-PIN_LINE_LEFT = 19           # Mắt Trái nối chân DO vào GPIO 19 (D19)
-PIN_LINE_RIGHT = 21          # Mắt Phải nối chân DO vào GPIO 21 (D21)
+PIN_LINE_S1 = 21             # Mắt 1: Ngoài Trái  -> D21 (GPIO 21)
+PIN_LINE_S2 = 19             # Mắt 2: Giữa Trái   -> D19 (GPIO 19)
+PIN_LINE_S3 = 18             # Mắt 3: Trung Tâm   -> D18 (GPIO 18)
+PIN_LINE_S4 = 5              # Mắt 4: Giữa Phải   -> D5  (GPIO 5)
+PIN_LINE_S5 = 17             # Mắt 5: Ngoài Phải  -> TX2 (GPIO 17)
+
+# Cấu hình dự phòng tương thích ngược cho chế độ 2 mắt cũ
+PIN_LINE_LEFT = 19           # Mắt Trái (D19)
+PIN_LINE_RIGHT = 21          # Mắt Phải (D21)
 
 # ==============================================================================
 # 5. CẤU HÌNH ĐỘNG CƠ TB6612FNG (BÁNH TRÁI VÀ BÁNH PHẢI)

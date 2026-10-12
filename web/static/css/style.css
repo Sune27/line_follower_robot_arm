@@ -2815,6 +2815,15 @@ textarea {
     backdrop-filter: blur(14px);
 }
 
+.tcrt5-card {
+    max-width: 960px;
+    gap: 20px;
+    background: radial-gradient(circle at 50% 0%, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.95) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 20px rgba(245, 158, 11, 0.08);
+}
+
+
 /* 1. Header cau hinh o tick */
 .tcrt-header-config {
     display: flex;
@@ -5532,5 +5541,545 @@ textarea {
 .log-entry.log-warn .log-time { color: #f59e0b; }
 .log-entry.log-danger .log-time { color: #ef4444; }
 .log-entry.log-danger { color: #fca5a5; font-weight: 700; }
+
+/* ==============================================================================
+   TCRT5000 5-CHANNEL DUAL-MODE STYLES (PHƯƠNG ÁN 1)
+   ============================================================================== */
+.tcrt5-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 18px;
+    background: rgba(2, 6, 23, 0.75);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 12px;
+}
+
+.tcrt5-toolbar-left,
+.tcrt5-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.tcrt-live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 15px;
+    border-radius: 9px;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    border: 1px solid rgba(6, 182, 212, 0.45);
+    background: rgba(6, 182, 212, 0.12);
+    color: #38bdf8;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 14px rgba(6, 182, 212, 0.2);
+}
+
+.tcrt-live-badge .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #06b6d4;
+    box-shadow: 0 0 8px #06b6d4;
+    animation: tcrtPulseLive 1.8s infinite ease-in-out;
+}
+
+@keyframes tcrtPulseLive {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.35;
+        transform: scale(0.8);
+    }
+}
+
+.btn-tcrt-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.btn-tcrt-action:hover {
+    background: rgba(51, 65, 85, 0.8);
+    border-color: #fbbf24;
+    color: #fbbf24;
+    transform: translateY(-1px);
+}
+
+/* 2. Sensor Bar 5 Capsules */
+.tcrt5-bar-container {
+    background: rgba(2, 6, 23, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.tcrt5-bar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.tcrt5-bar-title {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #fbbf24;
+    letter-spacing: 0.5px;
+}
+
+.tcrt5-bar-hint {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+.tcrt5-sensors-bar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+}
+
+.tcrt5-pod {
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 14px;
+    padding: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: default;
+    transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.pod-badge {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+.pod-badge-center {
+    color: #38bdf8;
+}
+
+.pod-lens {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #090e17;
+    border: 2px solid #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.pod-core {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #334155;
+    transition: all 0.3s ease;
+}
+
+.pod-pin {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.12);
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.pod-status {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #cbd5e1;
+}
+
+.pod-volt {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+/* Trạng thái Pod: VẠCH ĐEN (1) - Bắt sáng đỏ rực rỡ */
+.tcrt5-pod.is-black {
+    border-color: #ef4444;
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.15) 0%, rgba(15, 23, 42, 0.95) 100%);
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.35);
+}
+
+.tcrt5-pod.is-black .pod-lens {
+    border-color: #ef4444;
+    background: #450a0a;
+    box-shadow: 0 0 20px #ef4444, inset 0 0 12px #ef4444;
+}
+
+.tcrt5-pod.is-black .pod-core {
+    background: #ef4444;
+    box-shadow: 0 0 14px #ffffff, 0 0 25px #ef4444;
+}
+
+.tcrt5-pod.is-black .pod-status {
+    color: #ef4444;
+    text-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+.tcrt5-pod.is-black .pod-volt {
+    color: #fca5a5;
+    font-weight: 700;
+}
+
+/* Trạng thái Pod: NỀN TRẮNG (0) - Thanh lịch, dịu */
+.tcrt5-pod.is-white .pod-lens {
+    border-color: #10b981;
+    background: #022c22;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+}
+
+.tcrt5-pod.is-white .pod-core {
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+}
+
+.tcrt5-pod.is-white .pod-status {
+    color: #34d399;
+}
+
+/* Trạng thái Pod: TẮT (Nghỉ) */
+.tcrt5-pod.is-disabled {
+    opacity: 0.35;
+    pointer-events: none;
+    filter: grayscale(0.8);
+}
+
+/* 3. Thước đo lệch tâm Deviation HUD */
+.tcrt5-hud-container {
+    background: rgba(2, 6, 23, 0.85);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.5);
+}
+
+.tcrt5-hud-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.hud-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hud-icon {
+    font-size: 1.1rem;
+}
+
+.hud-title {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    letter-spacing: 0.5px;
+}
+
+.hud-bitmask {
+    font-family: 'Chakra Petch', monospace;
+    font-size: 0.82rem;
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    padding: 3px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+}
+
+/* Thước đo vạch chia độ */
+.tcrt5-gauge-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 14px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 12px;
+}
+
+.gauge-scale {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    padding: 0 4px;
+}
+
+.scale-mark.mark-zero {
+    color: #38bdf8;
+    font-size: 0.85rem;
+}
+
+.gauge-track {
+    position: relative;
+    height: 22px;
+    background: linear-gradient(90deg, 
+        rgba(239, 68, 68, 0.3) 0%, 
+        rgba(245, 158, 11, 0.2) 25%, 
+        rgba(16, 185, 129, 0.35) 50%, 
+        rgba(245, 158, 11, 0.2) 75%, 
+        rgba(239, 68, 68, 0.3) 100%
+    );
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 11px;
+    overflow: visible;
+}
+
+.gauge-center-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: #38bdf8;
+    box-shadow: 0 0 6px #38bdf8;
+}
+
+.gauge-indicator {
+    position: absolute;
+    top: -6px;
+    transform: translateX(-50%);
+    transition: left 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10;
+}
+
+.indicator-arrow {
+    width: 0;
+    height: 0;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-top: 10px solid #fbbf24;
+    filter: drop-shadow(0 0 6px #fbbf24);
+}
+
+.indicator-label {
+    margin-top: 2px;
+    background: #020617;
+    border: 1px solid #fbbf24;
+    color: #fbbf24;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+.gauge-labels-sub {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #64748b;
+    padding: 0 2px;
+}
+
+/* Thống kê 3 cột */
+.tcrt5-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.stat-box {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.stat-lbl {
+    font-size: 0.76rem;
+    color: #94a3b8;
+}
+
+.stat-val {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.stat-val.highlight {
+    color: #fbbf24;
+}
+
+.stat-badge {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    letter-spacing: 0.4px;
+}
+
+.stat-badge.badge-straight {
+    background: rgba(16, 185, 129, 0.18);
+    border: 1px solid #10b981;
+    color: #34d399;
+}
+
+.stat-badge.badge-steer {
+    background: rgba(6, 182, 212, 0.18);
+    border: 1px solid #06b6d4;
+    color: #38bdf8;
+}
+
+.stat-badge.badge-sharp {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid #f59e0b;
+    color: #fbbf24;
+}
+
+.stat-badge.badge-stop {
+    background: rgba(168, 85, 247, 0.22);
+    border: 1px solid #a855f7;
+    color: #c084fc;
+}
+
+.stat-badge.badge-lost {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid #ef4444;
+    color: #fca5a5;
+    animation: pulse-danger 1s infinite alternate;
+}
+
+@keyframes pulse-danger {
+    from { box-shadow: 0 0 4px rgba(239, 68, 68, 0.3); }
+    to { box-shadow: 0 0 14px rgba(239, 68, 68, 0.7); }
+}
+
+/* 4. Telemetry 5-Card Grid */
+.tcrt5-telemetry-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+}
+
+.tcrt5-tele-card {
+    background: rgba(2, 6, 23, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+    transition: all 0.25s ease;
+}
+
+.tcrt5-tele-card.center-card {
+    border-color: rgba(56, 189, 248, 0.4);
+    background: rgba(14, 165, 233, 0.08);
+}
+
+.tele-top {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+}
+
+.tele-mid {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.tele-bot {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.72rem;
+    color: #64748b;
+}
+
+@media (max-width: 768px) {
+    .tcrt5-sensors-bar {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+    }
+    .tcrt5-pod {
+        padding: 8px 4px;
+    }
+    .pod-lens {
+        width: 32px;
+        height: 32px;
+    }
+    .pod-core {
+        width: 12px;
+        height: 12px;
+    }
+    .tcrt5-stats-row {
+        grid-template-columns: 1fr;
+    }
+    .tcrt5-telemetry-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 4px;
+    }
+}
+
 
 

@@ -784,8 +784,8 @@
                     <span>Quay lại</span>
                 </button>
                 <div class="ultrasonic-title-box">
-                    <h2 class="ultrasonic-main-title">CẢM BIẾN DÒ LINE TCRT5000</h2>
-                    <span class="ultrasonic-sub-tag" style="color: #fbbf24;">HỆ THỐNG DẪN HƯỚNG QUANG HỌC 2D</span>
+                    <h2 class="ultrasonic-main-title">CẢM BIẾN DÒ LINE TCRT5000 (5 MẮT)</h2>
+                    <span class="ultrasonic-sub-tag" style="color: #fbbf24;">MẢNG DẪN HƯỚNG QUANG HỌC 5-KÊNH • BỘ ĐIỀU KHIỂN PID</span>
                 </div>
             </div>
 
@@ -793,162 +793,187 @@
                 <div class="sensor-hardware-badge"
                     style="border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08);">
                     <span class="hardware-pulse-dot" style="background: #f59e0b; box-shadow: 0 0 8px #f59e0b;"></span>
-                    <span class="hardware-label" style="color: #fbbf24;">TCRT5000 • CHASSIS VISUALIZER</span>
+                    <span class="hardware-label" style="color: #fbbf24;">5-CHANNEL ARRAY • LIVE HARDWARE</span>
                 </div>
             </div>
         </header>
 
-        <!-- KHU VỰC NỘI DUNG CHÍNH (CĂN GIỮA ĐẸP MẮT THEO MẪU SƠ ĐỒ) -->
+        <!-- KHU VỰC NỘI DUNG CHÍNH (LIVE HARDWARE MONITOR THỜI GIAN THỰC) -->
         <main class="ultrasonic-main-content tcrt-main-container">
-            <div class="tcrt-central-card">
+            <div class="tcrt-central-card tcrt5-card">
 
-                <!-- 1. CẤU HÌNH Ô TICK MẮT CẢM BIẾN (Theo yêu cầu: Mắt Trái D19, Mắt Phải D21) -->
-                <div class="tcrt-header-config">
-                    <span class="tcrt-config-title">⚙️ CẤU HÌNH MẮT DÒ LINE:</span>
-                    <div class="tcrt-checkboxes-group">
-                        <!-- Ô tick Mắt Trái (Mặc định cắm D19) -->
-                        <label class="tcrt-checkbox-label" for="chk-sensor-left">
-                            <input type="checkbox" id="chk-sensor-left" checked>
-                            <span class="checkbox-text">Mắt Trái <b class="pin-badge">GPIO 19</b></span>
-                        </label>
+                <!-- 1. THANH ĐIỀU HÀNH (GIÁM SÁT TRỰC TIẾP TỪ ESP32) -->
+                <div class="tcrt5-toolbar">
+                    <div class="tcrt5-toolbar-left">
+                        <button type="button" class="btn-tcrt-power is-off" id="btn-toggle-tcrt-power"
+                            title="Bật / Tắt cảm biến">
+                            <span class="btn-power-icon" id="tcrt-power-btn-icon">▶</span>
+                            <span class="btn-power-text" id="tcrt-power-btn-text">Bật cảm biến</span>
+                        </button>
 
-                        <!-- Ô tick Mắt Phải (Mặc định cắm D21) -->
-                        <label class="tcrt-checkbox-label" for="chk-sensor-right">
-                            <input type="checkbox" id="chk-sensor-right" checked>
-                            <span class="checkbox-text">Mắt Phải <b class="pin-badge">GPIO 21</b></span>
-                        </label>
+                        <div class="tcrt-live-badge" title="Tín hiệu đọc thời gian thực từ phần cứng ESP32">
+                            <span class="live-dot"></span>
+                            <span class="live-label">LIVE HARDWARE STREAM</span>
+                        </div>
+                    </div>
+
+                    <div class="tcrt5-toolbar-right">
+                        <button type="button" class="btn-tcrt-action" id="btn-tcrt-reset" title="Đưa toàn bộ hiển thị về trạng thái trắng ban đầu">
+                            <span>🔄</span> <span>Reset hiển thị</span>
+                        </button>
                     </div>
                 </div>
 
-                <!-- THANH ĐIỀU KHIỂN BẬT / TẮT TRẠNG THÁI LÀM VIỆC TCRT5000 -->
-                <div class="tcrt-power-bar">
-                    <div class="tcrt-power-status-box">
-                        <span class="tcrt-power-status-dot dot-off" id="tcrt-power-dot"></span>
-                        <span class="tcrt-power-status-lbl">Trạng thái:</span>
-                        <span class="tcrt-power-status-val status-standby" id="tcrt-power-status-text">ĐÃ TẮT
-                            (NGHỈ)</span>
+                <!-- 2. THANH MẢNG 5 MẮT SENSOR BAR (CAPSULES) -->
+                <div class="tcrt5-bar-container">
+                    <div class="tcrt5-bar-header">
+                        <span class="tcrt5-bar-title">MẢNG 5 MẮT CẢM BIẾN (GIÁM SÁT THỜI GIAN THỰC)</span>
+                        <span class="tcrt5-bar-hint">Đèn Đỏ = VẠCH ĐEN (1) • Đèn Xám = NỀN TRẮNG (0)</span>
                     </div>
-                    <button type="button" class="btn-tcrt-power is-off" id="btn-toggle-tcrt-power"
-                        title="Bật / Tắt trạng thái làm việc của cảm biến TCRT5000">
-                        <span class="btn-power-icon" id="tcrt-power-btn-icon">▶</span>
-                        <span class="btn-power-text" id="tcrt-power-btn-text">Bật cảm biến TCRT5000</span>
-                    </button>
-                </div>
 
-                <!-- 2. KHUNG SÂN CHẠY & ĐẦU XE ROBOT 2D (Theo sơ đồ trực quan) -->
-                <div class="tcrt-stage-wrapper">
-                    <div class="tcrt-track-floor" id="tcrt-track-floor">
-                        <!-- Vạch line màu đen chạy dọc -->
-                        <div class="tcrt-black-line" id="tcrt-black-line">
-                            <div class="tcrt-line-stripe"></div>
+                    <div class="tcrt5-sensors-bar" id="tcrt5-sensors-bar">
+                        <!-- Mắt 1: Far Left (D21) -->
+                        <div class="tcrt5-pod is-white" id="tcrt-pod-1">
+                            <div class="pod-badge">S1 • TRÁI NGOÀI</div>
+                            <div class="pod-lens">
+                                <div class="pod-core"></div>
+                            </div>
+                            <div class="pod-pin">GPIO 21</div>
+                            <div class="pod-status" id="pod-status-1">TRẮNG (0)</div>
+                            <div class="pod-volt" id="pod-volt-1">0.0V</div>
                         </div>
 
-                        <!-- Mô hình 2D ĐẦU XE ROBOT -->
-                        <div class="tcrt-robot-chassis" id="tcrt-robot-chassis">
-                            <div class="tcrt-chassis-shell">
-                                <div class="tcrt-bumper"></div>
-                                <div class="tcrt-headlights">
-                                    <div class="tcrt-hl hl-l"></div>
-                                    <div class="tcrt-hl hl-r"></div>
-                                </div>
-                                <div class="tcrt-chassis-title">ĐẦU XE ROBOT</div>
+                        <!-- Mắt 2: Mid Left (D19) -->
+                        <div class="tcrt5-pod is-white" id="tcrt-pod-2">
+                            <div class="pod-badge">S2 • TRÁI TRONG</div>
+                            <div class="pod-lens">
+                                <div class="pod-core"></div>
+                            </div>
+                            <div class="pod-pin">GPIO 19</div>
+                            <div class="pod-status" id="pod-status-2">TRẮNG (0)</div>
+                            <div class="pod-volt" id="pod-volt-2">0.0V</div>
+                        </div>
 
-                                <!-- 2 Mắt cảm biến trên đầu xe -->
-                                <div class="tcrt-sensors-row">
-                                    <!-- Mắt Trái -->
-                                    <div class="tcrt-eye-pod is-white" id="tcrt-eye-left" data-sensor="left"
-                                        title="Click để chuyển đổi Trắng / Đen thử nghiệm">
-                                        <div class="eye-lens" id="lens-left">
-                                            <div class="eye-core"></div>
-                                        </div>
-                                        <div class="eye-label" id="label-eye-left">Mắt Trái</div>
-                                        <div class="eye-pin">D19</div>
-                                    </div>
+                        <!-- Mắt 3: Center (D18) -->
+                        <div class="tcrt5-pod is-white" id="tcrt-pod-3">
+                            <div class="pod-badge pod-badge-center">S3 • CHÍNH GIỮA</div>
+                            <div class="pod-lens">
+                                <div class="pod-core"></div>
+                            </div>
+                            <div class="pod-pin">GPIO 18</div>
+                            <div class="pod-status" id="pod-status-3">TRẮNG (0)</div>
+                            <div class="pod-volt" id="pod-volt-3">0.0V</div>
+                        </div>
 
-                                    <!-- Mắt Phải -->
-                                    <div class="tcrt-eye-pod is-white" id="tcrt-eye-right" data-sensor="right"
-                                        title="Click để chuyển đổi Trắng / Đen thử nghiệm">
-                                        <div class="eye-lens" id="lens-right">
-                                            <div class="eye-core"></div>
-                                        </div>
-                                        <div class="eye-label" id="label-eye-right">Mắt Phải</div>
-                                        <div class="eye-pin">D21</div>
-                                    </div>
-                                </div>
+                        <!-- Mắt 4: Mid Right (D5) -->
+                        <div class="tcrt5-pod is-white" id="tcrt-pod-4">
+                            <div class="pod-badge">S4 • PHẢI TRONG</div>
+                            <div class="pod-lens">
+                                <div class="pod-core"></div>
+                            </div>
+                            <div class="pod-pin">GPIO 5</div>
+                            <div class="pod-status" id="pod-status-4">TRẮNG (0)</div>
+                            <div class="pod-volt" id="pod-volt-4">0.0V</div>
+                        </div>
 
-                                <!-- Bánh xe 2 bên mô phỏng -->
-                                <div class="tcrt-wheel wheel-left"></div>
-                                <div class="tcrt-wheel wheel-right"></div>
+                        <!-- Mắt 5: Far Right (TX2 / D17) -->
+                        <div class="tcrt5-pod is-white" id="tcrt-pod-5">
+                            <div class="pod-badge">S5 • PHẢI NGOÀI</div>
+                            <div class="pod-lens">
+                                <div class="pod-core"></div>
+                            </div>
+                            <div class="pod-pin">GPIO 17</div>
+                            <div class="pod-status" id="pod-status-5">TRẮNG (0)</div>
+                            <div class="pod-volt" id="pod-volt-5">0.0V</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. THƯỚC ĐO LỆCH TÂM & TÍNH TOÁN SAI SỐ PID (DEVIATION HUD) -->
+                <div class="tcrt5-hud-container">
+                    <div class="tcrt5-hud-header">
+                        <div class="hud-title-wrap">
+                            <span class="hud-icon">📐</span>
+                            <span class="hud-title">THƯỚC ĐO LỆCH TÂM & PHÂN TÍCH VỊ TRÍ PID</span>
+                        </div>
+                        <div class="hud-bitmask" id="tcrt5-bitmask">
+                            BITMASK: <b>0b00000</b> (0x00)
+                        </div>
+                    </div>
+
+                    <!-- Thước đo vạch chia độ (-4 đến +4) -->
+                    <div class="tcrt5-gauge-wrapper">
+                        <div class="gauge-scale">
+                            <span class="scale-mark mark-neg4">-4</span>
+                            <span class="scale-mark mark-neg3">-3</span>
+                            <span class="scale-mark mark-neg2">-2</span>
+                            <span class="scale-mark mark-neg1">-1</span>
+                            <span class="scale-mark mark-zero">0</span>
+                            <span class="scale-mark mark-pos1">+1</span>
+                            <span class="scale-mark mark-pos2">+2</span>
+                            <span class="scale-mark mark-pos3">+3</span>
+                            <span class="scale-mark mark-pos4">+4</span>
+                        </div>
+                        <div class="gauge-track">
+                            <div class="gauge-center-line"></div>
+                            <div class="gauge-indicator" id="tcrt5-gauge-indicator" style="left: 50%;">
+                                <div class="indicator-arrow"></div>
+                                <div class="indicator-label" id="tcrt5-error-label">0</div>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- THANH TÓM TẮT PHẢN ỨNG HÀNH VI DÒ LINE (ĐỒNG BỘ VỚI LOGIC XE) -->
-                <div class="tcrt-behavior-bar" id="tcrt-behavior-bar">
-                    <div class="behavior-title-group">
-                        <span class="behavior-icon">🧭</span>
-                        <span class="behavior-title">HÀNH VI ĐIỀU HƯỚNG BÁM VẠCH:</span>
-                    </div>
-                    <div class="behavior-status-badge badge-straight" id="tcrt-behavior-badge">
-                        <span class="behavior-beacon"></span>
-                        <span id="tcrt-behavior-text">ĐÚNG TIM ĐƯỜNG • ĐI THẲNG ĐỀU</span>
-                    </div>
-                </div>
-
-                <!-- 3. BẢNG THÔNG SỐ ĐO LƯỜNG VÀ LOGIC TỪNG MẮT (Theo sơ đồ) -->
-                <div class="tcrt-telemetry-grid">
-
-                    <!-- BẢNG MẮT TRÁI (D19) -->
-                    <div class="tcrt-telemetry-box" id="telemetry-box-left">
-                        <div class="telemetry-box-header">
-                            <span class="box-channel-icon">◀️</span>
-                            <span class="box-channel-name">MẮT TRÁI (GPIO D19)</span>
+                        <div class="gauge-labels-sub">
+                            <span>◄ CUA GẮT TRÁI</span>
+                            <span>CHÍNH GIỮA TIM ĐƯỜNG</span>
+                            <span>CUA GẮT PHẢI ►</span>
                         </div>
-                        <div class="telemetry-status-row">
-                            <span class="telemetry-label">Trạng thái:</span>
-                            <span class="telemetry-badge badge-white" id="status-badge-left">
-                                <span class="badge-dot dot-green" id="status-dot-left"></span>
-                                <span id="status-text-left">TRẮNG</span>
+                    </div>
+
+                    <!-- Thống kê thông số & Hành vi -->
+                    <div class="tcrt5-stats-row">
+                        <div class="stat-box">
+                            <span class="stat-lbl">Sai số vị trí (PID Error):</span>
+                            <span class="stat-val" id="tcrt5-error-val">0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-lbl">Trạng thái nhận diện:</span>
+                            <span class="stat-badge badge-straight" id="tcrt5-behavior-badge">
+                                ĐÚNG TIM ĐƯỜNG • ĐI THẲNG
                             </span>
                         </div>
-                        <div class="telemetry-metrics-row">
-                            <div class="metric-item">
-                                <span class="metric-lbl">Logic:</span>
-                                <span class="metric-val" id="logic-val-left">0 (LOW)</span>
-                            </div>
-                            <div class="metric-item">
-                                <span class="metric-lbl">Điện áp:</span>
-                                <span class="metric-val" id="volt-val-left">0.0V</span>
-                            </div>
+                        <div class="stat-box">
+                            <span class="stat-lbl">Tốc độ vi sai ước tính:</span>
+                            <span class="stat-val highlight" id="tcrt5-speed-preview">L: 35% | R: 35%</span>
                         </div>
                     </div>
+                </div>
 
-                    <!-- BẢNG MẮT PHẢI (D21) -->
-                    <div class="tcrt-telemetry-box" id="telemetry-box-right">
-                        <div class="telemetry-box-header">
-                            <span class="box-channel-icon">▶️</span>
-                            <span class="box-channel-name">MẮT PHẢI (GPIO D21)</span>
-                        </div>
-                        <div class="telemetry-status-row">
-                            <span class="telemetry-label">Trạng thái:</span>
-                            <span class="telemetry-badge badge-white" id="status-badge-right">
-                                <span class="badge-dot dot-green" id="status-dot-right"></span>
-                                <span id="status-text-right">TRẮNG</span>
-                            </span>
-                        </div>
-                        <div class="telemetry-metrics-row">
-                            <div class="metric-item">
-                                <span class="metric-lbl">Logic:</span>
-                                <span class="metric-val" id="logic-val-right">0 (LOW)</span>
-                            </div>
-                            <div class="metric-item">
-                                <span class="metric-lbl">Điện áp:</span>
-                                <span class="metric-val" id="volt-val-right">0.0V</span>
-                            </div>
-                        </div>
+                <!-- 4. BẢNG TELEMETRY CHI TIẾT 5 KÊNH -->
+                <div class="tcrt5-telemetry-grid">
+                    <div class="tcrt5-tele-card" id="tele-card-1">
+                        <div class="tele-top">S1 • D21</div>
+                        <div class="tele-mid" id="tele-status-1">TRẮNG</div>
+                        <div class="tele-bot" id="tele-detail-1">0 • 0.0V</div>
                     </div>
-
+                    <div class="tcrt5-tele-card" id="tele-card-2">
+                        <div class="tele-top">S2 • D19</div>
+                        <div class="tele-mid" id="tele-status-2">TRẮNG</div>
+                        <div class="tele-bot" id="tele-detail-2">0 • 0.0V</div>
+                    </div>
+                    <div class="tcrt5-tele-card center-card" id="tele-card-3">
+                        <div class="tele-top">S3 • D18 (TÂM)</div>
+                        <div class="tele-mid" id="tele-status-3">TRẮNG</div>
+                        <div class="tele-bot" id="tele-detail-3">0 • 0.0V</div>
+                    </div>
+                    <div class="tcrt5-tele-card" id="tele-card-4">
+                        <div class="tele-top">S4 • D5</div>
+                        <div class="tele-mid" id="tele-status-4">TRẮNG</div>
+                        <div class="tele-bot" id="tele-detail-4">0 • 0.0V</div>
+                    </div>
+                    <div class="tcrt5-tele-card" id="tele-card-5">
+                        <div class="tele-top">S5 • D17</div>
+                        <div class="tele-mid" id="tele-status-5">TRẮNG</div>
+                        <div class="tele-bot" id="tele-detail-5">0 • 0.0V</div>
+                    </div>
                 </div>
 
             </div>
