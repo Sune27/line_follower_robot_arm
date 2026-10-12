@@ -1,7 +1,7 @@
 # 🚗🤖 XE DÒ LINE KẾT HỢP CÁNH TAY ROBOT 4-DOF
 > **Hệ thống xe tự hành bám line tích hợp cánh tay robot gắp vật thể, điều khiển và giám sát thời gian thực qua giao diện Web.**
 
-[![Hardware](https://img.shields.io/badge/Hardware-ESP32%20%7C%20TB6612FNG%20%7C%20SG90-blue.svg)](#phần-cứng)
+[![Hardware](https://img.shields.io/badge/Hardware-ESP32%20%7C%20TB6612%20%7C%20TCRT5000--5CH-blue.svg)](#phần-cứng)
 [![Firmware](https://img.shields.io/badge/Firmware-MicroPython-green.svg)](#kiến-trúc-phần-mềm)
 [![Backend](https://img.shields.io/badge/Backend-Python%20%7C%20AioHTTP%20%7C%20WebSocket-yellow.svg)](#kiến-trúc-phần-mềm)
 [![Frontend](https://img.shields.io/badge/Frontend-HTML5%20%7C%20CSS3%20%7C%20JS-orange.svg)](#hướng-dẫn-truy-cập-web)
@@ -14,13 +14,13 @@ Dự án nghiên cứu và chế tạo **Xe tự hành dò đường (Line Follo
 - **Nhập môn Cơ Điện Tử:** Tích hợp cơ khí, mạch động lực, nguồn pin và điều khiển chấp hành.
 - **Kiến trúc Máy Tính & Mạng Truyền Thông Công Nghiệp:** Vi điều khiển ESP32 32-bit Dual-Core, giao thức mạng thời gian thực WebSocket, mạng Wi-Fi không dây.
 - **Lập Trình Nâng Cao:** Mô hình máy trạng thái (FSM), thuật toán điều khiển PID bám line, lập trình hướng đối tượng (OOP).
-- **Kỹ Thuật Đo Lường & Cảm Biến:** Thu thập và lọc nhiễu cảm biến hồng ngoại TCRT5000 và cảm biến siêu âm RCWL-1601.
+- **Kỹ Thuật Đo Lường & Cảm Biến:** Thu thập và xử lý tín hiệu mảng cảm biến hồng ngoại TCRT5000 5 mắt và cảm biến siêu âm RCWL-1601.
 
 ---
 
 ## 🌟 Tính Năng Chính
 
-* **Tự động bám line (Line Tracking):** Xe bám theo đường line đen chính xác trên nền sáng nhờ mảng cảm biến hồng ngoại `TCRT5000` và bộ điều khiển PID.
+* **Tự động bám line (Line Tracking):** Xe bám theo đường line đen chính xác trên nền sáng nhờ mảng cảm biến hồng ngoại `TCRT5000 5 mắt` kết hợp thuật toán điều khiển PID vi sai mượt mà, chống lắc cá rô.
 * **Đo khoảng cách & Tránh vật cản (Object Detection):** Cảm biến siêu âm `RCWL-1601` phát hiện vật thể phía trước với độ chính xác cao ở cự ly $\le 10\text{ cm}$.
 * **Cánh tay gắp tự động (Robotic Pick & Place):** Cánh tay 4-DOF dẫn động bởi 4 động cơ Servo `SG90` thực hiện chuỗi hành động hạ tay, mở kẹp, gắp vật và nâng vật an toàn.
 * **Giao diện Web điều khiển thời gian thực:**
@@ -36,8 +36,8 @@ Dự án nghiên cứu và chế tạo **Xe tự hành dò đường (Line Follo
 | STT | Khối chức năng | Tên linh kiện | Mô tả kỹ thuật |
 | :---: | :--- | :--- | :--- |
 | 1 | **Vi điều khiển** | ESP32 Devkit V1 (30 chân) | Vi xử lý Xtensa Dual-Core 240MHz, tích hợp Wi-Fi & BLE |
-| 2 | **Shield mở rộng** | Bảng mở rộng ESP32 30P | Phân phối chân GPIO, chân nguồn $5V$, $3.3V$ và GND |
-| 3 | **Cảm biến dò line** | Module IR TCRT5000 | Cảm biến phản xạ hồng ngoại phát hiện vạch đen |
+| 2 | **Shield mở rộng** | Bảng mở rộng ESP32 30P (Expansion Board) | Phân phối các hàng cọc chuẩn **S (Signal) - V (Voltage) - G (Ground)** cho từng chân GPIO, tích hợp cổng giắc tròn DC 6.5-16V, jumper chuyển đổi 3.3V/5V, mang lại nhiều chân cắm và sự lựa chọn đấu nối linh hoạt, an toàn |
+| 3 | **Cảm biến dò line** | Mảng cảm biến hồng ngoại TCRT5000 5 mắt (5-Channel IR Array) | Mảng 5 mắt phản xạ hồng ngoại phát hiện vạch đen, xuất 5 tín hiệu Digital (DO1 - DO5) giúp tính toán sai số vị trí đa mức cho bộ điều khiển PID |
 | 4 | **Cảm biến cự ly** | Module Siêu âm RCWL-1601 | Đo khoảng cách vật cản (hoạt động tốt ở mức $3.3V$ - $5V$) |
 | 5 | **Mạch công suất** | Driver cầu H TB6612FNG | Điều khiển 2 động cơ DC (hiệu suất cao, sụt áp thấp) |
 | 6 | **Cơ cấu gắp** | Bộ kit cánh tay robot 4-DOF | 4 khớp chuyển động: Đế xoay, Khớp vai, Khớp khuỷu, Kẹp gắp |
