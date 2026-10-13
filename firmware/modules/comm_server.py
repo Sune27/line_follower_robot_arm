@@ -83,8 +83,17 @@ class RobotCommServer:
         print(msg_str)
         if self.tcp_client:
             try:
-                self.tcp_client.write((msg_str + "\n").encode('utf-8'))
-            except Exception:
+                data = (msg_str + "\n").encode('utf-8')
+                if hasattr(self.tcp_client, "sendall"):
+                    self.tcp_client.sendall(data)
+                elif hasattr(self.tcp_client, "send"):
+                    self.tcp_client.send(data)
+                elif hasattr(self.tcp_client, "write"):
+                    self.tcp_client.write(data)
+            except Exception as e:
+                # Bỏ qua nếu socket tạm thời bận (EAGAIN)
+                if hasattr(e, "args") and len(e.args) > 0 and e.args[0] in (11, 110):
+                    return
                 try:
                     self.serial_poll.unregister(self.tcp_client)
                     self.tcp_client.close()
@@ -139,7 +148,10 @@ class RobotCommServer:
                                 c_line, self.tcp_rx_buf = self.tcp_rx_buf.split('\n', 1)
                                 if self.command_callback:
                                     self.command_callback(c_line.strip())
-                    except Exception:
+                    except Exception as e:
+                        # Trong MicroPython, non-blocking socket có thể ném EAGAIN (errno 11/110) khi chưa có byte đến
+                        if hasattr(e, "args") and len(e.args) > 0 and e.args[0] in (11, 110):
+                            continue
                         try:
                             self.serial_poll.unregister(self.tcp_client)
                             self.tcp_client.close()

@@ -59,8 +59,16 @@ def main():
         freq=config.MOTOR_PWM_FREQ
     )
 
-    # 5. Khởi tạo Bộ não điều phối Dò Line (Mặc định base_speed = 35%)
-    line_tracker = LineTracker(motor_driver=motor, base_speed=35)
+    # 5. Khởi tạo Bộ điều khiển Dò Line PD 5 kênh (Mặc định Standby - chờ lệnh Web)
+    line_tracker = LineTracker(
+        motor_driver=motor,
+        base_speed=config.LINE_BASE_SPEED,
+        kp=config.PID_KP,
+        ki=config.PID_KI,
+        kd=config.PID_KD,
+        startup_duration_ms=config.LINE_STARTUP_DURATION_MS,
+        startup_speed=config.LINE_STARTUP_SPEED
+    )
 
     # 6. Khởi tạo Server Truyền thông & Failsafe (Port 8888)
     comm = RobotCommServer(wifi_mgr=wifi_mgr, port=8888)
@@ -100,11 +108,9 @@ def main():
     # Bộ đếm thời gian cho các nhịp thực thi độc lập (Tick Scheduling)
     last_line_time = 0
     last_telemetry_time = 0
-    last_ultrasonic_time = 0
 
-    LINE_INTERVAL_MS = 15        # Nhịp 1: Điều khiển dò line cực nhanh (15ms ~ 66Hz)
+    LINE_INTERVAL_MS = 15        # Nhịp 1: Điều khiển dò line PID cực nhanh (15ms ~ 66Hz)
     TELEMETRY_INTERVAL_MS = 100   # Nhịp 2: Đẩy telemetry lên Web vừa phải (100ms ~ 10Hz)
-    ULTRASONIC_INTERVAL_MS = 200  # Nhịp 3: Quét siêu âm (200ms ~ 5Hz)
 
     print("[ESP32] ✅ HỆ THỐNG SẴN SÀNG VẬN HÀNH!")
 
@@ -118,14 +124,13 @@ def main():
             # --- TÁC VỤ A: LẮNG NGHE LỆNH TRUYỀN THÔNG (Serial & Wi-Fi TCP Socket) ---
             comm.poll_messages()
 
-            # --- TÁC VỤ B: NHỊP 1 - ĐIỀU KHIỂN DÒ LINE (15ms - ƯU TIÊN CAO NHẤT) ---
-            # Thuật toán dò line chạy Onboard độc lập, liên tục duy trì kể cả khi Wi-Fi chập chờn
+            # --- TÁC VỤ B: NHỊP 1 - ĐIỀU KHIỂN DÒ LINE PID 5 KÊNH (15ms - ƯU TIÊN CAO NHẤT) ---
+            # Thuật toán PID chạy Onboard độc lập khi được bật từ Web Dashboard
             if line_tracker.is_active:
                 if time.ticks_diff(now, last_line_time) >= LINE_INTERVAL_MS:
                     last_line_time = now
-                    raw_l = line_sensor.read_raw_left()
-                    raw_r = line_sensor.read_raw_right()
-                    line_tracker.update(raw_l, raw_r, now)
+                    raw_sensors = line_sensor.read_all_raw()
+                    line_tracker.update(raw_sensors, now)
 
             # --- TÁC VỤ C: NHỊP 2 - GỬI TELEMETRY ĐỊNH KỲ (100ms) ---
             if (dispatcher.stream_tcrt or line_tracker.is_active) and not comm.emergency_mode:
@@ -139,28 +144,17 @@ def main():
                             "speed_right": motor.current_speed_right,
                             "is_running": (motor.current_speed_left != 0 or motor.current_speed_right != 0)
                         },
+                        "pid": {
+                            "error": line_tracker.current_error,
+                            "output": round(line_tracker.pid_output, 2),
+                            "action": line_tracker.last_action
+                        },
                         "auto_line": line_tracker.is_active,
                         "mode": "tcrt_streaming"
                     }))
 
-            # --- TÁC VỤ D: NHỊP 3 - ĐO SIÊU ÂM LIÊN TỤC (200ms) ---
-            if dispatcher.stream_ultrasonic and not comm.emergency_mode:
-                if time.ticks_diff(now, last_ultrasonic_time) >= ULTRASONIC_INTERVAL_MS:
-                    last_ultrasonic_time = now
-                    d = ultrasonic.measure_distance()
-                    is_obs = (0 < d <= config.OBSTACLE_DISTANCE_THRESHOLD_CM)
-                    comm.broadcast("TELEMETRY:" + ujson.dumps({
-                        "event": "telemetry",
-                        "sensor": {"distance_cm": d, "obstacle_detected": is_obs},
-                        "tcrt5000": line_sensor.read_status(),
-                        "motor": {
-                            "speed_left": motor.current_speed_left,
-                            "speed_right": motor.current_speed_right,
-                            "is_running": (motor.current_speed_left != 0 or motor.current_speed_right != 0)
-                        },
-                        "auto_line": line_tracker.is_active,
-                        "mode": "streaming"
-                    }))
+            # (Tác vụ D - Quét siêu âm 200ms đã được gỡ bỏ để tránh xung chờ time_pulse_us 30ms
+            #  làm trễ nhịp 15ms của bộ điều khiển PID TCRT5000 + TB6612FNG)
 
             # --- TÁC VỤ E: GIÁM SÁT KẾT NỐI WI-FI VÀ GỬI UDP BEACON ---
             comm.check_network_and_beacon(now)

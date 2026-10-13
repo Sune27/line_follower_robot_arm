@@ -37,9 +37,9 @@ class CommandDispatcher:
         if not cmd:
             return
 
-        # 1. LỆNH BẮT ĐẦU DÒ LINE TỰ ĐỘNG
+        # 1. LỆNH BẮT ĐẦU DÒ LINE TỰ ĐỘNG (HOẶC CẬP NHẬT TỐC ĐỘ KHI ĐANG CHẠY)
         if "CMD:START_AUTO_LINE" in cmd:
-            speed = 35
+            speed = getattr(config, "LINE_BASE_SPEED", 35)
             try:
                 parts = cmd.split(":")
                 if len(parts) >= 3 and parts[2].isdigit():
@@ -47,9 +47,23 @@ class CommandDispatcher:
             except Exception:
                 pass
 
-            self.tracker.start(speed)
+            if self.tracker.is_active:
+                self.tracker.set_speed(speed)
+            else:
+                self.tracker.start(speed)
             self.stream_tcrt = True
             self.comm.broadcast(f"[CMD_ACK] START_AUTO_LINE: Tốc độ {self.tracker.base_speed}%")
+            self.comm.broadcast("TELEMETRY:" + ujson.dumps({
+                "event": "telemetry",
+                "tcrt5000": self.line_sensor.read_status(),
+                "motor": {
+                    "speed_left": self.motor.current_speed_left,
+                    "speed_right": self.motor.current_speed_right,
+                    "is_running": True
+                },
+                "auto_line": True,
+                "mode": "tcrt_streaming"
+            }))
 
         # 2. LỆNH DỪNG DÒ LINE
         elif "CMD:STOP_AUTO_LINE" in cmd:

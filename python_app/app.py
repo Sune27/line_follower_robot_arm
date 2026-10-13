@@ -69,7 +69,7 @@ class RobotControllerServer:
         self.ser_lock = threading.Lock()
 
         # Cấu hình Wi-Fi TCP Socket Bridge (khi xe chạy pin không cắm dây USB)
-        self.esp32_ip = "10.161.134.159"
+        self.esp32_ip = "10.202.195.159"
         self.esp32_tcp_port = 8888
         self.tcp_sock = None
         self.tcp_lock = threading.Lock()
@@ -526,6 +526,36 @@ class RobotControllerServer:
                     self.ser = None
                 time.sleep(2)
 
+    def auto_discover_esp32(self):
+        """Tự động tìm kiếm IP của ESP32 trong mạng LAN qua bảng ARP hoặc quét cổng 8888"""
+        # 1. Quét bảng ARP tìm thiết bị có MAC của chip Espressif (ESP32)
+        try:
+            import subprocess
+            output = subprocess.check_output("arp -a", shell=True).decode('utf-8', errors='ignore')
+            for line in output.splitlines():
+                parts = line.split()
+                if len(parts) >= 2:
+                    ip = parts[0]
+                    mac = parts[1].lower().replace(":", "-")
+                    if any(mac.startswith(prefix) for prefix in [
+                        "94-51-dc", "24-0a-c4", "30-ae-a4", "a4-cf-12", "dc-54-75", "e8-9f-6d", "40-22-d8", "48-e7-29"
+                    ]):
+                        return ip
+        except Exception:
+            pass
+
+        # 2. Kiểm tra nhanh IP hiện tại nếu cổng 8888 đang phản hồi
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(0.5)
+            s.connect((self.esp32_ip, self.esp32_tcp_port))
+            s.close()
+            return self.esp32_ip
+        except Exception:
+            pass
+
+        return None
+
     def wifi_tcp_bridge_loop(self):
         """Kênh 2: Lắng nghe Wi-Fi TCP Socket từ ESP32 khi chạy pin không dây"""
         while self.running:
@@ -535,17 +565,51 @@ class RobotControllerServer:
                     time.sleep(2)
                     continue
 
+            target_ip = self.esp32_ip
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(2.5)
+            sock.settimeout(1.5)
+            connected = False
+
             try:
-                sock.connect((self.esp32_ip, self.esp32_tcp_port))
+                sock.connect((target_ip, self.esp32_tcp_port))
+                connected = True
+            except (socket.timeout, ConnectionRefusedError, OSError):
+                sock.close()
+                # Thử tự động quét IP ESP32 trong mạng LAN
+                discovered = self.auto_discover_esp32()
+                if discovered and discovered != target_ip:
+                    print(f"[Auto-Discovery] 🔍 Tự động phát hiện ESP32 tại IP mới: {discovered}")
+                    self.esp32_ip = discovered
+                    target_ip = discovered
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock.settimeout(1.5)
+                    try:
+                        sock.connect((target_ip, self.esp32_tcp_port))
+                        connected = True
+                    except Exception:
+                        sock.close()
+
+            if not connected:
+                time.sleep(2)
+                continue
+
+            try:
                 sock.settimeout(1.0)
                 with self.tcp_lock:
                     self.tcp_sock = sock
                 self.active_channel = "WIFI_TCP"
-                print(f"[Wi-Fi TCP Bridge] ✅ ĐÃ KẾT NỐI TỚI ESP32 KHÔNG DÂY TẠI {self.esp32_ip}:{self.esp32_tcp_port}")
 
-                # Yêu cầu cập nhật trạng thái ban đầu
+                # Cập nhật ngay trạng thái kết nối Wi-Fi thành công
+                self.wifi_state["connected"] = True
+                self.wifi_state["ip"] = target_ip
+                if self.wifi_state.get("ssid") in ("—", "", None):
+                    self.wifi_state["ssid"] = "sune"
+                print(f"[Wi-Fi TCP Bridge] ✅ ĐÃ KẾT NỐI TỚI ESP32 KHÔNG DÂY TẠI {target_ip}:{self.esp32_tcp_port}")
+
+                if self.loop and self.connected_clients:
+                    asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
+
+                # Yêu cầu cập nhật trạng thái chi tiết ban đầu từ ESP32
                 self.send_serial("CMD:GET_WIFI_STATUS\n")
 
                 buf = ""
@@ -568,14 +632,17 @@ class RobotControllerServer:
                         continue
                     except Exception as e:
                         break
-            except (socket.timeout, ConnectionRefusedError, OSError):
-                time.sleep(2)
+            except Exception as e:
+                pass
             finally:
                 with self.tcp_lock:
                     if self.tcp_sock:
                         try: self.tcp_sock.close()
                         except: pass
                         self.tcp_sock = None
+                self.wifi_state["connected"] = False
+                if self.loop and self.connected_clients:
+                    asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
                 time.sleep(2)
 
     def udp_beacon_listener(self):
@@ -593,9 +660,13 @@ class RobotControllerServer:
                         parts = msg.split(":")
                         if len(parts) >= 2:
                             new_ip = parts[1]
-                            if new_ip != self.esp32_ip:
-                                print(f"[Auto-Discovery] 📡 Phát hiện ESP32 tại địa chỉ IP mới: {new_ip}")
-                                self.esp32_ip = new_ip
+                            self.esp32_ip = new_ip
+                            self.wifi_state["connected"] = True
+                            self.wifi_state["ip"] = new_ip
+                            if self.wifi_state.get("ssid") in ("—", "", None):
+                                self.wifi_state["ssid"] = "sune"
+                            if self.loop and self.connected_clients:
+                                asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
                 except socket.timeout:
                     continue
                 except Exception:

@@ -53,4 +53,12 @@ PIN_MOTOR_BIN1 = 27          # Bánh Phải (D27 - Cột S)
 PIN_MOTOR_BIN2 = 26          # Bánh Phải (D26 - Cột S)
 MOTOR_PWM_FREQ = 1000        # Tần số PWM 1000Hz chạy êm, mô-men xoắn khỏe
 
-
+# ==============================================================================
+# 6. CẤU HÌNH THUẬT TOÁN PD DÒ LINE 5 MẮT (ĐIỀU KHIỂN ÊM ÁI - CHỐNG VĂNG LINE)
+# ==============================================================================
+LINE_BASE_SPEED = 32           # Tốc độ cơ sở bình thường sau 1.5s (32% chạy êm, bám vạch chính xác)
+LINE_STARTUP_SPEED = 55        # Tốc độ cơ sở khởi hành trong 1.5s đầu (55% để thắng ma sát nghỉ)
+LINE_STARTUP_DURATION_MS = 1500 # Thời gian chạy tốc độ khởi hành 55% (1500ms = 1.5s)
+PID_KP = 4.2                   # Hệ số Tỷ lệ (P): 4.2 để lệch nhẹ xe lượn êm, không bị bẻ gắt văng line
+PID_KI = 0.0                   # Hệ số Tích phân (I): Đặt bằng 0 để triệt tiêu khâu I (thuần thuật toán PD)
+PID_KD = 2.2                   # Hệ số Đạo hàm (D): 2.2 để giảm chấn vừa phải, chống lắc đuôi xe

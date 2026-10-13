@@ -1610,7 +1610,13 @@ class VehicleMotionController {
 
         // Trạng thái vận hành
         this.isRunningAutoLine = false;  // Trạng thái tự hành bám vạch quang học
-        this.baseSpeed = 45;             // Tốc độ cơ sở khi bám vạch (20% - 85%)
+        this.baseSpeed = 32;             // Tốc độ cơ sở khi bám vạch sau 1.5s (20% - 85%)
+        this.startupSpeed = 55;          // Tốc độ cơ sở khởi hành trong 1.5s đầu
+        this.startupDurationMs = 1500;   // 1.5s chạy tốc độ khởi hành để thoát trạng thái nghỉ
+        this.startupStartTime = 0;
+        this.pidKp = 4.2;                // Hệ số Kp
+        this.pidKi = 0.0;                // Hệ số Ki = 0 (bỏ khâu I, thuần thuật toán PD)
+        this.pidKd = 2.2;                // Hệ số Kd
         this.leftSpeed = 0;              // Tốc độ hiện tại bánh trái (0 - 100%)
         this.rightSpeed = 0;             // Tốc độ hiện tại bánh phải (0 - 100%)
         this.masterSpeed = 0;            // Mức ga tổng
@@ -1709,12 +1715,23 @@ class VehicleMotionController {
 
         if (this.elements.baseSpeedSlider) {
             this.elements.baseSpeedSlider.addEventListener('input', (e) => {
-                this.baseSpeed = parseInt(e.target.value, 10) || 45;
+                this.baseSpeed = parseInt(e.target.value, 10) || 35;
                 if (this.elements.baseSpeedDisplay) {
                     this.elements.baseSpeedDisplay.textContent = `${this.baseSpeed}%`;
                 }
                 if (this.isRunningAutoLine) {
-                    this.computeAndApplyLineTracking();
+                    this.computeAndApplyLineTracking(true);
+                    this.updateUI();
+                    // Gửi tốc độ cơ sở mới xuống bộ PID trên ESP32 (debounce 80ms)
+                    if (this.speedUpdateDebounce) clearTimeout(this.speedUpdateDebounce);
+                    this.speedUpdateDebounce = setTimeout(() => {
+                        if (this.wsClient && this.isRunningAutoLine) {
+                            this.wsClient.send({
+                                cmd: 'start_auto_line',
+                                speed: this.baseSpeed
+                            });
+                        }
+                    }, 80);
                 }
             });
         }
@@ -1743,7 +1760,7 @@ class VehicleMotionController {
                     right: this.rightIsBlack
                 });
             }
-            if (this.isRunningAutoLine) this.computeAndApplyLineTracking();
+            if (this.isRunningAutoLine) this.computeAndApplyLineTracking(true);
             this.updateUI();
         };
 
@@ -1762,10 +1779,9 @@ class VehicleMotionController {
         this.updateUI();
         this.log('system', 'Đã kết nối giao diện Tổng quan Chuyển động xe.');
 
-        // Yêu cầu bắt đầu stream dữ liệu nếu WebSocket kết nối
+        // Yêu cầu bắt đầu stream dữ liệu TCRT5000 nếu WebSocket kết nối
         if (this.wsClient) {
             this.wsClient.send({ cmd: 'tcrt_start_stream' });
-            this.wsClient.send({ cmd: 'start_stream' });
         }
     }
 
@@ -1844,9 +1860,10 @@ class VehicleMotionController {
 
         this.lastUserToggleTime = Date.now();
         this.isRunningAutoLine = true;
-        this.log('action', `Khởi động chế độ Dò Line Onboard trên ESP32. Tốc độ cơ sở: ${this.baseSpeed}%.`);
-        
-        // Gửi lệnh kích hoạt onboard xuống ESP32 thông qua Python Server
+        this.startupStartTime = Date.now();
+        this.log('action', `Khởi động Dò Line PD: 1.5s đầu chạy tốc độ khởi hành ${this.startupSpeed}% để thoát trạng thái nghỉ, sau đó bám vạch ở ${this.baseSpeed}%. (Kp=${this.pidKp}, Ki=0, Kd=${this.pidKd})`);
+
+        // Gửi lệnh kích hoạt PID onboard xuống ESP32 thông qua Python Server
         if (this.wsClient) {
             this.wsClient.send({
                 cmd: 'start_auto_line',
@@ -1855,13 +1872,14 @@ class VehicleMotionController {
             this.wsClient.send({ cmd: 'tcrt_start_stream' });
         }
 
-        this.computeAndApplyLineTracking();
+        this.computeAndApplyLineTracking(true);
         this.updateUI();
     }
 
     stopAutoLine(isPassive = false) {
         this.lastUserToggleTime = Date.now();
         this.isRunningAutoLine = false;
+        this.startupStartTime = 0;
         this.leftSpeed = 0;
         this.rightSpeed = 0;
         this.steeringAngle = 0;
@@ -1874,13 +1892,14 @@ class VehicleMotionController {
         }
 
         if (!isPassive) {
-            this.log('action', 'Đã dừng chế độ dò line tự động. Xe đã dừng lại.');
+            this.log('action', 'Đã dừng chế độ dò line PD tự động. Xe đã dừng lại.');
         }
         this.updateUI();
     }
 
     emergencyStop() {
         this.isRunningAutoLine = false;
+        this.startupStartTime = 0;
         this.leftSpeed = 0;
         this.rightSpeed = 0;
         this.steeringAngle = 0;
@@ -1889,6 +1908,7 @@ class VehicleMotionController {
 
         // Lập tức ngắt motor và ngắt auto line
         if (this.sendThrottleDebounce) clearTimeout(this.sendThrottleDebounce);
+        if (this.speedUpdateDebounce) clearTimeout(this.speedUpdateDebounce);
         if (this.wsClient) {
             this.wsClient.send({ cmd: 'stop_auto_line' });
             this.wsClient.send({
@@ -1915,46 +1935,85 @@ class VehicleMotionController {
         this.updateUI();
     }
 
-    computeAndApplyLineTracking() {
+    computeAndApplyLineTracking(simulateMotors = false) {
         if (!this.isRunningAutoLine) return;
 
-        // Cập nhật trạng thái hiển thị mô phỏng trên Web theo 2 mắt cảm biến
-        const L = this.leftIsBlack;
-        const R = this.rightIsBlack;
+        // Xác định tốc độ cơ sở: 1.5s đầu chạy tốc độ khởi hành 55% để thoát trạng thái nghỉ, sau đó về baseSpeed
+        const now = Date.now();
+        const isStartup = this.startupStartTime && (now - this.startupStartTime < this.startupDurationMs);
+        const effectiveBase = isStartup ? this.startupSpeed : this.baseSpeed;
 
-        if (!L && !R) {
-            // TH 1: CẢ 2 ĐỀU TRẮNG (0, 0) -> Vạch đen nằm chính giữa 2 mắt -> XE ĐI THẲNG
-            this.lastAction = 'STRAIGHT';
-            this.steeringAngle = 0;
-            this.actionText = 'ĐI THẲNG: ĐÚNG TIM ĐƯỜNG (2 MẮT KẸP LINE)';
-            this.lineTrackingStatus = 'Đúng tim đường (Trong vạch)';
-        } else if (L && !R) {
-            // TH 2: MẮT TRÁI ĐEN (1), MẮT PHẢI TRẮNG (0) -> Xe lệch phải -> BẺ LÁI SANG TRÁI
-            this.lastAction = 'LEFT';
-            this.steeringAngle = -14;
-            this.actionText = 'BẺ LÁI TRÁI: MẮT TRÁI CHẠM VẠCH';
-            this.lineTrackingStatus = 'Lệch phải (Bẻ sang trái)';
-        } else if (!L && R) {
-            // TH 3: MẮT PHẢI ĐEN (1), MẮT TRÁI TRẮNG (0) -> Xe lệch trái -> BẺ LÁI SANG PHẢI
-            this.lastAction = 'RIGHT';
-            this.steeringAngle = 14;
-            this.actionText = 'BẺ LÁI PHẢI: MẮT PHẢI CHẠM VẠCH';
-            this.lineTrackingStatus = 'Lệch trái (Bẻ sang phải)';
-        } else {
-            // TH 4: CẢ 2 ĐỀU ĐEN (1, 1)
-            if (this.lastAction === 'LEFT') {
-                this.steeringAngle = -16;
-                this.actionText = 'CUA GẮT TRÁI: CẮT NGANG LINE (TIẾP TỤC ÔM CUA)';
-                this.lineTrackingStatus = 'Cua gắt: Ép cua trái (Không dừng)';
-            } else if (this.lastAction === 'RIGHT') {
-                this.steeringAngle = 16;
-                this.actionText = 'CUA GẮT PHẢI: CẮT NGANG LINE (TIẾP TỤC ÔM CUA)';
-                this.lineTrackingStatus = 'Cua gắt: Ép cua phải (Không dừng)';
-            } else {
-                this.steeringAngle = 0;
-                this.actionText = 'VẠCH NGANG: DỪNG TRẠM / VẠCH ĐÍCH';
-                this.lineTrackingStatus = 'Gặp vạch ngang (Dừng trạm)';
+        // Tính toán sai số vị trí e ∈ [-4, +4] từ mảng 5 mắt TCRT5000 [S1, S2, S3, S4, S5]
+        const weights = [-4.0, -2.0, 0.0, 2.0, 4.0];
+        let weightedSum = 0.0;
+        let activeCount = 0;
+
+        for (let i = 0; i < 5; i++) {
+            if (this.sensors[i] === 1) {
+                weightedSum += weights[i];
+                activeCount++;
             }
+        }
+
+        let err = 0.0;
+        let isCrossLine = false;
+        let isLostLine = false;
+
+        if (activeCount === 5) {
+            isCrossLine = true;
+            err = 0.0;
+        } else if (activeCount === 0) {
+            isLostLine = true;
+            err = (this.lastValidPidError !== undefined && this.lastValidPidError !== 0)
+                ? (this.lastValidPidError < 0 ? -4.0 : 4.0)
+                : 0.0;
+        } else {
+            err = weightedSum / activeCount;
+            if (Math.abs(err) >= 1.0) {
+                this.lastValidPidError = err;
+            }
+        }
+
+        // Nếu chỉ mô phỏng trên Web (chưa có gói motor từ ESP32), ước lượng tốc độ 2 bánh theo PD
+        if (simulateMotors) {
+            const kp = 4.2 * (effectiveBase / 32.0);
+            const pidVal = kp * err;
+            let minSpd = isStartup ? 25 : 20;
+            if (Math.abs(err) >= 4.0 || isLostLine) minSpd = -20;
+            else if (Math.abs(err) >= 3.0) minSpd = 10;
+            this.leftSpeed = Math.round(Math.max(minSpd, Math.min(100, effectiveBase + pidVal)));
+            this.rightSpeed = Math.round(Math.max(minSpd, Math.min(100, effectiveBase - pidVal)));
+        }
+
+        // Cập nhật góc đánh lái mô phỏng 2D (-20° đến +20°) và nhãn trạng thái PD
+        this.steeringAngle = Math.round(err * 4.5);
+
+        const tag = isStartup ? '[1.5s KHỞI HÀNH 55%] ' : '';
+        if (isCrossLine) {
+            this.lastAction = isStartup ? 'STARTUP_CROSS' : 'CROSS_LINE';
+            this.steeringAngle = 0;
+            this.actionText = `${tag}PD [11111]: CẮT VẠCH NGANG • GIỮ THẲNG`;
+            this.lineTrackingStatus = isStartup ? 'Khởi hành 55%: Vạch ngang' : 'Vạch ngang (5 mắt chạm line)';
+        } else if (isLostLine) {
+            this.lastAction = isStartup ? 'STARTUP_SEARCH' : 'SEARCH_LINE';
+            const dirStr = err < 0 ? 'QUAY TRÁI TÌM LINE' : err > 0 ? 'QUAY PHẢI TÌM LINE' : 'TIẾN THẲNG DÒ LINE';
+            this.actionText = `${tag}PD [00000]: MẤT VẠCH • ${dirStr}`;
+            this.lineTrackingStatus = isStartup ? `Khởi hành 55%: ${dirStr}` : `Mất vạch (${dirStr})`;
+        } else if (err === 0) {
+            this.lastAction = isStartup ? 'STARTUP_STRAIGHT' : 'STRAIGHT';
+            this.steeringAngle = 0;
+            this.actionText = `${tag}PD [e = 0.0]: ĐÚNG TIM ĐƯỜNG • ĐI THẲNG`;
+            this.lineTrackingStatus = isStartup ? 'Khởi hành 55%: Đúng tim đường' : 'Đúng tim đường (e = 0)';
+        } else if (err < 0) {
+            const sharp = err <= -3;
+            this.lastAction = isStartup ? (sharp ? 'STARTUP_SHARP_LEFT' : 'STARTUP_STEER_LEFT') : (sharp ? 'SHARP_LEFT' : 'LEFT');
+            this.actionText = `${tag}PD [e = ${err.toFixed(1)}]: XE LỆCH PHẢI • BẺ LÁI TRÁI`;
+            this.lineTrackingStatus = isStartup ? `Khởi hành 55%: Bẻ trái (e = ${err.toFixed(1)})` : `Bẻ trái (Sai số e = ${err.toFixed(1)})`;
+        } else {
+            const sharp = err >= 3;
+            this.lastAction = isStartup ? (sharp ? 'STARTUP_SHARP_RIGHT' : 'STARTUP_STEER_RIGHT') : (sharp ? 'SHARP_RIGHT' : 'RIGHT');
+            this.actionText = `${tag}PD [e = +${err.toFixed(1)}]: XE LỆCH TRÁI • BẺ LÁI PHẢI`;
+            this.lineTrackingStatus = isStartup ? `Khởi hành 55%: Bẻ phải (e = +${err.toFixed(1)})` : `Bẻ phải (Sai số e = +${err.toFixed(1)})`;
         }
     }
 
@@ -1983,7 +2042,7 @@ class VehicleMotionController {
             this.sensors[3] = this.rightIsBlack ? 1 : 0;
         }
         if (this.isRunningAutoLine) {
-            this.computeAndApplyLineTracking();
+            this.computeAndApplyLineTracking(false);
         }
         this.updateUI();
     }
@@ -2089,9 +2148,9 @@ class VehicleMotionController {
             hasChange = true;
         }
 
-        // Nếu xe đang tự hành bám line, tính toán góc lái và nhãn trạng thái hiển thị
+        // Nếu xe đang tự hành bám line, tính toán góc lái và nhãn trạng thái PID
         if (this.isRunningAutoLine) {
-            this.computeAndApplyLineTracking();
+            this.computeAndApplyLineTracking(false);
         }
 
         if (hasChange || this.isScreenActive) {
@@ -2104,13 +2163,13 @@ class VehicleMotionController {
         if (!els.masterSpeed) return; // Nếu màn hình chưa render trong DOM
 
         // 1. Tốc độ tổng và thanh đo 2 bánh
-        const maxSpd = Math.max(this.leftSpeed, this.rightSpeed);
+        const maxSpd = Math.max(Math.abs(this.leftSpeed), Math.abs(this.rightSpeed));
         this.masterSpeed = this.isRunningAutoLine ? maxSpd : 0;
         els.masterSpeed.textContent = this.masterSpeed;
 
-        if (els.wsBarLeft) els.wsBarLeft.style.width = `${this.leftSpeed}%`;
+        if (els.wsBarLeft) els.wsBarLeft.style.width = `${Math.max(0, Math.min(100, Math.abs(this.leftSpeed)))}%`;
         if (els.wsValLeft) els.wsValLeft.textContent = `${this.leftSpeed}%`;
-        if (els.wsBarRight) els.wsBarRight.style.width = `${this.rightSpeed}%`;
+        if (els.wsBarRight) els.wsBarRight.style.width = `${Math.max(0, Math.min(100, Math.abs(this.rightSpeed)))}%`;
         if (els.wsValRight) els.wsValRight.textContent = `${this.rightSpeed}%`;
 
         // 2. Cảm biến siêu âm & Huy hiệu cảnh báo
