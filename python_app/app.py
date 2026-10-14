@@ -497,14 +497,30 @@ class RobotControllerServer:
         while self.running:
             try:
                 if ser is None:
+                    target_port = SERIAL_PORT
                     try:
-                        ser = serial.Serial(SERIAL_PORT, SERIAL_BAUD, timeout=1)
+                        import serial.tools.list_ports
+                        ports = [p.device for p in serial.tools.list_ports.comports()]
+                        if target_port not in ports and ports:
+                            for p in serial.tools.list_ports.comports():
+                                desc = (p.description or "").lower()
+                                if any(k in desc for k in ["ch340", "cp210", "usb", "serial"]):
+                                    target_port = p.device
+                                    break
+                            else:
+                                target_port = ports[0]
+                    except Exception:
+                        pass
+
+                    try:
+                        ser = serial.Serial(target_port, SERIAL_BAUD, timeout=1)
                         ser.dtr = False
                         ser.rts = False
                         with self.ser_lock:
                             self.ser = ser
                         self.active_channel = "SERIAL"
-                        print(f"[Serial Bridge] ✅ Đã kết nối lắng nghe ESP32 qua USB tại {SERIAL_PORT}")
+                        print(f"[Serial Bridge] ✅ Đã kết nối lắng nghe ESP32 qua USB tại {target_port}")
+                        self.send_serial("CMD:START_TCRT_STREAM\n")
                     except Exception:
                         ser = None
                         with self.ser_lock:
@@ -527,32 +543,57 @@ class RobotControllerServer:
                 time.sleep(2)
 
     def auto_discover_esp32(self):
-        """Tự động tìm kiếm IP của ESP32 trong mạng LAN qua bảng ARP hoặc quét cổng 8888"""
-        # 1. Quét bảng ARP tìm thiết bị có MAC của chip Espressif (ESP32)
-        try:
-            import subprocess
-            output = subprocess.check_output("arp -a", shell=True).decode('utf-8', errors='ignore')
-            for line in output.splitlines():
-                parts = line.split()
-                if len(parts) >= 2:
-                    ip = parts[0]
-                    mac = parts[1].lower().replace(":", "-")
-                    if any(mac.startswith(prefix) for prefix in [
-                        "94-51-dc", "24-0a-c4", "30-ae-a4", "a4-cf-12", "dc-54-75", "e8-9f-6d", "40-22-d8", "48-e7-29"
-                    ]):
-                        return ip
-        except Exception:
-            pass
-
-        # 2. Kiểm tra nhanh IP hiện tại nếu cổng 8888 đang phản hồi
+        """Tự động tìm kiếm IP của ESP32 trong mạng LAN bằng quét cổng 8888 siêu tốc đa luồng"""
+        # 1. Kiểm tra nhanh IP hiện tại nếu cổng 8888 đang phản hồi
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(0.5)
+            s.settimeout(0.4)
             s.connect((self.esp32_ip, self.esp32_tcp_port))
             s.close()
             return self.esp32_ip
         except Exception:
             pass
+
+        # 2. Quét nhanh dải IP mạng LAN của máy tính
+        local_ips = []
+        try:
+            hostname = socket.gethostname()
+            addr_infos = socket.getaddrinfo(hostname, None, socket.AF_INET)
+            for item in addr_infos:
+                lip = item[4][0]
+                if not lip.startswith("127.") and not lip.startswith("169.254."):
+                    local_ips.append(lip)
+        except Exception:
+            pass
+
+        if not local_ips and self.esp32_ip:
+            local_ips = [self.esp32_ip]
+
+        import concurrent.futures
+
+        def test_ip(ip):
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(0.3)
+                s.connect((ip, self.esp32_tcp_port))
+                s.close()
+                return ip
+            except Exception:
+                return None
+
+        for lip in local_ips:
+            parts = lip.split(".")
+            if len(parts) == 4:
+                prefix = f"{parts[0]}.{parts[1]}.{parts[2]}."
+                candidates = [f"{prefix}{i}" for i in range(1, 255)]
+                try:
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+                        for res in executor.map(test_ip, candidates):
+                            if res:
+                                print(f"[Auto-Discovery] 🎯 Tìm thấy ESP32 tại: {res}:{self.esp32_tcp_port}")
+                                return res
+                except Exception:
+                    pass
 
         return None
 
@@ -603,14 +644,15 @@ class RobotControllerServer:
                 self.wifi_state["connected"] = True
                 self.wifi_state["ip"] = target_ip
                 if self.wifi_state.get("ssid") in ("—", "", None):
-                    self.wifi_state["ssid"] = "sune"
+                    self.wifi_state["ssid"] = "Sune"
                 print(f"[Wi-Fi TCP Bridge] ✅ ĐÃ KẾT NỐI TỚI ESP32 KHÔNG DÂY TẠI {target_ip}:{self.esp32_tcp_port}")
 
                 if self.loop and self.connected_clients:
                     asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
 
-                # Yêu cầu cập nhật trạng thái chi tiết ban đầu từ ESP32
+                # Yêu cầu cập nhật trạng thái chi tiết và kích hoạt stream TCRT5000 ngay lập tức
                 self.send_serial("CMD:GET_WIFI_STATUS\n")
+                self.send_serial("CMD:START_TCRT_STREAM\n")
 
                 buf = ""
                 while self.running:
@@ -664,7 +706,7 @@ class RobotControllerServer:
                             self.wifi_state["connected"] = True
                             self.wifi_state["ip"] = new_ip
                             if self.wifi_state.get("ssid") in ("—", "", None):
-                                self.wifi_state["ssid"] = "sune"
+                                self.wifi_state["ssid"] = "Sune"
                             if self.loop and self.connected_clients:
                                 asyncio.run_coroutine_threadsafe(self._broadcast(json.dumps(self.wifi_state)), self.loop)
                 except socket.timeout:

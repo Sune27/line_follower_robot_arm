@@ -86,11 +86,16 @@ class WiFiStationManager:
         # 4. Tìm kiếm mạng phù hợp theo thứ tự ưu tiên trong danh sách cấu hình
         candidate_networks = []
         if scan_success and visible_ssids:
+            visible_map = {s.lower(): s for s in visible_ssids}
             for net in self.networks:
                 configured_ssid = net.get("ssid", "").strip()
-                if configured_ssid and configured_ssid in visible_ssids:
-                    candidate_networks.append(net)
-                    print(f"[WiFi] ✅ ĐÃ PHÁT HIỆN SÓNG: '{configured_ssid}'")
+                if configured_ssid and configured_ssid.lower() in visible_map:
+                    actual_ssid = visible_map[configured_ssid.lower()]
+                    candidate_networks.append({
+                        "ssid": actual_ssid,
+                        "password": net.get("password", "")
+                    })
+                    print(f"[WiFi] ✅ ĐÃ PHÁT HIỆN SÓNG: '{actual_ssid}'")
 
         # 4.1 Cơ chế Dự phòng (Fallback): Nếu quét sóng bị sót/chập chờn nhưng có cấu hình
         if not candidate_networks:

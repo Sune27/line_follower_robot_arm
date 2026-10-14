@@ -74,8 +74,27 @@ def upload_file(ser, local_path, remote_path):
     print("XONG!")
 
 def main():
-    print(f"[Serial] Kết nối tới {PORT}...")
-    ser = serial.Serial(PORT, BAUD, timeout=1)
+    import serial.tools.list_ports
+    target_port = PORT
+    available_ports = [p.device for p in serial.tools.list_ports.comports()]
+    if target_port not in available_ports and available_ports:
+        # Ưu tiên cổng USB-SERIAL hoặc cổng có sẵn đầu tiên
+        for p in serial.tools.list_ports.comports():
+            desc = (p.description or "").lower()
+            if any(k in desc for k in ["ch340", "cp210", "usb", "serial"]):
+                target_port = p.device
+                break
+        else:
+            target_port = available_ports[0]
+        print(f"[Serial Auto-Detect] 🔍 Tự động phát hiện cổng ESP32: {target_port}")
+
+    print(f"[Serial] Kết nối tới {target_port}...")
+    try:
+        ser = serial.Serial(target_port, BAUD, timeout=1)
+    except Exception as e:
+        print(f"[ERR] Không thể mở cổng {target_port}: {e}")
+        print("-> Các cổng COM hiện có:", available_ports if available_ports else "Không có thiết bị COM nào được cắm!")
+        return
     ser.dtr = False
     ser.rts = False
     time.sleep(1.5)

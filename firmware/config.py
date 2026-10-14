@@ -8,16 +8,12 @@
 WIFI_NETWORKS = [
     {
         "ssid": "Sune",
-        "password": "khongcomatkhau"
-    },
-    {
-        "ssid" : "NGA-5G",
-        "password" : "0961699271"
-    }   
+        "password": "mouse_love_rice"
+    }
 ]
 
-WIFI_CONNECT_TIMEOUT_SEC = 10
-WIFI_RETRY_DELAY_SEC = 5
+WIFI_CONNECT_TIMEOUT_SEC = 8
+WIFI_RETRY_DELAY_SEC = 3
 
 # ==============================================================================
 # 2. CẤU HÌNH CẢM BIẾN SIÊU ÂM RCWL-1601 / HC-SR04 (MẠNG BÊN PHẢI)
@@ -59,6 +55,7 @@ MOTOR_PWM_FREQ = 1000        # Tần số PWM 1000Hz chạy êm, mô-men xoắn 
 LINE_BASE_SPEED = 32           # Tốc độ cơ sở bình thường sau 1.5s (32% chạy êm, bám vạch chính xác)
 LINE_STARTUP_SPEED = 55        # Tốc độ cơ sở khởi hành trong 1.5s đầu (55% để thắng ma sát nghỉ)
 LINE_STARTUP_DURATION_MS = 1500 # Thời gian chạy tốc độ khởi hành 55% (1500ms = 1.5s)
+LINE_LOST_TIMEOUT_MS = 1500     # Khi mất line (00000): tiếp tục chạy THẲNG tốc độ cơ sở trong 1.5s rồi phanh về 0
 PID_KP = 4.2                   # Hệ số Tỷ lệ (P): 4.2 để lệch nhẹ xe lượn êm, không bị bẻ gắt văng line
 PID_KI = 0.0                   # Hệ số Tích phân (I): Đặt bằng 0 để triệt tiêu khâu I (thuần thuật toán PD)
 PID_KD = 2.2                   # Hệ số Đạo hàm (D): 2.2 để giảm chấn vừa phải, chống lắc đuôi xe

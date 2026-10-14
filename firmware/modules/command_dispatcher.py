@@ -24,9 +24,9 @@ class CommandDispatcher:
         self.comm = comm
         self.wifi_mgr = wifi_mgr
 
-        # Trạng thái stream dữ liệu liên tục
+        # Trạng thái stream dữ liệu liên tục (Mặc định bật stream TCRT5000 để Web nhận realtime)
         self.stream_ultrasonic = False
-        self.stream_tcrt = False
+        self.stream_tcrt = True
 
     def dispatch(self, cmd):
         """

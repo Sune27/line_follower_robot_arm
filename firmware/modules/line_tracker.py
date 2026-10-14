@@ -30,7 +30,8 @@ class LineTracker:
         auto_stop_on_cross=False,
         stop_hold_ms=1000,
         startup_duration_ms=None,
-        startup_speed=None
+        startup_speed=None,
+        lost_line_timeout_ms=None
     ):
         """
         Khởi tạo bộ điều khiển PD/PID dò line 5 mắt.
@@ -41,6 +42,7 @@ class LineTracker:
         :param kd: Hệ số Đạo hàm (Derivative Gain)
         :param startup_duration_ms: Thời gian chạy tốc độ khởi hành 55% (mặc định 1500ms = 1.5s)
         :param startup_speed: Tốc độ cơ sở khởi hành để thắng ma sát nghỉ (mặc định 55%)
+        :param lost_line_timeout_ms: Thời gian chạy thẳng khi mất vạch trước khi phanh về 0 (1500ms = 1.5s)
         """
         self.motor = motor_driver
 
@@ -57,6 +59,10 @@ class LineTracker:
         default_startup_spd = getattr(config, "LINE_STARTUP_SPEED", 55)
         self.startup_speed = int(startup_speed if startup_speed is not None else default_startup_spd)
         self.start_ticks = 0
+
+        default_lost_dur = getattr(config, "LINE_LOST_TIMEOUT_MS", 1500)
+        self.lost_line_timeout_ms = int(lost_line_timeout_ms if lost_line_timeout_ms is not None else default_lost_dur)
+        self.lost_line_start_time = 0
 
         self.auto_stop_on_cross = auto_stop_on_cross
         self.stop_hold_ms = stop_hold_ms
@@ -81,6 +87,7 @@ class LineTracker:
         self.integral = 0.0
         self.pid_output = 0.0
         self.both_black_start_time = 0
+        self.lost_line_start_time = 0
 
     def start(self, speed=None):
         """Kích hoạt chế độ tự hành dò line bằng PID/PD (Gọi khi ấn Bắt đầu trên Web)."""
@@ -89,6 +96,7 @@ class LineTracker:
         self.reset_pid()
         self.is_active = True
         self.start_ticks = time.ticks_ms()
+        self.lost_line_start_time = 0
         self.last_action = "STARTUP_55"
         # 1.5s đầu chạy với tốc độ cơ sở khởi hành (55%) để thắng ma sát nghỉ
         init_speed = self.startup_speed if self.startup_duration_ms > 0 else self.base_speed
@@ -134,14 +142,9 @@ class LineTracker:
         if bitmask == 0b11111:
             return (0.0, "CROSS_LINE")
 
-        # 2. Cả 5 mắt cùng Trắng (00000) -> Mất vạch, hồi phục theo hướng lệch cuối cùng
+        # 2. Cả 5 mắt cùng Trắng (00000) -> Mất vạch hoàn toàn
         if bitmask == 0b00000:
-            if self.last_valid_error < -0.5:
-                return (-4.0, "LOST_LEFT")
-            elif self.last_valid_error > 0.5:
-                return (4.0, "LOST_RIGHT")
-            else:
-                return (0.0, "LOST_STRAIGHT")
+            return (0.0, "LOST_LINE")
 
         # 3. Bảng tra nhanh 9 vị trí chuẩn (từ -4 đến +4)
         MAP_ERROR = {
@@ -166,7 +169,7 @@ class LineTracker:
             total = s1 + s2 + s3 + s4 + s5
             err = ((-4.0 * s1) + (-2.0 * s2) + (0.0 * s3) + (2.0 * s4) + (4.0 * s5)) / total
 
-        # Lưu lại hướng lệch hợp lệ gần nhất để phòng khi xe vọt ra ngoài vạch (00000)
+        # Lưu lại hướng lệch hợp lệ gần nhất
         if err != 0.0:
             self.last_valid_error = err
         elif bitmask == 0b00100:
@@ -206,7 +209,32 @@ class LineTracker:
         # Bước 1: Tính sai số vị trí e in [-4.0, +4.0]
         error, mode = self._compute_error(sensors)
 
-        # Bước 2: Xử lý trường hợp gặp vạch ngang (11111)
+        # Bước 2: Xử lý trường hợp mất line hoàn toàn (00000)
+        # Yêu cầu: Tiếp tục chạy THẲNG với tốc độ cơ sở trong 1.5s, sau đó phanh tốc độ về 0
+        if mode == "LOST_LINE":
+            if self.lost_line_start_time == 0:
+                self.lost_line_start_time = now_ms
+
+            # Kiểm tra thời gian mất line (1.5s = lost_line_timeout_ms)
+            if time.ticks_diff(now_ms, self.lost_line_start_time) >= self.lost_line_timeout_ms:
+                self.stop()
+                self.last_action = "LOST_STOPPED"
+                print(f"[LineTracker PD] ⏹ MẤT LINE QUÁ {self.lost_line_timeout_ms}ms -> ĐÃ PHANH DỪNG XE HOÀN TOÀN!")
+                return (0, 0, "LOST_STOPPED")
+
+            # Trong 1.5s đầu mất vạch: Giữ xe chạy THẲNG với tốc độ cơ sở (không rẽ, không giữ trạng thái cũ)
+            self.integral = 0.0
+            self.prev_error = 0.0
+            self.current_error = 0.0
+            self.pid_output = 0.0
+            self.last_action = "LOST_STRAIGHT"
+            self.motor.set_differential(current_base, current_base)
+            return (current_base, current_base, "LOST_STRAIGHT")
+        else:
+            # Khi thấy lại vạch (dù chỉ 1 mắt), reset ngay bộ đếm mất vạch
+            self.lost_line_start_time = 0
+
+        # Bước 3: Xử lý trường hợp gặp vạch ngang (11111)
         if mode == "CROSS_LINE":
             if self.auto_stop_on_cross:
                 if self.both_black_start_time == 0:
@@ -226,11 +254,11 @@ class LineTracker:
         else:
             self.both_black_start_time = 0
 
-        # Bước 3: Tính toán 3 thành phần P - I - D (Thuần PD khi Ki = 0)
-        # 3.1. Thành phần Tỷ lệ (P)
+        # Bước 4: Tính toán 3 thành phần P - I - D (Thuần PD khi Ki = 0)
+        # 4.1. Thành phần Tỷ lệ (P)
         p_term = self.kp * error
 
-        # 3.2. Thành phần Tích phân (I) - Khi Ki = 0.0, triệt tiêu hoàn toàn thành phần I
+        # 4.2. Thành phần Tích phân (I) - Khi Ki = 0.0, triệt tiêu hoàn toàn thành phần I
         if self.ki == 0.0:
             self.integral = 0.0
             i_term = 0.0
@@ -241,7 +269,7 @@ class LineTracker:
                 self.integral = max(-20.0, min(20.0, self.integral + error))
             i_term = self.ki * self.integral
 
-        # 3.3. Thành phần Đạo hàm (D) giảm chấn
+        # 4.3. Thành phần Đạo hàm (D) giảm chấn
         derivative = error - self.prev_error
         d_term = self.kd * derivative
 
@@ -254,16 +282,16 @@ class LineTracker:
         pid_val = (p_term + i_term + d_term) * speed_scale
         self.pid_output = round(pid_val, 2)
 
-        # Bước 4: Quy đổi ra tốc độ 2 bánh Trái / Phải theo current_base
+        # Bước 5: Quy đổi ra tốc độ 2 bánh Trái / Phải theo current_base
         # Khi error < 0 (vạch bên trái) -> pid_val < 0 -> speed_l giảm, speed_r tăng -> Rẽ Trái
         # Khi error > 0 (vạch bên phải) -> pid_val > 0 -> speed_l tăng, speed_r giảm -> Rẽ Phải
         speed_l = int(round(current_base + pid_val))
         speed_r = int(round(current_base - pid_val))
 
-        # Bước 5: Giới hạn biên độ PWM thông minh (Chống kẹt vùng chết mô-men xoắn motor)
+        # Bước 6: Giới hạn biên độ PWM thông minh (Chống kẹt vùng chết mô-men xoắn motor)
         min_gentle = 25 if is_startup else 20
-        if abs(error) >= 4.0 or mode in ("LOST_LEFT", "LOST_RIGHT"):
-            # Cua gắt 90 độ hoặc mất vạch: cho phép bánh trong phanh/lùi nhẹ tới -20% để xoay tâm nhanh
+        if abs(error) >= 4.0:
+            # Cua gắt 90 độ: cho phép bánh trong phanh/lùi nhẹ tới -20% để xoay tâm nhanh
             speed_l = max(-20, min(100, speed_l))
             speed_r = max(-20, min(100, speed_r))
         elif abs(error) >= 3.0:
@@ -277,9 +305,7 @@ class LineTracker:
             speed_r = max(min_gentle, min(100, speed_r))
 
         # Gán nhãn hành động phục vụ Telemetry hiển thị trên Web
-        if mode in ("LOST_LEFT", "LOST_RIGHT"):
-            act_name = mode
-        elif error == 0.0:
+        if error == 0.0:
             act_name = "STRAIGHT"
         elif error <= -3.0:
             act_name = "SHARP_LEFT"
@@ -292,7 +318,7 @@ class LineTracker:
 
         self.last_action = f"STARTUP_{act_name}" if is_startup else act_name
 
-        # Bước 6: Xuất xung PWM xuống mạch công suất TB6612FNG
+        # Bước 7: Xuất xung PWM xuống mạch công suất TB6612FNG
         self.motor.set_differential(speed_l, speed_r)
         return (speed_l, speed_r, self.last_action)
 

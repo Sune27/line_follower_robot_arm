@@ -167,20 +167,29 @@ class RobotCommServer:
             self.last_wifi_check_time = now_ms
             is_conn = self.wifi_mgr.is_connected()
 
-            # Mất sóng Wi-Fi -> Bật chế độ khẩn cấp Failsafe
-            if (not is_conn) and (not self.emergency_mode):
-                self.emergency_mode = True
-                if self.wifi_mgr.led:
-                    self.wifi_mgr.led.value(1) # Sáng đèn cảnh báo
-                print("\n[FAILSAFE] 🚨 PHÁT HIỆN MẤT / CHƯA KẾT NỐI WI-FI!")
-                if self.emergency_callback:
-                    self.emergency_callback(True)
-                self.broadcast("EMERGENCY:" + ujson.dumps({
-                    "event": "emergency",
-                    "type": "wifi_lost",
-                    "msg": "MẤT KẾT NỐI WI-FI: ĐÃ DỪNG MỌI HOẠT ĐỘNG, ĐANG TỰ ĐỘNG TÌM LẠI..."
-                }))
-                self.last_emergency_retry_time = 0
+            if is_conn:
+                if self.tcp_server is None:
+                    print(f"[CommServer] 🌐 Phát hiện Wi-Fi sẵn sàng ({self.wifi_mgr.get_ip()}) -> Khởi động TCP Server cổng {self.port}")
+                    self.start_tcp_server()
+                if self.emergency_mode:
+                    self.emergency_mode = False
+                    if self.wifi_mgr.led:
+                        self.wifi_mgr.led.value(0)
+            else:
+                # Mất sóng Wi-Fi -> Bật chế độ khẩn cấp Failsafe
+                if not self.emergency_mode:
+                    self.emergency_mode = True
+                    if self.wifi_mgr.led:
+                        self.wifi_mgr.led.value(1) # Sáng đèn cảnh báo
+                    print("\n[FAILSAFE] 🚨 PHÁT HIỆN MẤT / CHƯA KẾT NỐI WI-FI!")
+                    if self.emergency_callback:
+                        self.emergency_callback(True)
+                    self.broadcast("EMERGENCY:" + ujson.dumps({
+                        "event": "emergency",
+                        "type": "wifi_lost",
+                        "msg": "MẤT KẾT NỐI WI-FI: ĐÃ DỪNG MỌI HOẠT ĐỘNG, ĐANG TỰ ĐỘNG TÌM LẠI..."
+                    }))
+                    self.last_emergency_retry_time = 0
 
         # B. Tự động kết nối lại khi ở chế độ Failsafe
         if self.emergency_mode:

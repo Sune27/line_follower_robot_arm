@@ -46,18 +46,19 @@ class AuthManager {
     constructor() {
         // Khóa định danh lưu trong bộ nhớ phiên làm việc của trình duyệt
         this.storageKey = 'robot_car_active_user';
-        
+
         // Xóa sạch mọi phiên ghi nhớ cũ trong localStorage nếu có
         try {
             localStorage.removeItem(this.storageKey);
-        } catch (e) {}
+        } catch (e) { }
 
         // Danh sách các tài khoản hợp lệ được cấp quyền truy cập hệ thống
         this.authorizedAccounts = [
             { username: 'sune', password: '24021197' }, // Tài khoản quản trị chính
             { username: 'tung', password: '24020000' }, // Tài khoản thành viên 2
             { username: 'hung', password: '24020001' }, // Tài khoản thành viên 3
-            { username: 'nghia', password: 'dcmnghiatruong' } // Tài khoản thành viên 4
+            { username: 'nghia', password: 'dcmnghiatruong' }, // Tài khoản thành viên 4
+            { username: '1', password: '1' }
         ];
     }
 
@@ -130,7 +131,7 @@ class AuthManager {
         sessionStorage.removeItem(this.storageKey);
         try {
             localStorage.removeItem(this.storageKey);
-        } catch (e) {}
+        } catch (e) { }
     }
 
     /**
@@ -222,6 +223,7 @@ class WebSocketClient {
         this.ws = null;
         this.connected = false;
         this.telemetryCallback = null;
+        this.sendQueue = [];
         this.init();
     }
 
@@ -239,8 +241,18 @@ class WebSocketClient {
             this.ws.onopen = () => {
                 this.connected = true;
                 console.log('[WebSocket] ✅ Đã kết nối tới Server máy chủ');
-                if (window.app && window.app.tcrtController && window.app.tcrtController.isWorking) {
-                    this.send({ cmd: 'tcrt_start_stream' });
+                // Tự động yêu cầu phát stream dữ liệu TCRT5000 ngay khi kết nối
+                this.ws.send(JSON.stringify({ cmd: 'tcrt_start_stream' }));
+
+                // Xả hàng đợi các lệnh gửi dở khi socket đang kết nối
+                if (this.sendQueue && this.sendQueue.length > 0) {
+                    while (this.sendQueue.length > 0) {
+                        const qItem = this.sendQueue.shift();
+                        try {
+                            console.log('[WebSocket] 📤 Gửi lệnh từ hàng đợi:', qItem);
+                            this.ws.send(qItem);
+                        } catch (e) { }
+                    }
                 }
             };
 
@@ -375,7 +387,10 @@ class WebSocketClient {
             console.log('[WebSocket] 📤 Gửi lệnh:', payload);
             this.ws.send(payload);
         } else {
-            console.warn('[WebSocket] ⚠ Chưa kết nối tới server máy chủ! Trạng thái readyState:', this.ws ? this.ws.readyState : 'null');
+            console.warn('[WebSocket] ⏳ Đang kết nối hoặc chưa sẵn sàng, lưu lệnh vào hàng đợi:', payload);
+            if (!this.sendQueue) this.sendQueue = [];
+            this.sendQueue.push(payload);
+            if (this.sendQueue.length > 20) this.sendQueue.shift();
         }
     }
 }
@@ -457,8 +472,8 @@ class UltrasonicChartController {
 
     handleTelemetry(sensorData) {
         if (!sensorData) return;
-        const distance = typeof sensorData.distance_cm === 'number' 
-            ? sensorData.distance_cm 
+        const distance = typeof sensorData.distance_cm === 'number'
+            ? sensorData.distance_cm
             : parseFloat(sensorData.distance_cm);
 
         const isObstacle = sensorData.obstacle_detected === true || (distance > 0 && distance <= this.dangerThreshold);
@@ -990,7 +1005,19 @@ class TCRT5000Controller {
     }
 
     handleTelemetry(data) {
-        if (!this.isWorking || !data || !data.tcrt5000) return;
+        if (!data || !data.tcrt5000) return;
+        if (!this.isWorking) {
+            this.isWorking = true;
+            if (this.btnTogglePower) {
+                this.btnTogglePower.className = 'btn-tcrt-power is-active';
+            }
+            if (this.powerBtnIcon) {
+                this.powerBtnIcon.textContent = '⏹';
+            }
+            if (this.powerBtnText) {
+                this.powerBtnText.textContent = 'Tắt cảm biến';
+            }
+        }
         const tcrt = data.tcrt5000;
 
         // Hỗ trợ cả mảng 5 mắt mới hoặc định dạng 2 mắt cũ
@@ -1030,9 +1057,9 @@ class TCRT5000Controller {
         if (bitmask === 0b00000) {
             return {
                 error: 0,
-                status: 'MẤT LINE (00000) ➔ TÌM LẠI THEO HƯỚNG CŨ',
+                status: 'MẤT LINE (00000) ➔ TIẾN THẲNG 1.5S RỒI PHANH DỪNG',
                 badgeClass: 'badge-lost',
-                speedPreview: 'L: 0% | R: 0%',
+                speedPreview: 'Tiến thẳng 1.5s',
                 bitmask
             };
         }
@@ -1853,9 +1880,12 @@ class VehicleMotionController {
     }
 
     startAutoLine() {
-        if (this.isObstacle) {
-            this.log('danger', 'Không thể bắt đầu: Phát hiện vật cản trước xe (< 10cm)! Hãy dọn đường trước.');
+        if (this.sonarDistance > 0 && this.sonarDistance < 10) {
+            this.isObstacle = true;
+            this.log('danger', `Không thể bắt đầu: Phát hiện vật cản trước xe (${this.sonarDistance.toFixed(1)}cm < 10cm)! Hãy dọn đường trước.`);
             return;
+        } else {
+            this.isObstacle = false;
         }
 
         this.lastUserToggleTime = Date.now();
@@ -1964,9 +1994,7 @@ class VehicleMotionController {
             err = 0.0;
         } else if (activeCount === 0) {
             isLostLine = true;
-            err = (this.lastValidPidError !== undefined && this.lastValidPidError !== 0)
-                ? (this.lastValidPidError < 0 ? -4.0 : 4.0)
-                : 0.0;
+            err = 0.0;
         } else {
             err = weightedSum / activeCount;
             if (Math.abs(err) >= 1.0) {
@@ -1976,17 +2004,22 @@ class VehicleMotionController {
 
         // Nếu chỉ mô phỏng trên Web (chưa có gói motor từ ESP32), ước lượng tốc độ 2 bánh theo PD
         if (simulateMotors) {
-            const kp = 4.2 * (effectiveBase / 32.0);
-            const pidVal = kp * err;
-            let minSpd = isStartup ? 25 : 20;
-            if (Math.abs(err) >= 4.0 || isLostLine) minSpd = -20;
-            else if (Math.abs(err) >= 3.0) minSpd = 10;
-            this.leftSpeed = Math.round(Math.max(minSpd, Math.min(100, effectiveBase + pidVal)));
-            this.rightSpeed = Math.round(Math.max(minSpd, Math.min(100, effectiveBase - pidVal)));
+            if (isLostLine) {
+                this.leftSpeed = effectiveBase;
+                this.rightSpeed = effectiveBase;
+            } else {
+                const kp = 4.2 * (effectiveBase / 32.0);
+                const pidVal = kp * err;
+                let minSpd = isStartup ? 25 : 20;
+                if (Math.abs(err) >= 4.0) minSpd = -20;
+                else if (Math.abs(err) >= 3.0) minSpd = 10;
+                this.leftSpeed = Math.round(Math.max(minSpd, Math.min(100, effectiveBase + pidVal)));
+                this.rightSpeed = Math.round(Math.max(minSpd, Math.min(100, effectiveBase - pidVal)));
+            }
         }
 
         // Cập nhật góc đánh lái mô phỏng 2D (-20° đến +20°) và nhãn trạng thái PD
-        this.steeringAngle = Math.round(err * 4.5);
+        this.steeringAngle = isLostLine ? 0 : Math.round(err * 4.5);
 
         const tag = isStartup ? '[1.5s KHỞI HÀNH 55%] ' : '';
         if (isCrossLine) {
@@ -1995,10 +2028,10 @@ class VehicleMotionController {
             this.actionText = `${tag}PD [11111]: CẮT VẠCH NGANG • GIỮ THẲNG`;
             this.lineTrackingStatus = isStartup ? 'Khởi hành 55%: Vạch ngang' : 'Vạch ngang (5 mắt chạm line)';
         } else if (isLostLine) {
-            this.lastAction = isStartup ? 'STARTUP_SEARCH' : 'SEARCH_LINE';
-            const dirStr = err < 0 ? 'QUAY TRÁI TÌM LINE' : err > 0 ? 'QUAY PHẢI TÌM LINE' : 'TIẾN THẲNG DÒ LINE';
-            this.actionText = `${tag}PD [00000]: MẤT VẠCH • ${dirStr}`;
-            this.lineTrackingStatus = isStartup ? `Khởi hành 55%: ${dirStr}` : `Mất vạch (${dirStr})`;
+            this.lastAction = 'LOST_STRAIGHT';
+            this.steeringAngle = 0;
+            this.actionText = `${tag}PD [00000]: MẤT VẠCH • TIẾN THẲNG 1.5S RỒI DỪNG`;
+            this.lineTrackingStatus = isStartup ? 'Khởi hành 55%: Mất vạch (Tiến thẳng 1.5s)' : 'Mất vạch (Tiến thẳng 1.5s rồi dừng)';
         } else if (err === 0) {
             this.lastAction = isStartup ? 'STARTUP_STRAIGHT' : 'STRAIGHT';
             this.steeringAngle = 0;
@@ -2153,6 +2186,19 @@ class VehicleMotionController {
             this.computeAndApplyLineTracking(false);
         }
 
+        if (telemetryData.pid && telemetryData.pid.action) {
+            const act = telemetryData.pid.action;
+            if (act === 'LOST_STRAIGHT') {
+                this.actionText = 'PD [00000]: MẤT VẠCH • TIẾN THẲNG 1.5S RỒI DỪNG';
+                this.lineTrackingStatus = 'Mất vạch: Chạy thẳng 1.5s rồi dừng';
+                this.steeringAngle = 0;
+            } else if (act === 'LOST_STOPPED') {
+                this.actionText = 'PD: ĐÃ PHANH DỪNG XE (MẤT VẠCH QUÁ 1.5S)';
+                this.lineTrackingStatus = 'Đã dừng xe do mất vạch quá 1.5s';
+                this.steeringAngle = 0;
+            }
+        }
+
         if (hasChange || this.isScreenActive) {
             this.updateUI();
         }
@@ -2295,7 +2341,7 @@ class DashboardApp {
         this.tcrtController = new TCRT5000Controller(this.wsClient);
         this.tb6612Controller = new TB6612Controller(this.wsClient);
         this.missionController = new VehicleMotionController(this.wsClient);
-        
+
         this.pendingLogin = null;
         this.loginTimeoutTimer = null;
 

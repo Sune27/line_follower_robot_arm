@@ -67,7 +67,8 @@ def main():
         ki=config.PID_KI,
         kd=config.PID_KD,
         startup_duration_ms=config.LINE_STARTUP_DURATION_MS,
-        startup_speed=config.LINE_STARTUP_SPEED
+        startup_speed=config.LINE_STARTUP_SPEED,
+        lost_line_timeout_ms=config.LINE_LOST_TIMEOUT_MS
     )
 
     # 6. Khởi tạo Server Truyền thông & Failsafe (Port 8888)
@@ -133,11 +134,16 @@ def main():
                     line_tracker.update(raw_sensors, now)
 
             # --- TÁC VỤ C: NHỊP 2 - GỬI TELEMETRY ĐỊNH KỲ (100ms) ---
-            if (dispatcher.stream_tcrt or line_tracker.is_active) and not comm.emergency_mode:
+            if dispatcher.stream_tcrt or line_tracker.is_active:
                 if time.ticks_diff(now, last_telemetry_time) >= TELEMETRY_INTERVAL_MS:
                     last_telemetry_time = now
                     comm.broadcast("TELEMETRY:" + ujson.dumps({
                         "event": "telemetry",
+                        "wifi": {
+                            "connected": wifi_mgr.is_connected(),
+                            "ssid": wifi_mgr.get_ssid(),
+                            "ip": wifi_mgr.get_ip()
+                        },
                         "tcrt5000": line_sensor.read_status(),
                         "motor": {
                             "speed_left": motor.current_speed_left,
