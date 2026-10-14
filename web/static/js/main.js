@@ -1057,9 +1057,9 @@ class TCRT5000Controller {
         if (bitmask === 0b00000) {
             return {
                 error: 0,
-                status: 'MẤT LINE (00000) ➔ TIẾN THẲNG 1.5S RỒI PHANH DỪNG',
+                status: 'MẤT LINE (00000) ➔ QUÉT TÌM LINE THEO HƯỚNG CŨ (1.5S)',
                 badgeClass: 'badge-lost',
-                speedPreview: 'Tiến thẳng 1.5s',
+                speedPreview: 'Quét tìm vạch',
                 bitmask
             };
         }
@@ -1637,13 +1637,13 @@ class VehicleMotionController {
 
         // Trạng thái vận hành
         this.isRunningAutoLine = false;  // Trạng thái tự hành bám vạch quang học
-        this.baseSpeed = 32;             // Tốc độ cơ sở khi bám vạch sau 1.5s (20% - 85%)
-        this.startupSpeed = 55;          // Tốc độ cơ sở khởi hành trong 1.5s đầu
+        this.baseSpeed = 55;             // Tốc độ cơ sở khi bám vạch sau 1.5s (55% theo yêu cầu)
+        this.startupSpeed = 65;          // Tốc độ cơ sở khởi hành trong 1.5s đầu
         this.startupDurationMs = 1500;   // 1.5s chạy tốc độ khởi hành để thoát trạng thái nghỉ
         this.startupStartTime = 0;
-        this.pidKp = 4.2;                // Hệ số Kp
-        this.pidKi = 0.0;                // Hệ số Ki = 0 (bỏ khâu I, thuần thuật toán PD)
-        this.pidKd = 2.2;                // Hệ số Kd
+        this.pidKp = 4.8;                // Hệ số Kp = 4.8
+        this.pidKi = 0.08;               // Hệ số Ki = 0.08 (khâu I tích phân bù lệch cơ khí)
+        this.pidKd = 2.8;                // Hệ số Kd = 2.8
         this.leftSpeed = 0;              // Tốc độ hiện tại bánh trái (0 - 100%)
         this.rightSpeed = 0;             // Tốc độ hiện tại bánh phải (0 - 100%)
         this.masterSpeed = 0;            // Mức ga tổng
@@ -2008,13 +2008,13 @@ class VehicleMotionController {
                 this.leftSpeed = effectiveBase;
                 this.rightSpeed = effectiveBase;
             } else {
-                const kp = 4.2 * (effectiveBase / 32.0);
+                const kp = (this.pidKp || 4.8) * (effectiveBase / (this.baseSpeed || 55.0));
                 const pidVal = kp * err;
-                let minSpd = isStartup ? 25 : 20;
-                if (Math.abs(err) >= 4.0) minSpd = -20;
-                else if (Math.abs(err) >= 3.0) minSpd = 10;
-                this.leftSpeed = Math.round(Math.max(minSpd, Math.min(100, effectiveBase + pidVal)));
-                this.rightSpeed = Math.round(Math.max(minSpd, Math.min(100, effectiveBase - pidVal)));
+                let minSpd = 30;
+                if (Math.abs(err) >= 3.0) minSpd = 15;
+                else if (Math.abs(err) >= 2.0) minSpd = 25;
+                this.leftSpeed = Math.round(Math.max(minSpd, Math.min(88, effectiveBase + pidVal)));
+                this.rightSpeed = Math.round(Math.max(minSpd, Math.min(88, effectiveBase - pidVal)));
             }
         }
 
@@ -2189,9 +2189,17 @@ class VehicleMotionController {
         if (telemetryData.pid && telemetryData.pid.action) {
             const act = telemetryData.pid.action;
             if (act === 'LOST_STRAIGHT') {
-                this.actionText = 'PD [00000]: MẤT VẠCH • TIẾN THẲNG 1.5S RỒI DỪNG';
-                this.lineTrackingStatus = 'Mất vạch: Chạy thẳng 1.5s rồi dừng';
+                this.actionText = 'PD [00000]: MẤT VẠCH • TIẾN THẲNG QUA KHOẢNG TRỐNG (1.5S)';
+                this.lineTrackingStatus = 'Mất vạch: Đi thẳng đón line';
                 this.steeringAngle = 0;
+            } else if (act === 'LOST_SEARCH_LEFT') {
+                this.actionText = 'PD [00000]: MẤT VẠCH • QUAY TRÁI QUÉT TÌM LINE';
+                this.lineTrackingStatus = 'Mất vạch: Xoay trái quét tìm lại line';
+                this.steeringAngle = -20;
+            } else if (act === 'LOST_SEARCH_RIGHT') {
+                this.actionText = 'PD [00000]: MẤT VẠCH • QUAY PHẢI QUÉT TÌM LINE';
+                this.lineTrackingStatus = 'Mất vạch: Xoay phải quét tìm lại line';
+                this.steeringAngle = 20;
             } else if (act === 'LOST_STOPPED') {
                 this.actionText = 'PD: ĐÃ PHANH DỪNG XE (MẤT VẠCH QUÁ 1.5S)';
                 this.lineTrackingStatus = 'Đã dừng xe do mất vạch quá 1.5s';

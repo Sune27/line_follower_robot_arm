@@ -110,8 +110,8 @@ def main():
     last_line_time = 0
     last_telemetry_time = 0
 
-    LINE_INTERVAL_MS = 15        # Nhịp 1: Điều khiển dò line PID cực nhanh (15ms ~ 66Hz)
-    TELEMETRY_INTERVAL_MS = 100   # Nhịp 2: Đẩy telemetry lên Web vừa phải (100ms ~ 10Hz)
+    LINE_INTERVAL_MS = 10        # Nhịp 1: Điều khiển dò line PID cực nhanh (10ms ~ 100Hz phản ứng tức thời)
+    TELEMETRY_INTERVAL_MS = 50   # Nhịp 2: Đẩy telemetry lên Web nhanh (50ms ~ 20Hz - mượt mà thời gian thực)
 
     print("[ESP32] ✅ HỆ THỐNG SẴN SÀNG VẬN HÀNH!")
 
@@ -168,7 +168,7 @@ def main():
         except Exception as e:
             print("[Lỗi vòng lặp chính]", e)
 
-        time.sleep_ms(5)
+        time.sleep_ms(1)
 
 if __name__ == "__main__":
     main()

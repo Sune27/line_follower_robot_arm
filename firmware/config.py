@@ -50,12 +50,15 @@ PIN_MOTOR_BIN2 = 26          # Bánh Phải (D26 - Cột S)
 MOTOR_PWM_FREQ = 1000        # Tần số PWM 1000Hz chạy êm, mô-men xoắn khỏe
 
 # ==============================================================================
-# 6. CẤU HÌNH THUẬT TOÁN PD DÒ LINE 5 MẮT (ĐIỀU KHIỂN ÊM ÁI - CHỐNG VĂNG LINE)
+# 6. CẤU HÌNH THUẬT TOÁN PID DÒ LINE 5 MẮT (ĐIỀU KHIỂN ÊM ÁI - CHỐNG VĂNG LINE)
 # ==============================================================================
-LINE_BASE_SPEED = 32           # Tốc độ cơ sở bình thường sau 1.5s (32% chạy êm, bám vạch chính xác)
-LINE_STARTUP_SPEED = 55        # Tốc độ cơ sở khởi hành trong 1.5s đầu (55% để thắng ma sát nghỉ)
-LINE_STARTUP_DURATION_MS = 1500 # Thời gian chạy tốc độ khởi hành 55% (1500ms = 1.5s)
-LINE_LOST_TIMEOUT_MS = 1500     # Khi mất line (00000): tiếp tục chạy THẲNG tốc độ cơ sở trong 1.5s rồi phanh về 0
-PID_KP = 4.2                   # Hệ số Tỷ lệ (P): 4.2 để lệch nhẹ xe lượn êm, không bị bẻ gắt văng line
-PID_KI = 0.0                   # Hệ số Tích phân (I): Đặt bằng 0 để triệt tiêu khâu I (thuần thuật toán PD)
-PID_KD = 2.2                   # Hệ số Đạo hàm (D): 2.2 để giảm chấn vừa phải, chống lắc đuôi xe
+LINE_BASE_SPEED = 55           # Tốc độ cơ sở bình thường sau 1.5s (55% theo yêu cầu người dùng)
+LINE_MIN_SPEED = 30            # Ngưỡng tốc độ tối thiểu khi bám tâm (30% để chống kẹt mô-men xoắn / vùng chết)
+LINE_STARTUP_SPEED = 65        # Tốc độ cơ sở khởi hành trong 1.5s đầu (65% để thắng ma sát nghỉ ở tốc độ cao)
+LINE_STARTUP_DURATION_MS = 1500 # Thời gian chạy tốc độ khởi hành (1500ms = 1.5s)
+LINE_LOST_TIMEOUT_MS = 1500     # Khi mất line (00000): thời gian tối đa quét tìm lại vạch trước khi phanh dừng hẳn
+LINE_SEARCH_REVERSE_SPEED = -15 # Tốc độ bánh trong khi xoay quét tìm lại vạch khi mất line (-15% xoay tại chỗ)
+PID_KP = 4.8                   # Hệ số Tỷ lệ (P): 4.8 để bẻ lái sớm ngay từ mắt 2 và 4, giữ xe trong 3 mắt giữa
+PID_KI = 0.08                  # Hệ số Tích phân (I): 0.08 bù lệch cơ khí 2 động cơ (tự triệt tiêu khi qua tâm)
+PID_KD = 2.8                   # Hệ số Đạo hàm (D): 2.8 để phanh giảm chấn quán tính mạnh hơn ở tốc độ 55
+PID_FILTER_ALPHA = 0.7         # Hệ số lọc thông thấp làm mịn sai số (0.1 - 1.0, 0.7 giúp loại bỏ xung gai rời rạc)

@@ -51,12 +51,12 @@ class LineFollowerSensor:
         self.pin_left_num = s2_pin
         self.pin_right_num = s4_pin
 
-        # Khởi tạo đối tượng GPIO Pin input
-        self.sensor_s1 = Pin(s1_pin, Pin.IN) if s1_pin is not None else None
-        self.sensor_s2 = Pin(s2_pin, Pin.IN) if s2_pin is not None else None
-        self.sensor_s3 = Pin(s3_pin, Pin.IN) if s3_pin is not None else None
-        self.sensor_s4 = Pin(s4_pin, Pin.IN) if s4_pin is not None else None
-        self.sensor_s5 = Pin(s5_pin, Pin.IN) if s5_pin is not None else None
+        # Khởi tạo đối tượng GPIO Pin input với PULL_UP nội để chống trôi nổi tín hiệu
+        self.sensor_s1 = Pin(s1_pin, Pin.IN, Pin.PULL_UP) if s1_pin is not None else None
+        self.sensor_s2 = Pin(s2_pin, Pin.IN, Pin.PULL_UP) if s2_pin is not None else None
+        self.sensor_s3 = Pin(s3_pin, Pin.IN, Pin.PULL_UP) if s3_pin is not None else None
+        self.sensor_s4 = Pin(s4_pin, Pin.IN, Pin.PULL_UP) if s4_pin is not None else None
+        self.sensor_s5 = Pin(s5_pin, Pin.IN, Pin.PULL_UP) if s5_pin is not None else None
 
         self.sensors = [self.sensor_s1, self.sensor_s2, self.sensor_s3, self.sensor_s4, self.sensor_s5]
 

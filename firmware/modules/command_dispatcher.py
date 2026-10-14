@@ -39,7 +39,7 @@ class CommandDispatcher:
 
         # 1. LỆNH BẮT ĐẦU DÒ LINE TỰ ĐỘNG (HOẶC CẬP NHẬT TỐC ĐỘ KHI ĐANG CHẠY)
         if "CMD:START_AUTO_LINE" in cmd:
-            speed = getattr(config, "LINE_BASE_SPEED", 35)
+            speed = getattr(config, "LINE_BASE_SPEED", 45)
             try:
                 parts = cmd.split(":")
                 if len(parts) >= 3 and parts[2].isdigit():
