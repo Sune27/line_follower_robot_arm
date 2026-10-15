@@ -1207,18 +1207,19 @@ class TCRT5000Controller {
 
 
 // ==============================================================================
-// 5.6 CLASS TB6612_CONTROLLER (Điều khiển 2 Cần số dọc độc lập & Giám sát Động cơ TB6612FNG)
+// 5.6 CLASS TB6612_CONTROLLER (Cân chỉnh Đi Thẳng & Scale Động cơ TB6612FNG)
 // ==============================================================================
 class TB6612Controller {
     constructor(wsClient) {
         this.wsClient = wsClient;
-        this.leftSpeed = 0;   // Tốc độ bánh trái Motor A (0 - 100%)
-        this.rightSpeed = 0;  // Tốc độ bánh phải Motor B (0 - 100%)
-        this.isEngineRunning = false;
-        this.isSync = false;  // Chế độ đồng bộ 2 cần gạt (mặc định tắt: chỉnh riêng lẻ)
-        this.direction = 'CW'; // Chiều quay tiến
 
-        this.sendThrottleDebounce = null;
+        // Trạng thái vận hành
+        this.baseSpeed = 90;            // Tốc độ cơ sở (Mặc định 90 PWM)
+        this.scaleLeft = 0.84;          // Hệ số scale bánh trái (0.50 - 1.00)
+        this.scaleRight = 0.87;         // Hệ số scale bánh phải (0.50 - 1.00)
+        this.isStraightRunning = false; // Trạng thái chạy thẳng
+        this.sendDebounce = null;
+        this.lastToggleTime = 0;        // Chống dội phím / double-click
     }
 
     init() {
@@ -1228,400 +1229,332 @@ class TB6612Controller {
     }
 
     cacheElements() {
-        // --- 1. KHU VỰC CẦN SỐ BÁNH TRÁI (MOTOR A - CYAN) ---
-        this.sliderLeft = document.getElementById('tb6612-slider-left');
-        this.shifterLeftSpeedVal = document.getElementById('shifter-left-speed-val');
-        this.shifterLeftStatus = document.getElementById('shifter-left-status');
-        this.shifterGlowLeft = document.getElementById('shifter-glow-left');
-        this.shiftKnobLeft = document.getElementById('shift-knob-left');
-        this.knobGearSymbolLeft = document.getElementById('knob-gear-symbol-left');
-        this.btnBrakeLeft = document.getElementById('btn-brake-left');
-
-        this.gearButtonsLeft = [
-            { el: document.getElementById('gear-btn-left-p'), gear: 'P', speed: 0 },
-            { el: document.getElementById('gear-btn-left-1'), gear: '1', speed: 35 },
-            { el: document.getElementById('gear-btn-left-2'), gear: '2', speed: 65 },
-            { el: document.getElementById('gear-btn-left-3'), gear: '3', speed: 100 }
-        ];
-
-        // --- 2. KHU VỰC CẦN SỐ BÁNH PHẢI (MOTOR B - PURPLE) ---
-        this.sliderRight = document.getElementById('tb6612-slider-right');
-        this.shifterRightSpeedVal = document.getElementById('shifter-right-speed-val');
-        this.shifterRightStatus = document.getElementById('shifter-right-status');
-        this.shifterGlowRight = document.getElementById('shifter-glow-right');
-        this.shiftKnobRight = document.getElementById('shift-knob-right');
-        this.knobGearSymbolRight = document.getElementById('knob-gear-symbol-right');
-        this.btnBrakeRight = document.getElementById('btn-brake-right');
-
-        this.gearButtonsRight = [
-            { el: document.getElementById('gear-btn-right-p'), gear: 'P', speed: 0 },
-            { el: document.getElementById('gear-btn-right-1'), gear: '1', speed: 35 },
-            { el: document.getElementById('gear-btn-right-2'), gear: '2', speed: 65 },
-            { el: document.getElementById('gear-btn-right-3'), gear: '3', speed: 100 }
-        ];
-
-        // --- 3. ĐỒNG HỒ ĐO & GIÁM SÁT 2 BÁNH Ở TRUNG TÂM ---
-        this.diffMotionStatus = document.getElementById('tb6612-motion-status');
-        this.motionStatusText = document.getElementById('motion-status-text');
-
         // Bánh trái
-        this.gaugeFillLeft = document.getElementById('gauge-fill-left');
-        this.wheelGraphicLeft = document.getElementById('wheel-graphic-left');
-        this.speedLeftVal = document.getElementById('speed-left-val');
-        this.rpmLeftVal = document.getElementById('rpm-left-val');
-        this.leftDirPill = document.getElementById('left-dir-pill');
-        this.leftDirText = document.getElementById('left-dir-text');
+        this.scaleLeftText = document.getElementById('scale-left-text');
+        this.pwmLeftText = document.getElementById('pwm-left-text');
+        this.sliderScaleLeft = document.getElementById('slider-scale-left');
+        this.tagSliderLeftVal = document.getElementById('tag-slider-left-val');
+        this.btnScaleLeftMinus = document.getElementById('btn-scale-left-minus');
+        this.btnScaleLeftReset = document.getElementById('btn-scale-left-reset');
+        this.btnScaleLeftPlus = document.getElementById('btn-scale-left-plus');
 
         // Bánh phải
-        this.gaugeFillRight = document.getElementById('gauge-fill-right');
-        this.wheelGraphicRight = document.getElementById('wheel-graphic-right');
-        this.speedRightVal = document.getElementById('speed-right-val');
-        this.rpmRightVal = document.getElementById('rpm-right-val');
-        this.rightDirPill = document.getElementById('right-dir-pill');
-        this.rightDirText = document.getElementById('right-dir-text');
+        this.scaleRightText = document.getElementById('scale-right-text');
+        this.pwmRightText = document.getElementById('pwm-right-text');
+        this.sliderScaleRight = document.getElementById('slider-scale-right');
+        this.tagSliderRightVal = document.getElementById('tag-slider-right-val');
+        this.btnScaleRightMinus = document.getElementById('btn-scale-right-minus');
+        this.btnScaleRightReset = document.getElementById('btn-scale-right-reset');
+        this.btnScaleRightPlus = document.getElementById('btn-scale-right-plus');
 
-        // Differential Balance
-        this.ratioLeftTxt = document.getElementById('ratio-left-txt');
-        this.ratioRightTxt = document.getElementById('ratio-right-txt');
-        this.diffBarLeft = document.getElementById('diff-bar-left');
-        this.diffBarRight = document.getElementById('diff-bar-right');
+        // Trung tâm
+        this.btnToggleStraight = document.getElementById('btn-toggle-straight');
+        this.straightStatusPill = document.getElementById('straight-status-pill');
+        this.straightStatusText = document.getElementById('straight-status-text');
+        this.straightMainLabel = document.getElementById('straight-main-label');
+        this.straightSubLabel = document.getElementById('straight-sub-label');
+        this.straightBtnIcon = document.getElementById('straight-btn-icon');
 
-        // --- 4. CÁC NÚT ĐIỀU KHIỂN TRUNG TÂM (ENGINE & SYNC) ---
-        this.btnToggleMotorPower = document.getElementById('btn-toggle-motor-power');
-        this.engineBtnLabel = document.getElementById('engine-btn-label');
-        this.engineBtnSub = document.getElementById('engine-btn-sub');
+        // Tốc độ cơ sở
+        this.baseSpeedDisplay = document.getElementById('base-speed-display');
+        this.sliderBaseSpeed = document.getElementById('slider-base-speed');
+        this.btnBaseMinus = document.getElementById('btn-base-minus');
+        this.btnBasePlus = document.getElementById('btn-base-plus');
 
-        this.btnToggleSync = document.getElementById('btn-toggle-sync');
-        this.syncBtnLabel = document.getElementById('sync-btn-label');
-        this.syncBtnSub = document.getElementById('sync-btn-sub');
+        // Config & Copy
+        this.configCodePreview = document.getElementById('config-code-preview');
+        this.btnCopyConfig = document.getElementById('btn-copy-config');
     }
 
     bindEvents() {
-        // 1. Kéo cần số bánh trái
-        if (this.sliderLeft) {
-            this.sliderLeft.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value, 10) || 0;
-                this.setLeftSpeed(val, true, this.isSync);
+        // 1. Nút Bật/Dừng Đi thẳng
+        if (this.btnToggleStraight) {
+            this.btnToggleStraight.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.btnToggleStraight.blur(); // Hủy focus tránh xung đột với phím Space
+                this.toggleStraight();
             });
         }
 
-        // 2. Kéo cần số bánh phải
-        if (this.sliderRight) {
-            this.sliderRight.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value, 10) || 0;
-                this.setRightSpeed(val, true, this.isSync);
+        // 2. Thanh gạt Scale Bánh Trái
+        if (this.sliderScaleLeft) {
+            this.sliderScaleLeft.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value) || 1.0;
+                this.setScaleLeft(val);
             });
         }
 
-        // 3. Các nút nấc số bánh trái (P, 1, 2, 3)
-        this.gearButtonsLeft.forEach(btnObj => {
-            if (btnObj.el) {
-                btnObj.el.addEventListener('click', () => {
-                    this.setLeftSpeed(btnObj.speed, true, this.isSync);
-                });
+        // 3. Nút vi chỉnh Bánh Trái
+        if (this.btnScaleLeftMinus) {
+            this.btnScaleLeftMinus.addEventListener('click', () => {
+                this.setScaleLeft(this.scaleLeft - 0.01);
+            });
+        }
+        if (this.btnScaleLeftReset) {
+            this.btnScaleLeftReset.addEventListener('click', () => {
+                this.setScaleLeft(1.00);
+            });
+        }
+        if (this.btnScaleLeftPlus) {
+            this.btnScaleLeftPlus.addEventListener('click', () => {
+                this.setScaleLeft(this.scaleLeft + 0.01);
+            });
+        }
+
+        // 4. Thanh gạt Scale Bánh Phải
+        if (this.sliderScaleRight) {
+            this.sliderScaleRight.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value) || 1.0;
+                this.setScaleRight(val);
+            });
+        }
+
+        // 5. Nút vi chỉnh Bánh Phải
+        if (this.btnScaleRightMinus) {
+            this.btnScaleRightMinus.addEventListener('click', () => {
+                this.setScaleRight(this.scaleRight - 0.01);
+            });
+        }
+        if (this.btnScaleRightReset) {
+            this.btnScaleRightReset.addEventListener('click', () => {
+                this.setScaleRight(1.00);
+            });
+        }
+        if (this.btnScaleRightPlus) {
+            this.btnScaleRightPlus.addEventListener('click', () => {
+                this.setScaleRight(this.scaleRight + 0.01);
+            });
+        }
+
+        // 6. Điều chỉnh tốc độ cơ sở (Base Speed)
+        if (this.sliderBaseSpeed) {
+            this.sliderBaseSpeed.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value, 10) || 90;
+                this.setBaseSpeed(val);
+            });
+        }
+        if (this.btnBaseMinus) {
+            this.btnBaseMinus.addEventListener('click', () => {
+                this.setBaseSpeed(this.baseSpeed - 5);
+            });
+        }
+        if (this.btnBasePlus) {
+            this.btnBasePlus.addEventListener('click', () => {
+                this.setBaseSpeed(this.baseSpeed + 5);
+            });
+        }
+
+        // 7. Nút Sao chép thông số cấu hình
+        if (this.btnCopyConfig) {
+            this.btnCopyConfig.addEventListener('click', () => {
+                const text = `MOTOR_LEFT_SCALE = ${this.scaleLeft.toFixed(2)}\nMOTOR_RIGHT_SCALE = ${this.scaleRight.toFixed(2)}`;
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        this.btnCopyConfig.textContent = '✓ Đã chép!';
+                        setTimeout(() => { if (this.btnCopyConfig) this.btnCopyConfig.textContent = 'Sao chép'; }, 1500);
+                    });
+                }
+            });
+        }
+
+        // 8. Lắng nghe phím tắt khi ở tab tb6612
+        window.addEventListener('keydown', (e) => {
+            const currentScreen = window.app && window.app.screenManager ? window.app.screenManager.getCurrentScreenId() : null;
+            if (currentScreen !== 'tb6612-screen') return;
+            if (e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (document.activeElement) {
+                    document.activeElement.blur();
+                }
+                this.toggleStraight();
+            } else if (e.code === 'ArrowLeft') {
+                e.preventDefault();
+                this.setScaleLeft(this.scaleLeft - 0.01);
+            } else if (e.code === 'ArrowRight') {
+                e.preventDefault();
+                this.setScaleRight(this.scaleRight - 0.01);
+            } else if (e.key === 'r' || e.key === 'R') {
+                e.preventDefault();
+                this.setScaleLeft(1.00);
+                this.setScaleRight(1.00);
             }
         });
-
-        // 4. Các nút nấc số bánh phải (P, 1, 2, 3)
-        this.gearButtonsRight.forEach(btnObj => {
-            if (btnObj.el) {
-                btnObj.el.addEventListener('click', () => {
-                    this.setRightSpeed(btnObj.speed, true, this.isSync);
-                });
-            }
-        });
-
-        // 5. Nút phanh nhanh từng bánh
-        if (this.btnBrakeLeft) {
-            this.btnBrakeLeft.addEventListener('click', () => {
-                this.setLeftSpeed(0, true, this.isSync);
-            });
-        }
-
-        if (this.btnBrakeRight) {
-            this.btnBrakeRight.addEventListener('click', () => {
-                this.setRightSpeed(0, true, this.isSync);
-            });
-        }
-
-        // 6. Nút Bật/Tắt Động cơ chính (Engine Master Toggle)
-        if (this.btnToggleMotorPower) {
-            this.btnToggleMotorPower.addEventListener('click', () => {
-                this.toggleEngine();
-            });
-        }
-
-        // 7. Nút Bật/Tắt Đồng bộ 2 cần gạt (Sync Toggle)
-        if (this.btnToggleSync) {
-            this.btnToggleSync.addEventListener('click', () => {
-                this.toggleSync();
-            });
-        }
     }
 
-    setLeftSpeed(speedVal, dispatchServer = true, syncToRight = false) {
-        speedVal = Math.max(0, Math.min(100, Math.round(speedVal)));
-        this.leftSpeed = speedVal;
-
-        if (syncToRight) {
-            this.rightSpeed = speedVal;
-        }
-
-        this.checkEngineState();
+    setScaleLeft(val) {
+        this.scaleLeft = Math.round(Math.max(0.50, Math.min(1.00, val)) * 100) / 100;
         this.updateUI();
-
-        if (dispatchServer) {
-            this.sendSpeedToServer();
+        if (this.isStraightRunning) {
+            this.dispatchSpeed();
         }
     }
 
-    setRightSpeed(speedVal, dispatchServer = true, syncToLeft = false) {
-        speedVal = Math.max(0, Math.min(100, Math.round(speedVal)));
-        this.rightSpeed = speedVal;
-
-        if (syncToLeft) {
-            this.leftSpeed = speedVal;
-        }
-
-        this.checkEngineState();
+    setScaleRight(val) {
+        this.scaleRight = Math.round(Math.max(0.50, Math.min(1.00, val)) * 100) / 100;
         this.updateUI();
-
-        if (dispatchServer) {
-            this.sendSpeedToServer();
+        if (this.isStraightRunning) {
+            this.dispatchSpeed();
         }
     }
 
-    setDualSpeed(leftVal, rightVal, dispatchServer = true) {
-        this.leftSpeed = Math.max(0, Math.min(100, Math.round(leftVal)));
-        this.rightSpeed = Math.max(0, Math.min(100, Math.round(rightVal)));
-        this.checkEngineState();
+    setBaseSpeed(val) {
+        this.baseSpeed = Math.max(20, Math.min(100, val));
         this.updateUI();
-
-        if (dispatchServer) {
-            this.sendSpeedToServer();
+        if (this.isStraightRunning) {
+            this.dispatchSpeed();
         }
     }
 
-    checkEngineState() {
-        this.isEngineRunning = (this.leftSpeed > 0 || this.rightSpeed > 0);
-    }
+    toggleStraight() {
+        const now = Date.now();
+        // Chống dội phím / double-click trong 200ms
+        if (now - this.lastToggleTime < 200) {
+            return;
+        }
+        this.lastToggleTime = now;
 
-    toggleEngine() {
-        if (this.isEngineRunning) {
-            // Đang chạy -> Dừng cả 2 bánh về 0
-            this.setDualSpeed(0, 0, true);
+        if (this.isStraightRunning) {
+            this.stopStraight();
         } else {
-            // Đang dừng -> Bật ở mức khởi động 35%
-            const defaultSpeed = 35;
-            this.setDualSpeed(defaultSpeed, defaultSpeed, true);
+            this.startStraight();
         }
     }
 
-    toggleSync() {
-        this.isSync = !this.isSync;
-
-        // Nếu vừa BẬT đồng bộ: Cho bánh phải đồng bộ theo tốc độ bánh trái
-        if (this.isSync) {
-            if (this.rightSpeed !== this.leftSpeed) {
-                this.rightSpeed = this.leftSpeed;
-                this.checkEngineState();
-                this.sendSpeedToServer();
-            }
-        }
-
+    startStraight() {
+        this.lastToggleTime = Date.now();
+        this.isStraightRunning = true;
         this.updateUI();
+
+        // GỬI LỆNH NGAY LẬP TỨC (0ms latency, không qua debounce)
+        if (this.sendDebounce) {
+            clearTimeout(this.sendDebounce);
+            this.sendDebounce = null;
+        }
+        const leftPwm = Math.max(0, Math.min(100, Math.round(this.baseSpeed * this.scaleLeft)));
+        const rightPwm = Math.max(0, Math.min(100, Math.round(this.baseSpeed * this.scaleRight)));
+        this.executeSendSpeed(leftPwm, rightPwm, true);
     }
 
-    sendSpeedToServer() {
-        if (this.sendThrottleDebounce) {
-            clearTimeout(this.sendThrottleDebounce);
+    stopStraight() {
+        this.lastToggleTime = Date.now();
+        this.isStraightRunning = false;
+        this.updateUI();
+
+        // DỪNG KHẨN CẤP NGAY LẬP TỨC (0ms latency)
+        if (this.sendDebounce) {
+            clearTimeout(this.sendDebounce);
+            this.sendDebounce = null;
         }
-        this.sendThrottleDebounce = setTimeout(() => {
-            if (this.wsClient) {
-                const maxSpeed = Math.max(this.leftSpeed, this.rightSpeed);
-                this.wsClient.send({
-                    cmd: 'set_motor_speed',
-                    speed: maxSpeed,
-                    left: this.leftSpeed,
-                    right: this.rightSpeed,
-                    is_running: this.isEngineRunning
-                });
+        this.executeSendSpeed(0, 0, false);
+    }
+
+    dispatchSpeed() {
+        const leftPwm = Math.max(0, Math.min(100, Math.round(this.baseSpeed * this.scaleLeft)));
+        const rightPwm = Math.max(0, Math.min(100, Math.round(this.baseSpeed * this.scaleRight)));
+        this.sendSpeedDebounced(leftPwm, rightPwm);
+    }
+
+    sendSpeedDebounced(left, right) {
+        if (this.sendDebounce) {
+            clearTimeout(this.sendDebounce);
+        }
+        this.sendDebounce = setTimeout(() => {
+            if (this.isStraightRunning) {
+                this.executeSendSpeed(left, right, true);
             }
-        }, 70);
+        }, 30);
     }
 
-    handleTelemetry(data) {
-        if (!data) return;
-        // Nếu Server hoặc ESP32 gửi thông tin tốc độ vi sai phản hồi
-        if (data.event === 'motor_telemetry' || data.motor) {
-            const motorData = data.motor || data;
-            if (motorData.speed_left !== undefined) this.leftSpeed = motorData.speed_left;
-            if (motorData.speed_right !== undefined) this.rightSpeed = motorData.speed_right;
-            if (motorData.is_running !== undefined) this.isEngineRunning = motorData.is_running;
-            this.updateUI();
-        }
-    }
-
-    getGearInfo(speed) {
-        if (speed === 0 || !this.isEngineRunning) {
-            return { gear: 'P', label: 'DỪNG (PARK)', color: '#64748b' };
-        } else if (speed <= 45) {
-            return { gear: '1', label: 'CHẬM / ECO', color: '#38bdf8' };
-        } else if (speed <= 75) {
-            return { gear: '2', label: 'TIÊU CHUẨN', color: '#a78bfa' };
-        } else {
-            return { gear: '3', label: 'TURBO', color: '#f59e0b' };
+    executeSendSpeed(left, right, isRunning) {
+        if (this.wsClient) {
+            const maxSpeed = Math.max(left, right);
+            this.wsClient.send({
+                cmd: 'set_motor_speed',
+                speed: maxSpeed,
+                left: left,
+                right: right,
+                is_running: isRunning
+            });
         }
     }
 
     updateUI() {
-        const leftSpd = this.leftSpeed;
-        const rightSpd = this.rightSpeed;
+        const leftPwm = Math.round(this.baseSpeed * this.scaleLeft);
+        const rightPwm = Math.round(this.baseSpeed * this.scaleRight);
 
-        const leftGear = this.getGearInfo(leftSpd);
-        const rightGear = this.getGearInfo(rightSpd);
-
-        // --- 1. CẬP NHẬT CẦN SỐ BÁNH TRÁI (MOTOR A) ---
-        if (this.shifterLeftSpeedVal) this.shifterLeftSpeedVal.textContent = leftSpd;
-        if (this.shifterLeftStatus) {
-            this.shifterLeftStatus.textContent = leftGear.label;
-            this.shifterLeftStatus.style.color = leftGear.color;
-        }
-        if (this.shiftKnobLeft) this.shiftKnobLeft.style.bottom = `${leftSpd}%`;
-        if (this.shifterGlowLeft) this.shifterGlowLeft.style.height = `${leftSpd}%`;
-        if (this.knobGearSymbolLeft) this.knobGearSymbolLeft.textContent = leftGear.gear;
-
-        if (this.sliderLeft && parseInt(this.sliderLeft.value, 10) !== leftSpd) {
-            this.sliderLeft.value = leftSpd;
+        // Bánh trái
+        if (this.scaleLeftText) this.scaleLeftText.textContent = this.scaleLeft.toFixed(2);
+        if (this.pwmLeftText) this.pwmLeftText.textContent = leftPwm;
+        if (this.tagSliderLeftVal) this.tagSliderLeftVal.textContent = this.scaleLeft.toFixed(2);
+        if (this.sliderScaleLeft && parseFloat(this.sliderScaleLeft.value) !== this.scaleLeft) {
+            this.sliderScaleLeft.value = this.scaleLeft.toFixed(2);
         }
 
-        this.gearButtonsLeft.forEach(btnObj => {
-            if (btnObj.el) {
-                btnObj.el.classList.toggle('is-active', btnObj.gear === leftGear.gear);
-            }
-        });
-
-        // --- 2. CẬP NHẬT CẦN SỐ BÁNH PHẢI (MOTOR B) ---
-        if (this.shifterRightSpeedVal) this.shifterRightSpeedVal.textContent = rightSpd;
-        if (this.shifterRightStatus) {
-            this.shifterRightStatus.textContent = rightGear.label;
-            this.shifterRightStatus.style.color = rightGear.color;
-        }
-        if (this.shiftKnobRight) this.shiftKnobRight.style.bottom = `${rightSpd}%`;
-        if (this.shifterGlowRight) this.shifterGlowRight.style.height = `${rightSpd}%`;
-        if (this.knobGearSymbolRight) this.knobGearSymbolRight.textContent = rightGear.gear;
-
-        if (this.sliderRight && parseInt(this.sliderRight.value, 10) !== rightSpd) {
-            this.sliderRight.value = rightSpd;
+        // Bánh phải
+        if (this.scaleRightText) this.scaleRightText.textContent = this.scaleRight.toFixed(2);
+        if (this.pwmRightText) this.pwmRightText.textContent = rightPwm;
+        if (this.tagSliderRightVal) this.tagSliderRightVal.textContent = this.scaleRight.toFixed(2);
+        if (this.sliderScaleRight && parseFloat(this.sliderScaleRight.value) !== this.scaleRight) {
+            this.sliderScaleRight.value = this.scaleRight.toFixed(2);
         }
 
-        this.gearButtonsRight.forEach(btnObj => {
-            if (btnObj.el) {
-                btnObj.el.classList.toggle('is-active', btnObj.gear === rightGear.gear);
-            }
-        });
-
-        // --- 3. CẬP NHẬT ĐỒNG HỒ ĐO 2 BÁNH Ở GIỮA ---
-        const maxArcLength = 386.4;
-
-        // Bánh Trái
-        if (this.speedLeftVal) this.speedLeftVal.textContent = leftSpd;
-        if (this.rpmLeftVal) this.rpmLeftVal.textContent = `${Math.round(leftSpd * 2.2)} RPM`;
-        const leftOffset = maxArcLength - (maxArcLength * (leftSpd / 100));
-        if (this.gaugeFillLeft) {
-            this.gaugeFillLeft.style.strokeDashoffset = leftOffset;
-            this.gaugeFillLeft.style.opacity = leftSpd > 0 ? '1' : '0';
+        // Base Speed
+        if (this.baseSpeedDisplay) this.baseSpeedDisplay.textContent = `${this.baseSpeed} PWM`;
+        if (this.sliderBaseSpeed && parseInt(this.sliderBaseSpeed.value, 10) !== this.baseSpeed) {
+            this.sliderBaseSpeed.value = this.baseSpeed;
         }
-        if (this.wheelGraphicLeft) {
-            if (leftSpd > 0) {
-                this.wheelGraphicLeft.classList.add('is-spinning');
-                const duration = Math.max(0.18, (1.6 - (leftSpd / 100 * 1.35))).toFixed(2);
-                this.wheelGraphicLeft.style.animationDuration = `${duration}s`;
+
+        // Nút Đi Thẳng
+        if (this.btnToggleStraight) {
+            if (this.isStraightRunning) {
+                this.btnToggleStraight.className = 'btn-straight-master btn-state-running';
+                if (this.straightMainLabel) this.straightMainLabel.textContent = 'DỪNG LẠI';
+                if (this.straightSubLabel) this.straightSubLabel.textContent = `Đang chạy: Trái ${leftPwm} · Phải ${rightPwm} PWM`;
+                if (this.straightBtnIcon) {
+                    this.straightBtnIcon.innerHTML = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
+                }
             } else {
-                this.wheelGraphicLeft.classList.remove('is-spinning');
-            }
-        }
-
-        // Bánh Phải
-        if (this.speedRightVal) this.speedRightVal.textContent = rightSpd;
-        if (this.rpmRightVal) this.rpmRightVal.textContent = `${Math.round(rightSpd * 2.2)} RPM`;
-        const rightOffset = maxArcLength - (maxArcLength * (rightSpd / 100));
-        if (this.gaugeFillRight) {
-            this.gaugeFillRight.style.strokeDashoffset = rightOffset;
-            this.gaugeFillRight.style.opacity = rightSpd > 0 ? '1' : '0';
-        }
-        if (this.wheelGraphicRight) {
-            if (rightSpd > 0) {
-                this.wheelGraphicRight.classList.add('is-spinning');
-                const duration = Math.max(0.18, (1.6 - (rightSpd / 100 * 1.35))).toFixed(2);
-                this.wheelGraphicRight.style.animationDuration = `${duration}s`;
-            } else {
-                this.wheelGraphicRight.classList.remove('is-spinning');
-            }
-        }
-
-        // Tỷ lệ phân bổ vi sai
-        const totalSpd = leftSpd + rightSpd;
-        let leftRatio = 50;
-        let rightRatio = 50;
-        if (totalSpd > 0) {
-            leftRatio = Math.round((leftSpd / totalSpd) * 100);
-            rightRatio = 100 - leftRatio;
-        }
-        if (this.ratioLeftTxt) this.ratioLeftTxt.textContent = `${leftRatio}%`;
-        if (this.ratioRightTxt) this.ratioRightTxt.textContent = `${rightRatio}%`;
-        if (this.diffBarLeft) this.diffBarLeft.style.width = `${leftRatio}%`;
-        if (this.diffBarRight) this.diffBarRight.style.width = `${rightRatio}%`;
-
-        // Trạng thái chuyển động vi sai
-        if (this.diffMotionStatus && this.motionStatusText) {
-            if (!this.isEngineRunning || (leftSpd === 0 && rightSpd === 0)) {
-                this.diffMotionStatus.className = 'diff-motion-pill';
-                this.motionStatusText.textContent = 'XE ĐANG DỪNG';
-            } else {
-                this.diffMotionStatus.className = 'diff-motion-pill is-moving';
-                if (leftSpd === rightSpd) {
-                    this.motionStatusText.textContent = 'XE ĐANG ĐI THẲNG (ĐỀU TỐC)';
-                } else if (leftSpd < rightSpd) {
-                    if (leftSpd === 0) {
-                        this.motionStatusText.textContent = 'XE ĐANG QUAY TẠI CHỖ SANG TRÁI';
-                    } else {
-                        this.motionStatusText.textContent = 'XE ĐANG RẼ TRÁI (BÁNH PHẢI NHANH HƠN)';
-                    }
-                } else {
-                    if (rightSpd === 0) {
-                        this.motionStatusText.textContent = 'XE ĐANG QUAY TẠI CHỖ SANG PHẢI';
-                    } else {
-                        this.motionStatusText.textContent = 'XE ĐANG RẼ PHẢI (BÁNH TRÁI NHANH HƠN)';
-                    }
+                this.btnToggleStraight.className = 'btn-straight-master btn-state-stopped';
+                if (this.straightMainLabel) this.straightMainLabel.textContent = 'ĐI THẲNG';
+                if (this.straightSubLabel) this.straightSubLabel.textContent = 'Nhấn để kích hoạt động cơ chạy thẳng';
+                if (this.straightBtnIcon) {
+                    this.straightBtnIcon.innerHTML = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>`;
                 }
             }
         }
 
-        // --- 4. CẬP NHẬT CÁC NÚT ĐIỀU KHIỂN TRUNG TÂM ---
-        // Nút Bật/Dừng Động cơ
-        if (this.btnToggleMotorPower) {
-            if (this.isEngineRunning) {
-                this.btnToggleMotorPower.className = 'btn-engine-toggle engine-running';
-                if (this.engineBtnLabel) this.engineBtnLabel.textContent = 'DỪNG ĐỘNG CƠ';
-                if (this.engineBtnSub) this.engineBtnSub.textContent = `Trái: ${leftSpd}% · Phải: ${rightSpd}%`;
+        // Trạng thái pill
+        if (this.straightStatusPill && this.straightStatusText) {
+            if (this.isStraightRunning) {
+                this.straightStatusPill.className = 'status-pill-center is-running';
+                this.straightStatusText.textContent = 'XE ĐANG CHẠY THẲNG';
             } else {
-                this.btnToggleMotorPower.className = 'btn-engine-toggle engine-stopped';
-                if (this.engineBtnLabel) this.engineBtnLabel.textContent = 'BẬT ĐỘNG CƠ';
-                if (this.engineBtnSub) this.engineBtnSub.textContent = 'Khởi động ở mức ga 35%';
+                this.straightStatusPill.className = 'status-pill-center';
+                this.straightStatusText.textContent = 'XE ĐANG DỪNG';
             }
         }
 
-        // Nút Đồng bộ 2 cần
-        if (this.btnToggleSync) {
-            if (this.isSync) {
-                this.btnToggleSync.className = 'btn-sync-toggle sync-enabled';
-                if (this.syncBtnLabel) this.syncBtnLabel.textContent = 'ĐỒNG BỘ 2 CẦN: BẬT';
-                if (this.syncBtnSub) this.syncBtnSub.textContent = 'Kéo 1 cần cả 2 bánh cùng đổi';
-            } else {
-                this.btnToggleSync.className = 'btn-sync-toggle sync-disabled';
-                if (this.syncBtnLabel) this.syncBtnLabel.textContent = 'ĐỒNG BỘ 2 CẦN: TẮT';
-                if (this.syncBtnSub) this.syncBtnSub.textContent = 'Điều chỉnh riêng lẻ từng bánh';
+        // Preview code cấu hình
+        if (this.configCodePreview) {
+            this.configCodePreview.textContent = `MOTOR_LEFT_SCALE = ${this.scaleLeft.toFixed(2)}\nMOTOR_RIGHT_SCALE = ${this.scaleRight.toFixed(2)}`;
+        }
+    }
+
+    handleTelemetry(data) {
+        if (!data) return;
+        // Bỏ qua telemetry trong 800ms sau khi bấm Bật/Dừng để dập tắt race condition dội gói cũ
+        const now = Date.now();
+        if (now - this.lastToggleTime < 800) {
+            return;
+        }
+
+        if (data.event === 'motor_telemetry' || data.motor) {
+            const motorData = data.motor || data;
+            if (motorData.is_running === false && this.isStraightRunning) {
+                this.isStraightRunning = false;
+                this.updateUI();
             }
         }
     }
@@ -1637,8 +1570,8 @@ class VehicleMotionController {
 
         // Trạng thái vận hành
         this.isRunningAutoLine = false;  // Trạng thái tự hành bám vạch quang học
-        this.baseSpeed = 55;             // Tốc độ cơ sở khi bám vạch sau 1.5s (55% theo yêu cầu)
-        this.startupSpeed = 65;          // Tốc độ cơ sở khởi hành trong 1.5s đầu
+        this.baseSpeed = 70;             // Tốc độ cơ sở khi bám vạch sau 1.5s (70% theo yêu cầu)
+        this.startupSpeed = 75;          // Tốc độ cơ sở khởi hành trong 1.5s đầu
         this.startupDurationMs = 1500;   // 1.5s chạy tốc độ khởi hành để thoát trạng thái nghỉ
         this.startupStartTime = 0;
         this.pidKp = 4.8;                // Hệ số Kp = 4.8
@@ -1718,7 +1651,7 @@ class VehicleMotionController {
             btnEmergencyStop: document.getElementById('btn-emergency-stop'),
 
             baseSpeedSlider: document.getElementById('base-speed-slider'),
-            baseSpeedDisplay: document.getElementById('base-speed-display'),
+            baseSpeedDisplay: document.getElementById('mission-base-speed-display') || document.getElementById('base-speed-display'),
 
             logBox: document.getElementById('mission-log-box'),
             btnClearLog: document.getElementById('btn-clear-mission-log')
@@ -2596,6 +2529,9 @@ class DashboardApp {
             backTb6612Btn.removeAttribute('onclick');
             backTb6612Btn.addEventListener('click', (e) => {
                 e.preventDefault();
+                if (this.tb6612Controller && this.tb6612Controller.isStraightRunning) {
+                    this.tb6612Controller.stopStraight();
+                }
                 this.screenManager.show('dashboard-screen');
             });
         }

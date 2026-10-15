@@ -94,6 +94,18 @@ class LineTracker:
         self.pid_output = 0.0
         self.both_black_start_time = 0
 
+    def _drive(self, left, right):
+        """
+        Xuất xung PWM có tự động nhân hệ số cân bằng cơ khí (MOTOR_LEFT_SCALE, MOTOR_RIGHT_SCALE)
+        được cấu hình từ Tab TB6612, đảm bảo 2 bánh triệt tiêu sai lệch phần cứng.
+        """
+        scale_l = getattr(config, "MOTOR_LEFT_SCALE", 1.0)
+        scale_r = getattr(config, "MOTOR_RIGHT_SCALE", 1.0)
+        out_l = int(round(left * scale_l))
+        out_r = int(round(right * scale_r))
+        self.motor.set_differential(out_l, out_r)
+        return (out_l, out_r)
+
     def reset_pid(self):
         """Đặt lại toàn bộ các thanh ghi trạng thái PID về 0."""
         self.current_error = 0.0
@@ -114,10 +126,10 @@ class LineTracker:
         self.is_active = True
         self.start_ticks = time.ticks_ms()
         self.lost_line_start_time = 0
-        self.last_action = "STARTUP_55"
-        # 1.5s đầu chạy với tốc độ cơ sở khởi hành (55%) để thắng ma sát nghỉ
+        self.last_action = "STARTUP"
+        # 1.5s đầu chạy với tốc độ cơ sở khởi hành để thắng ma sát nghỉ
         init_speed = self.startup_speed if self.startup_duration_ms > 0 else self.base_speed
-        self.motor.set_differential(init_speed, init_speed)
+        self._drive(init_speed, init_speed)
         print(f"[LineTracker PD] ▶ BẮT ĐẦU DÒ LINE (1.5s đầu chạy tốc độ {self.startup_speed}%, sau đó {self.base_speed}%, Kp={self.kp}, Ki={self.ki}, Kd={self.kd})")
 
     def stop(self):
@@ -251,22 +263,23 @@ class LineTracker:
             if abs(self.last_valid_error) < 0.5:
                 # TH 1: Mất vạch khi đang bám đúng tâm (vạch đứt quãng) -> Tiếp tục chạy THẲNG đón vạch
                 self.last_action = "LOST_STRAIGHT"
-                self.motor.set_differential(current_base, current_base)
+                self._drive(current_base, current_base)
                 return (current_base, current_base, "LOST_STRAIGHT")
             elif self.last_valid_error <= -0.5:
                 # TH 2: Vạch vừa trôi sang TRÁI (cua gấp trái) -> Bẻ lái quay TRÁI để quét đón vạch
-                speed_l = self.lost_search_reverse_speed  # Bánh trong quay lùi nhẹ (-15%)
-                speed_r = current_base                    # Bánh ngoài quay tới (45%)
+                # Bánh trong dừng (0% làm trụ), Bánh ngoài chạy vừa phải 35-40%, KHÔNG QUAY LÙI để chống xoay ngang xe
+                search_outer = min(42, max(28, int(current_base * 0.55)))
+                search_inner = getattr(config, "LINE_SEARCH_REVERSE_SPEED", 0)
                 self.last_action = "LOST_SEARCH_LEFT"
-                self.motor.set_differential(speed_l, speed_r)
-                return (speed_l, speed_r, "LOST_SEARCH_LEFT")
+                self._drive(search_inner, search_outer)
+                return (search_inner, search_outer, "LOST_SEARCH_LEFT")
             else:
                 # TH 3: Vạch vừa trôi sang PHẢI (cua gấp phải) -> Bẻ lái quay PHẢI để quét đón vạch
-                speed_l = current_base                    # Bánh ngoài quay tới (45%)
-                speed_r = self.lost_search_reverse_speed  # Bánh trong quay lùi nhẹ (-15%)
+                search_outer = min(42, max(28, int(current_base * 0.55)))
+                search_inner = getattr(config, "LINE_SEARCH_REVERSE_SPEED", 0)
                 self.last_action = "LOST_SEARCH_RIGHT"
-                self.motor.set_differential(speed_l, speed_r)
-                return (speed_l, speed_r, "LOST_SEARCH_RIGHT")
+                self._drive(search_outer, search_inner)
+                return (search_outer, search_inner, "LOST_SEARCH_RIGHT")
         else:
             # Khi thấy lại vạch (dù chỉ 1 mắt), reset ngay bộ đếm mất vạch
             self.lost_line_start_time = 0
@@ -287,7 +300,7 @@ class LineTracker:
             self.current_error = 0.0
             self.pid_output = 0.0
             self.last_action = "STARTUP_CROSS" if is_startup else "CROSS_LINE"
-            self.motor.set_differential(current_base, current_base)
+            self._drive(current_base, current_base)
             return (current_base, current_base, self.last_action)
         else:
             self.both_black_start_time = 0
@@ -327,10 +340,9 @@ class LineTracker:
         self.prev_error = raw_error
 
         # Bước 5: KHUẾCH ĐẠI VI SAI HỢP LÝ KHI VÀO CUA
-        # Giúp xe bẻ lái mượt mà, không bị vọt quá đà gây văng xe
         abs_err = abs(smooth_err)
         if abs_err > 1.0:
-            curve_mult = 1.0 + 0.22 * (abs_err - 1.0)
+            curve_mult = 1.0 + 0.35 * (abs_err - 1.0)
         else:
             curve_mult = 1.0
 
@@ -339,32 +351,42 @@ class LineTracker:
         pid_val = (p_term + i_term + d_term) * speed_scale * curve_mult
         self.pid_output = round(pid_val, 2)
 
-        # Bước 6: PHÂN TẦNG TỐC ĐỘ BÁNH TRONG THÔNG MINH (CHỐNG KHÓA CỨNG BÁNH LÀM VĂNG XE)
+        # Bước 6: PHÂN TẦNG TỐC ĐỘ BÁNH TRONG THÔNG MINH (CHỦ ĐỘNG ÉP GIẢM GA BÁNH TRONG)
+        # Khắc phục triệt để hiện tượng vạch ở Mắt 2/4 xe không chịu rẽ mà trượt ra Mắt 1/5!
         speed_l = int(round(current_base + pid_val))
         speed_r = int(round(current_base - pid_val))
 
-        min_gentle = self.min_speed  # Ngưỡng 30% mặc định
+        min_gentle = self.min_speed  # Ngưỡng tốc độ tối thiểu khi bám tâm
 
         if abs_err <= 1.2:
-            # Vùng 1: Bám tim đường thẳng (mắt 3) -> Giữ cả 2 bánh >= min_gentle (30%)
+            # VÙNG 1: Bám tim đường thẳng (Mắt 3 trung tâm, |err| <= 1.2)
+            # Cả 2 bánh duy trì tốc độ ổn định xung quanh current_base
             speed_l = max(min_gentle, min(88, speed_l))
             speed_r = max(min_gentle, min(88, speed_r))
-        elif abs_err <= 2.2:
-            # Vùng 2: Chớm lệch mắt 2 hoặc 4 -> Bánh trong hạ xuống tối thiểu 25%
-            # Tạo lực kéo dứt khoát đưa xe về lại mắt 3, giữ xe không văng ra mắt 1 và 5
-            speed_l = max(25, min(88, speed_l))
-            speed_r = max(25, min(88, speed_r))
-        elif abs_err < 3.2:
-            # Vùng 3: Cua gắt vừa (mắt 1-2 hoặc 4-5) -> Bánh trong giữ tối thiểu 18%
-            # Bánh trong vẫn lăn để xe lượn hình cánh cung, KHÔNG KHÓA CỨNG
-            speed_l = max(18, min(88, speed_l))
-            speed_r = max(18, min(88, speed_r))
+        elif smooth_err < -1.2:
+            # VẠCH LỆCH SANG TRÁI -> CẦN RẼ TRÁI (Bánh Trái: Bánh Trong, Bánh Phải: Bánh Ngoài)
+            if abs_err <= 2.5:
+                # VÙNG 2: Mắt 2 thấy vạch (Lệch vừa: 1.2 < abs_err <= 2.5)
+                # Chủ động ép bánh trong hạ sâu (tối đa 40% base speed), bánh ngoài tăng ga để rẽ vào tâm ngay
+                speed_l = max(18, min(int(current_base * 0.40), speed_l))
+                speed_r = min(88, max(int(current_base * 1.10), speed_r))
+            else:
+                # VÙNG 3 & 4: Mắt 1 thấy vạch (Cua gắt: abs_err > 2.5)
+                # Bánh trong hạ xuống 15-20%, bánh ngoài giữ 75-85% ôm cua cánh cung, không khóa bánh
+                speed_l = max(15, min(int(current_base * 0.25), speed_l))
+                speed_r = min(88, max(int(current_base * 1.15), speed_r))
         else:
-            # Vùng 4: Chỉ còn mắt 1 hoặc 5 (Góc cua cực gắt)
-            # Bánh trong vẫn giữ 15% (không giảm về 0, không đảo chiều lùi)
-            # Xe vừa tiến vừa ôm cua gắt (Arc Turn) mượt mà, dập tắt hoàn toàn cú văng đuôi xe!
-            speed_l = max(15, min(88, speed_l))
-            speed_r = max(15, min(88, speed_r))
+            # VẠCH LỆCH SANG PHẢI -> CẦN RẼ PHẢI (Bánh Phải: Bánh Trong, Bánh Trái: Bánh Ngoài)
+            if abs_err <= 2.5:
+                # VÙNG 2: Mắt 4 thấy vạch (Lệch vừa: 1.2 < abs_err <= 2.5)
+                # Chủ động ép bánh trong hạ sâu (tối đa 40% base speed), bánh ngoài tăng ga để rẽ vào tâm ngay
+                speed_r = max(18, min(int(current_base * 0.40), speed_r))
+                speed_l = min(88, max(int(current_base * 1.10), speed_l))
+            else:
+                # VÙNG 3 & 4: Mắt 5 thấy vạch (Cua gắt: abs_err > 2.5)
+                # Bánh trong hạ xuống 15-20%, bánh ngoài giữ 75-85% ôm cua cánh cung, không khóa bánh
+                speed_r = max(15, min(int(current_base * 0.25), speed_r))
+                speed_l = min(88, max(int(current_base * 1.15), speed_l))
 
         # Gán nhãn hành động phục vụ Telemetry hiển thị trên Web
         if abs_err < 0.2:
@@ -380,7 +402,7 @@ class LineTracker:
 
         self.last_action = f"STARTUP_{act_name}" if is_startup else act_name
 
-        # Bước 7: Xuất xung PWM xuống mạch công suất TB6612FNG
-        self.motor.set_differential(speed_l, speed_r)
+        # Bước 7: Xuất xung PWM xuống mạch công suất TB6612FNG (tự động nhân scale cơ khí bù lệch 2 bánh)
+        self._drive(speed_l, speed_r)
         return (speed_l, speed_r, self.last_action)
 
